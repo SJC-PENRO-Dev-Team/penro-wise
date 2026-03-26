@@ -1,0 +1,158 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}Undo Last Action - Confirmation{% endblock %}
+
+{% block content %}
+<div class="section-header mb-4">
+  <div class="section-title">
+    <i class="fas fa-undo"></i>
+    Undo Last Action
+  </div>
+  <a href="{% url 'document_tracking:admin_submission_detail' submission.id %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Cancel
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card border-secondary">
+      <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0">
+          <i class="fas fa-exclamation-triangle"></i> Confirm Undo Last Action
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-warning">
+          <h6 class="alert-heading">
+            <i class="fas fa-info-circle"></i> Important Information
+          </h6>
+          <p class="mb-2">You are about to undo the last status change. This action will:</p>
+          <ul class="mb-0">
+            <li>Revert status from <strong>{{ submission.get_status_display }}</strong> to <strong>{{ previous_status_display }}</strong></li>
+            <li>Unlock the submission record for editing</li>
+            <li>Allow the workflow to continue from the previous state</li>
+            <li>Send email notification to the submitter</li>
+            <li>Create a logbook entry with your remarks</li>
+          </ul>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">
+            <h6 class="mb-0">Submission Details</h6>
+          </div>
+          <div class="card-body">
+            <div class="row mb-2">
+              <div class="col-md-4"><strong>Tracking Number:</strong></div>
+              <div class="col-md-8">
+                <span class="badge bg-dark">{{ submission.tracking_number }}</span>
+              </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4"><strong>Title:</strong></div>
+              <div class="col-md-8">{{ submission.title }}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4"><strong>Submitted By:</strong></div>
+              <div class="col-md-8">{{ submission.submitted_by.get_full_name }} ({{ submission.submitted_by.email }})</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4"><strong>Current Status:</strong></div>
+              <div class="col-md-8">
+                <span class="badge bg-primary">{{ submission.get_status_display }}</span>
+              </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4"><strong>Will Revert To:</strong></div>
+              <div class="col-md-8">
+                <span class="badge bg-info">{{ previous_status_display }}</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4"><strong>Last Updated:</strong></div>
+              <div class="col-md-8">{{ submission.updated_at|date:"F d, Y g:i A" }}</div>
+            </div>
+          </div>
+        </div>
+
+        <form method="post" id="undoForm">
+          {% csrf_token %}
+          
+          <div class="mb-4">
+            <label for="remarks" class="form-label fw-bold">
+              <i class="fas fa-comment-alt"></i> Remarks (Optional)
+            </label>
+            <textarea 
+              name="remarks" 
+              id="remarks" 
+              class="form-control" 
+              rows="4" 
+              placeholder="Optionally explain why this action is being undone..."></textarea>
+            <small class="form-text text-muted">
+              Provide an explanation for why this undo is necessary. This will be logged and included in the email notification.
+            </small>
+          </div>
+
+          <div class="alert alert-info">
+            <h6 class="alert-heading">
+              <i class="fas fa-info-circle"></i> Note
+            </h6>
+            <p class="mb-0">
+              This action will revert the submission to the previous status in the workflow. 
+              The submission can then continue from that point forward.
+            </p>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <a href="{% url 'document_tracking:admin_submission_detail' submission.id %}" class="btn btn-secondary">
+              <i class="fas fa-times"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-primary" id="confirmBtn">
+              <i class="fas fa-undo"></i> Confirm Undo Action
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('undoForm');
+  const confirmBtn = document.getElementById('confirmBtn');
+  const remarksField = document.getElementById('remarks');
+  
+  form.addEventListener('submit', function(e) {
+    const confirmed = confirm(
+      'Are you sure you want to undo the last action?\n\n' +
+      'This will revert the status from "{{ submission.get_status_display }}" to "{{ previous_status_display }}".\n\n' +
+      'The submission will be unlocked and can continue from the previous state.'
+    );
+    
+    if (!confirmed) {
+      e.preventDefault();
+      return false;
+    }
+    
+    // Disable button to prevent double submission
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Undoing...';
+  });
+});
+</script>
+
+<style>
+.card.border-secondary {
+  border-width: 2px;
+}
+
+.alert-warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.alert-info {
+  border-left: 4px solid #3b82f6;
+}
+</style>
+{% endblock %}

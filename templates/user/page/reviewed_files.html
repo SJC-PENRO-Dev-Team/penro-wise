@@ -1,0 +1,632 @@
+{% extends "user/layout/base.html" %}
+{% load static %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<style>
+/* ===============================
+   REVIEWED FILES PAGE (USER)
+================================ */
+.rf-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* Header */
+.rf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 24px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.rf-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.rf-header-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #fff;
+}
+
+.rf-header-icon.accepted {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.rf-header-icon.rejected {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.rf-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.rf-subtitle {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 4px 0 0 0;
+}
+
+.rf-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Stats */
+.rf-stats {
+  display: flex;
+  gap: 12px;
+}
+
+.rf-stat {
+  text-align: center;
+  padding: 10px 18px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.rf-stat-value {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.rf-stat.accepted .rf-stat-value {
+  color: #10b981;
+}
+
+.rf-stat.rejected .rf-stat-value {
+  color: #ef4444;
+}
+
+.rf-stat-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Navigation */
+.rf-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.rf-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.rf-nav-btn:hover {
+  border-color: #cbd5e1;
+  color: #475569;
+  background: #f8fafc;
+}
+
+.rf-nav-btn.active {
+  border-color: transparent;
+  color: #fff;
+}
+
+.rf-nav-btn.active.accepted {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.rf-nav-btn.active.rejected {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+/* Filter Bar */
+.rf-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.rf-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.rf-search:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.rf-search i {
+  color: #94a3b8;
+}
+
+.rf-search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.85rem;
+  width: 100%;
+  color: #1e293b;
+}
+
+.rf-filter-select {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 0.85rem;
+  color: #475569;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+/* Files List */
+.rf-list {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+/* File Card */
+.rf-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+}
+
+.rf-card:last-child {
+  border-bottom: none;
+}
+
+.rf-card:hover {
+  background: #f8fafc;
+}
+
+.rf-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.rf-card-icon.accepted {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.rf-card-icon.rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.rf-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.rf-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.rf-card-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  word-break: break-word;
+}
+
+.rf-card-name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.rf-card-name a:hover {
+  color: #3b82f6;
+}
+
+.rf-card-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.rf-card-badge.accepted {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.rf-card-badge.rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.rf-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.rf-card-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rf-card-meta i {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* Rejection Info */
+.rf-rejection-box {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: #fef2f2;
+  border-radius: 8px;
+  border-left: 3px solid #ef4444;
+}
+
+.rf-rejection-reason {
+  font-size: 0.85rem;
+  color: #991b1b;
+  font-style: italic;
+  margin-bottom: 6px;
+}
+
+.rf-rejection-expires {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* Card Actions */
+.rf-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.rf-card-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.rf-card-btn:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+/* Empty State */
+.rf-empty {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.rf-empty-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+
+.rf-empty-icon.accepted {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.rf-empty-icon.rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.rf-empty h5 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.rf-empty p {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .rf-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .rf-header-right {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  
+  .rf-filter-bar {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .rf-search {
+    width: 100%;
+  }
+  
+  .rf-card {
+    flex-direction: column;
+  }
+  
+  .rf-card-actions {
+    width: 100%;
+  }
+  
+  .rf-card-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+</style>
+
+<div class="rf-container">
+  <!-- Header -->
+  <div class="rf-header">
+    <div class="rf-header-left">
+      <div class="rf-header-icon {{ status_type }}">
+        {% if status_type == 'accepted' %}
+          <i class="fas fa-check-circle"></i>
+        {% else %}
+          <i class="fas fa-times-circle"></i>
+        {% endif %}
+      </div>
+      <div>
+        <h4 class="rf-title">{{ page_title }}</h4>
+        <p class="rf-subtitle">
+          {% if status_type == 'accepted' %}
+            Your files that have been approved by reviewers
+          {% else %}
+            Your files that were rejected (will be auto-deleted after 24 hours)
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    
+    <div class="rf-header-right">
+      <div class="rf-stats">
+        <div class="rf-stat {{ status_type }}">
+          <span class="rf-stat-value">{{ total_count }}</span>
+          <span class="rf-stat-label">Files</span>
+        </div>
+      </div>
+      
+      <div class="rf-nav">
+        <a href="{% url 'user_app:dashboard' %}" 
+           class="rf-nav-btn" title="Dashboard">
+          <i class="fas fa-home"></i>
+        </a>
+        <a href="{% url 'user_app:file-manager' %}" 
+           class="rf-nav-btn" title="File Manager">
+          <i class="fas fa-folder-tree"></i>
+        </a>
+        <a href="{% url 'user_app:all-accepted-files' %}" 
+           class="rf-nav-btn" title="All Accepted Files">
+          <i class="fas fa-check-double"></i>
+        </a>
+        <a href="{% url 'user_app:accepted-files' %}" 
+           class="rf-nav-btn {% if status_type == 'accepted' %}active accepted{% endif %}">
+          <i class="fas fa-check-circle"></i>
+          Accepted
+        </a>
+        <a href="{% url 'user_app:rejected-files' %}" 
+           class="rf-nav-btn {% if status_type == 'rejected' %}active rejected{% endif %}">
+          <i class="fas fa-times-circle"></i>
+          Rejected
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <form method="get" class="rf-filter-bar">
+    <div class="rf-search">
+      <i class="fas fa-search"></i>
+      <input type="text" 
+             name="q" 
+             value="{{ search_query }}" 
+             placeholder="Search by filename or workcycle...">
+    </div>
+    
+    <select name="type" class="rf-filter-select" onchange="this.form.submit()">
+      <option value="">All Types</option>
+      {% for value, label in attachment_types %}
+        <option value="{{ value }}" {% if current_type == value %}selected{% endif %}>
+          {{ label }}
+        </option>
+      {% endfor %}
+    </select>
+    
+    <button type="submit" class="rf-nav-btn">
+      <i class="fas fa-filter"></i>
+      Filter
+    </button>
+  </form>
+
+  <!-- Files List -->
+  <div class="rf-list">
+    {% if files %}
+      {% for file in files %}
+      <div class="rf-card">
+        <div class="rf-card-icon {{ status_type }}">
+          {% if status_type == 'accepted' %}
+            <i class="fas fa-check"></i>
+          {% else %}
+            <i class="fas fa-times"></i>
+          {% endif %}
+        </div>
+        
+        <div class="rf-card-content">
+          <div class="rf-card-header">
+            <div class="rf-card-name">
+              {% if file.is_link %}
+                <!-- Link attachment -->
+                <a href="{{ file.link_url }}" target="_blank" rel="noopener noreferrer">
+                  <i class="fas fa-link me-1" style="color: #8b5cf6;"></i>
+                  {{ file.link_url|truncatechars:60 }}
+                  <i class="fas fa-external-link-alt ms-1" style="font-size: 0.75rem;"></i>
+                </a>
+              {% else %}
+                <!-- File attachment -->
+                <a href="{{ file.file.url }}" target="_blank">
+                  {{ file.file.name|slice:"-60:" }}
+                </a>
+              {% endif %}
+            </div>
+            <span class="rf-card-badge {{ status_type }}">
+              {{ file.get_attachment_type_display }}
+            </span>
+          </div>
+          
+          <div class="rf-card-meta">
+            <span>
+              <i class="fas fa-folder"></i>
+              {{ file.work_item.workcycle.title|truncatechars:40 }}
+            </span>
+            <span>
+              <i class="fas fa-user-check"></i>
+              {% if file.reviewed_by %}
+                {{ file.reviewed_by.get_full_name|default:file.reviewed_by.username }}
+              {% else %}
+                —
+              {% endif %}
+            </span>
+            <span>
+              <i class="fas fa-calendar"></i>
+              {% if status_type == 'accepted' and file.accepted_at %}
+                {{ file.accepted_at|date:"M d, Y · g:i A" }}
+              {% elif status_type == 'rejected' and file.rejected_at %}
+                {{ file.rejected_at|date:"M d, Y · g:i A" }}
+              {% endif %}
+            </span>
+          </div>
+          
+          {% if status_type == 'rejected' %}
+          <div class="rf-rejection-box">
+            {% if file.rejection_reason %}
+              <div class="rf-rejection-reason">
+                "{{ file.rejection_reason }}"
+              </div>
+            {% endif %}
+            {% if file.rejection_expires_at %}
+              <div class="rf-rejection-expires">
+                <i class="fas fa-clock"></i>
+                This file will be deleted {{ file.rejection_expires_at|timesince }} from now
+              </div>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        
+        <div class="rf-card-actions">
+          {% if file.is_file %}
+          <a href="{{ file.file.url }}" target="_blank" class="rf-card-btn">
+            <i class="fas fa-download"></i>
+            Download
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="rf-empty">
+        <div class="rf-empty-icon {{ status_type }}">
+          {% if status_type == 'accepted' %}
+            <i class="fas fa-check-circle"></i>
+          {% else %}
+            <i class="fas fa-times-circle"></i>
+          {% endif %}
+        </div>
+        <h5>No {{ status_type }} files</h5>
+        <p>
+          {% if status_type == 'accepted' %}
+            Your approved files will appear here.
+          {% else %}
+            Your rejected files will appear here until they are auto-deleted.
+          {% endif %}
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

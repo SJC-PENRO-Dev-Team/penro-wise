@@ -1,0 +1,211 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}{{ action }} Document Type - Settings{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/document-tracking.css' %}">
+
+<div class="dt-page">
+  <!-- UNIFIED HEADER -->
+  <div class="dt-unified-header">
+    <div class="dt-header-top">
+      <div class="dt-title-section">
+        <h3 class="dt-main-title">
+          <i class="fas fa-{% if action == 'Add' %}plus{% else %}edit{% endif %}"></i>
+          {{ action }} Document Type
+        </h3>
+        <p class="dt-subtitle">Configure document type and tracking number prefix</p>
+      </div>
+      <div class="dt-action-buttons-top">
+        <a href="{% url 'document_tracking:document-types' %}" class="dt-btn dt-btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to Document Types
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM CONTAINER -->
+  <div style="max-width: 700px; margin: 0 auto;">
+    <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px;">
+      
+      <form method="post" id="document-type-form">
+        {% csrf_token %}
+        
+        <!-- FORM ERRORS -->
+        {% if form.non_field_errors %}
+          <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px; margin-bottom: 20px;">
+            <div style="display: flex; gap: 10px; align-items: start;">
+              <i class="fas fa-exclamation-circle" style="color: #ef4444; margin-top: 2px;"></i>
+              <div style="flex: 1;">
+                {% for error in form.non_field_errors %}
+                  <div style="font-size: 0.85rem; color: #991b1b;">{{ error }}</div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- NAME FIELD -->
+        <div style="margin-bottom: 20px;">
+          <label for="{{ form.name.id_for_label }}" style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 6px;">
+            Document Type Name <span style="color: #ef4444;">*</span>
+          </label>
+          {{ form.name }}
+          {% if form.name.help_text %}
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+              <i class="fas fa-info-circle"></i> {{ form.name.help_text }}
+            </div>
+          {% endif %}
+          {% if form.name.errors %}
+            <div style="font-size: 0.8rem; color: #ef4444; margin-top: 4px;">
+              <i class="fas fa-exclamation-circle"></i> {{ form.name.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- PREFIX FIELD -->
+        <div style="margin-bottom: 20px;">
+          <label for="{{ form.prefix.id_for_label }}" style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 6px;">
+            Tracking Number Prefix <span style="color: #ef4444;">*</span>
+          </label>
+          {{ form.prefix }}
+          {% if form.prefix.help_text %}
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+              <i class="fas fa-info-circle"></i> {{ form.prefix.help_text }}
+            </div>
+          {% endif %}
+          {% if form.prefix.errors %}
+            <div style="font-size: 0.8rem; color: #ef4444; margin-top: 4px;">
+              <i class="fas fa-exclamation-circle"></i> {{ form.prefix.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- PREVIEW FIELD -->
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 6px;">
+            Tracking Number Preview
+          </label>
+          <div id="tracking-preview" style="background: #f5f3ff; border: 2px solid #e9d5ff; border-radius: 10px; padding: 16px; text-align: center;">
+            <div style="font-size: 1.5rem; font-weight: 700; color: #8b5cf6; font-family: 'Courier New', monospace;">
+              {{ form.preview.initial|default:"XXX-2026-XXX" }}
+            </div>
+          </div>
+          <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+            <i class="fas fa-info-circle"></i> Preview updates as you type the prefix
+          </div>
+        </div>
+
+        <!-- DESCRIPTION FIELD -->
+        <div style="margin-bottom: 20px;">
+          <label for="{{ form.description.id_for_label }}" style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 6px;">
+            Description
+          </label>
+          {{ form.description }}
+          {% if form.description.help_text %}
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+              <i class="fas fa-info-circle"></i> {{ form.description.help_text }}
+            </div>
+          {% endif %}
+          {% if form.description.errors %}
+            <div style="font-size: 0.8rem; color: #ef4444; margin-top: 4px;">
+              <i class="fas fa-exclamation-circle"></i> {{ form.description.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- SERIAL MODE FIELD -->
+        <div style="margin-bottom: 20px;">
+          <label for="{{ form.serial_mode.id_for_label }}" style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 6px;">
+            Serial Number Mode <span style="color: #ef4444;">*</span>
+          </label>
+          {{ form.serial_mode }}
+          {% if form.serial_mode.help_text %}
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+              <i class="fas fa-info-circle"></i> {{ form.serial_mode.help_text }}
+            </div>
+          {% endif %}
+          {% if form.serial_mode.errors %}
+            <div style="font-size: 0.8rem; color: #ef4444; margin-top: 4px;">
+              <i class="fas fa-exclamation-circle"></i> {{ form.serial_mode.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- RESET POLICY FIELD -->
+        <div style="margin-bottom: 20px;">
+          <label for="{{ form.reset_policy.id_for_label }}" style="display: block; font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 6px;">
+            Reset Policy <span style="color: #ef4444;">*</span>
+          </label>
+          {{ form.reset_policy }}
+          {% if form.reset_policy.help_text %}
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+              <i class="fas fa-info-circle"></i> {{ form.reset_policy.help_text }}
+            </div>
+          {% endif %}
+          {% if form.reset_policy.errors %}
+            <div style="font-size: 0.8rem; color: #ef4444; margin-top: 4px;">
+              <i class="fas fa-exclamation-circle"></i> {{ form.reset_policy.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- IS ACTIVE CHECKBOX -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 24px;">
+          <div class="form-check">
+            {{ form.is_active }}
+            <label for="{{ form.is_active.id_for_label }}" style="font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-left: 8px; cursor: pointer;">
+              Active
+            </label>
+          </div>
+          {% if form.is_active.help_text %}
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 6px; margin-left: 28px;">
+              {{ form.is_active.help_text }}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- FORM ACTIONS -->
+        <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <a href="{% url 'document_tracking:document-types' %}" class="dt-btn dt-btn-secondary">
+            <i class="fas fa-times"></i>
+            Cancel
+          </a>
+          <button type="submit" class="dt-btn dt-btn-primary">
+            <i class="fas fa-save"></i>
+            Save Document Type
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<!-- JAVASCRIPT FOR LIVE PREVIEW -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const prefixInput = document.getElementById('{{ form.prefix.id_for_label }}');
+  const previewDiv = document.getElementById('tracking-preview');
+  const currentYear = new Date().getFullYear();
+  
+  if (prefixInput && previewDiv) {
+    prefixInput.addEventListener('input', function() {
+      let prefix = this.value.trim().toUpperCase();
+      
+      // Update input value to uppercase
+      this.value = prefix;
+      
+      // Update preview
+      if (prefix.length > 0) {
+        previewDiv.querySelector('div').textContent = prefix + '-' + currentYear + '-XXX';
+      } else {
+        previewDiv.querySelector('div').textContent = 'XXX-' + currentYear + '-XXX';
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

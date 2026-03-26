@@ -1,0 +1,155 @@
+<!-- Routed Documents Content (Partial Refresh) -->
+{% if filter_display %}
+<div class="routed-doc-header" style="background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+  <div style="display: flex; align-items: center; justify-content: space-between;">
+    <div>
+      <h6 style="margin: 0 0 8px 0; font-size: 1.1rem; font-weight: 600; color: #1e293b;">
+        <i class="fas fa-filter" style="color: #8b5cf6; margin-right: 8px;"></i>
+        {{ filter_display }}
+      </h6>
+      <div style="display: flex; align-items: center; gap: 16px; font-size: 0.875rem; color: #64748b;">
+        <span>
+          <i class="fas fa-file-alt" style="color: #8b5cf6;"></i>
+          <strong>Submissions:</strong> {{ submissions_count }}
+        </span>
+        <span>
+          <i class="fas fa-paperclip" style="color: #8b5cf6;"></i>
+          <strong>Files:</strong> {{ total_files }}
+        </span>
+      </div>
+    </div>
+    <button onclick="clearRoutedFilter()" class="btn btn-sm btn-outline-secondary">
+      <i class="fas fa-times"></i> Clear Filter
+    </button>
+  </div>
+</div>
+{% elif submission %}
+<div class="routed-doc-header" style="background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+  <div style="display: flex; align-items: center; justify-content: space-between;">
+    <div>
+      <h6 style="margin: 0 0 8px 0; font-size: 1.1rem; font-weight: 600; color: #1e293b;">
+        <i class="fas fa-file-alt" style="color: #8b5cf6; margin-right: 8px;"></i>
+        {{ submission.title }}
+      </h6>
+      <div style="display: flex; align-items: center; gap: 16px; font-size: 0.875rem; color: #64748b;">
+        <span>
+          <i class="fas fa-hashtag" style="color: #8b5cf6;"></i>
+          <strong>Tracking:</strong> {{ submission.tracking_number }}
+        </span>
+        <span>
+          <i class="fas fa-paperclip" style="color: #8b5cf6;"></i>
+          <strong>Files:</strong> {{ total_files }}
+        </span>
+      </div>
+    </div>
+    <button onclick="clearRoutedFilter()" class="btn btn-sm btn-outline-secondary">
+      <i class="fas fa-times"></i> Clear Filter
+    </button>
+  </div>
+</div>
+{% endif %}
+
+{% if files %}
+  <div class="fm-section">
+    <h6 class="fm-section-title">Documents & Assets ({{ total_files }})</h6>
+    <div class="fm-grid" id="filesGrid">
+      {% for file in files %}
+      <div class="fm-item file"
+           data-id="{{ file.id }}"
+           data-type="{% if file.is_link_group %}link-group{% elif file.is_link %}link{% else %}file{% endif %}"
+           data-name="{{ file.name|escapejs }}">
+        
+        <div class="fm-item-checkbox">
+          <input type="checkbox" class="fm-checkbox" data-id="{{ file.id }}" data-type="{% if file.is_link_group %}link-group{% elif file.is_link %}link{% else %}file{% endif %}">
+        </div>
+        
+        {% if file.is_link_group %}
+          <!-- Link Group -->
+          <div class="fm-item-link" onclick="showLinkGroupModal('{{ file.id }}', '{{ file.name|escapejs }}', {{ file.links|safe }})">
+            <div class="fm-item-icon file-icon">
+              <i class="fas fa-layer-group" style="color: #8b5cf6;"></i>
+            </div>
+            <div class="fm-item-info">
+              <span class="fm-item-name" title="{{ file.name }}">{{ file.name|truncatechars:25 }}</span>
+              <span class="fm-item-meta">
+                <span class="badge bg-purple">{{ file.link_count }} links</span>
+                {% if file.doc_type %}
+                  <span class="badge" style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">{{ file.doc_type }}</span>
+                {% endif %}
+                {% if file.status %}
+                  <span class="badge" style="background: {% if file.status == 'Approved' %}#dcfce7; color: #166534{% elif file.status == 'Under Review' %}#fef3c7; color: #92400e{% elif file.status == 'Rejected' %}#fee2e2; color: #dc2626{% else %}#f3f4f6; color: #6b7280{% endif %}; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">{{ file.status }}</span>
+                {% endif %}
+                {{ file.uploaded_at|date:"M d, Y" }}
+              </span>
+            </div>
+          </div>
+        {% elif file.is_link %}
+          <!-- Single Link -->
+          <div class="fm-item-link" onclick="window.open('{{ file.file_url }}', '_blank')">
+            <div class="fm-item-icon file-icon">
+              <i class="fas fa-link" style="color: #8b5cf6;"></i>
+            </div>
+            <div class="fm-item-info">
+              <span class="fm-item-name" title="{{ file.name }}">{{ file.name|truncatechars:25 }}</span>
+              <span class="fm-item-meta">
+                <span class="badge" style="background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Link</span>
+                {% if file.doc_type %}
+                  <span class="badge" style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">{{ file.doc_type }}</span>
+                {% endif %}
+                {% if file.status %}
+                  <span class="badge" style="background: {% if file.status == 'Approved' %}#dcfce7; color: #166534{% elif file.status == 'Under Review' %}#fef3c7; color: #92400e{% elif file.status == 'Rejected' %}#fee2e2; color: #dc2626{% else %}#f3f4f6; color: #6b7280{% endif %}; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">{{ file.status }}</span>
+                {% endif %}
+                {{ file.uploaded_at|date:"M d, Y" }}
+              </span>
+            </div>
+          </div>
+        {% else %}
+          <!-- Regular File -->
+          <div class="fm-item-link" ondblclick="FilePreview.show({{ file.id }})">
+            <div class="fm-item-icon file-icon">
+              {% with ext=file.name|slice:"-4:"|lower %}
+                {% if ext == ".pdf" %}
+                  <i class="fas fa-file-pdf" style="color: #ef4444;"></i>
+                {% elif ext == "docx" or ext == ".doc" %}
+                  <i class="fas fa-file-word" style="color: #2563eb;"></i>
+                {% elif ext == "xlsx" or ext == ".xls" %}
+                  <i class="fas fa-file-excel" style="color: #10b981;"></i>
+                {% elif ext == ".jpg" or ext == ".png" or ext == ".gif" or ext == "jpeg" %}
+                  <i class="fas fa-file-image" style="color: #06b6d4;"></i>
+                {% else %}
+                  <i class="fas fa-file" style="color: #6b7280;"></i>
+                {% endif %}
+              {% endwith %}
+            </div>
+            <div class="fm-item-info">
+              <span class="fm-item-name" title="{{ file.name }}">{{ file.name|truncatechars:25 }}</span>
+              <span class="fm-item-meta">
+                <span class="badge" style="background: #f0fdf4; color: #166534; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Document</span>
+                {% if file.doc_type %}
+                  <span class="badge" style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">{{ file.doc_type }}</span>
+                {% endif %}
+                {% if file.status %}
+                  <span class="badge" style="background: {% if file.status == 'Approved' %}#dcfce7; color: #166534{% elif file.status == 'Under Review' %}#fef3c7; color: #92400e{% elif file.status == 'Rejected' %}#fee2e2; color: #dc2626{% else %}#f3f4f6; color: #6b7280{% endif %}; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">{{ file.status }}</span>
+                {% endif %}
+                {{ file.uploaded_at|date:"M d, Y" }}
+              </span>
+            </div>
+          </div>
+        {% endif %}
+        
+        <button class="fm-item-menu" onclick="showContextMenu(event, '{% if file.is_link_group %}link-group{% elif file.is_link %}link{% else %}file{% endif %}', '{{ file.id }}', '{{ file.name|escapejs }}', false)">
+          <i class="fas fa-ellipsis-v"></i>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+{% else %}
+  <div class="fm-empty">
+    <div class="fm-empty-icon">
+      <i class="fas fa-inbox"></i>
+    </div>
+    <h5>No documents found</h5>
+    <p>{% if filter_display %}No documents match the selected filter{% else %}This submission has no attached files or links{% endif %}</p>
+  </div>
+{% endif %}

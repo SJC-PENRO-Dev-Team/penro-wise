@@ -1,0 +1,71 @@
+<!-- Analytics Table Partial (for AJAX) -->
+{% if summaries %}
+<div class="analytics-table-wrapper">
+  <table class="analytics-table">
+    <thead>
+      <tr>
+        <th>Work Cycle</th>
+        <th>Due Date</th>
+        <th>Status</th>
+        <th class="text-center">Workers</th>
+        <th class="text-center">Done</th>
+        <th class="text-center">Pending</th>
+        <th class="text-center">Approved</th>
+        <th class="text-center">Revision</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in summaries %}
+      <tr data-workcycle-id="{{ s.workcycle_id }}">
+        <td>
+          <div class="wc-title-cell">
+            <span class="wc-title">{{ s.workcycle__title }}</span>
+            <span class="wc-lifecycle-badge wc-lifecycle-{{ s.lifecycle_state }}">
+              {{ s.lifecycle_state|title }}
+            </span>
+          </div>
+        </td>
+        <td>
+          <span class="wc-due-date">{{ s.workcycle__due_at|date:"M d, Y" }}</span>
+          <span class="wc-due-time">{{ s.workcycle__due_at|date:"g:i A" }}</span>
+        </td>
+        <td>
+          <div class="progress-bar-mini">
+            <div class="progress-fill" style="width: {{ s.done_pct }}%"></div>
+          </div>
+          <span class="progress-text">{{ s.done_pct }}% complete</span>
+        </td>
+        <td class="text-center">
+          <span class="stat-badge stat-total">{{ s.total_workers }}</span>
+        </td>
+        <td class="text-center">
+          <span class="stat-badge stat-done">{{ s.done_count }}</span>
+        </td>
+        <td class="text-center">
+          <span class="stat-badge stat-pending">{{ s.pending_count }}</span>
+        </td>
+        <td class="text-center">
+          <span class="stat-badge stat-approved">{{ s.approved_count }}</span>
+        </td>
+        <td class="text-center">
+          <span class="stat-badge stat-revision">{{ s.revision_count }}</span>
+        </td>
+        <td>
+          <a href="{% url 'admin_app:done-workers-by-workcycle' s.workcycle_id %}" 
+             class="analytics-action-btn">
+            <i class="fas fa-eye"></i> Review
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="analytics-empty-state">
+  <i class="fas fa-chart-bar"></i>
+  <h4>No data found</h4>
+  <p>Try adjusting your filters or check back when work cycles have submissions.</p>
+</div>
+{% endif %}

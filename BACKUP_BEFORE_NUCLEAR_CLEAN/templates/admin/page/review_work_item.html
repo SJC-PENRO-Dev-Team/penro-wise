@@ -1,0 +1,1588 @@
+{% extends "admin/layout/base.html" %}
+{% block title %}Review Work Item{% endblock %}
+
+{% block content %}
+
+<style>
+/* ===============================
+   LAYOUT
+================================ */
+.review-layout{
+  display:grid;
+  grid-template-columns:1fr 340px;
+  gap:20px;
+}
+
+/* ===============================
+   HEADER
+================================ */
+.review-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  margin-bottom:18px;
+}
+
+.review-title h4{
+  margin:0;
+  font-weight:700;
+}
+
+.review-sub{
+  font-size:.8rem;
+  color:#6b7280;
+}
+
+/* ===============================
+   LEFT PANEL (BASE)
+================================ */
+.review-main{
+  border-radius:16px;
+  border:1px solid #e5e7eb;
+  box-shadow:0 10px 28px rgba(15,23,42,.08);
+  padding:20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+/* Glowing border effects based on review state */
+.review-main.approved{
+  background:#eff6ff;
+  border-color:#bfdbfe;
+}
+
+.review-main.approved:hover {
+  border-color: #3b82f6;
+  box-shadow: 
+    0 10px 28px rgba(15,23,42,.08),
+    0 0 0 3px rgba(59, 130, 246, 0.15),
+    0 0 0 1px #3b82f6;
+}
+
+.review-main.revision{
+  background:#fef2f2;
+  border-color:#fecaca;
+}
+
+.review-main.revision:hover {
+  border-color: #ef4444;
+  box-shadow: 
+    0 10px 28px rgba(15,23,42,.08),
+    0 0 0 3px rgba(239, 68, 68, 0.15),
+    0 0 0 1px #ef4444;
+}
+
+.review-main.pending{
+  background:#fffbeb;
+  border-color:#fde68a;
+}
+
+.review-main.pending:hover {
+  border-color: #f59e0b;
+  box-shadow: 
+    0 10px 28px rgba(15,23,42,.08),
+    0 0 0 3px rgba(245, 158, 11, 0.15),
+    0 0 0 1px #f59e0b;
+}
+
+/* Status indicator dot in top-right corner */
+.review-main::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.review-main:hover::before {
+  opacity: 1;
+}
+
+.review-main.approved::before {
+  background: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.review-main.revision::before {
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+}
+
+.review-main.pending::before {
+  background: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+}
+
+/* ===============================
+   INFO ROW
+================================ */
+.review-info{
+  display:flex;
+  gap:20px;
+  font-size:.8rem;
+  color:#374151;
+  margin-bottom:14px;
+  align-items:center;
+}
+
+.review-pill{
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:.7rem;
+  font-weight:700;
+  transition: all 0.2s ease;
+}
+
+.review-pill.approved{ 
+  background:#dbeafe;
+  color:#1e40af;
+  border: 1px solid transparent;
+}
+
+.review-pill.approved:hover {
+  background:#2563eb;
+  color:#ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  transform: translateY(-1px);
+}
+
+.review-pill.revision{ 
+  background:#fee2e2;
+  color:#991b1b;
+  border: 1px solid transparent;
+}
+
+.review-pill.revision:hover {
+  background:#dc2626;
+  color:#ffffff;
+  border-color: #dc2626;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+  transform: translateY(-1px);
+}
+
+.review-pill.pending{ 
+  background:#fef3c7;
+  color:#92400e;
+  border: 1px solid transparent;
+}
+
+.review-pill.pending:hover {
+  background:#f59e0b;
+  color:#ffffff;
+  border-color: #f59e0b;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+  transform: translateY(-1px);
+}
+
+/* ===============================
+   SECTIONS
+================================ */
+.review-section{
+  margin-top:16px;
+  transition: all 0.2s ease;
+}
+
+.review-section:hover {
+  transform: translateY(-2px);
+}
+
+.review-section-title{
+  font-size:.7rem;
+  font-weight:800;
+  color:#6b7280;
+  text-transform:uppercase;
+  margin-bottom:6px;
+  letter-spacing: 0.03em;
+}
+
+/* ===============================
+   MESSAGE
+================================ */
+.review-message{
+  background:#ffffff;
+  border-radius:12px;
+  padding:14px;
+  font-size:.85rem;
+  line-height:1.5;
+  border:1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.review-message:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.review-message-short{
+  background:#ffffff;
+  border-radius:12px;
+  padding:14px;
+  width:fit-content;
+  font-size:.85rem;
+  line-height:1.5;
+  border:1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.review-message-short:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  transform: translateY(-1px);
+}
+
+/* ===============================
+   ATTACHMENTS
+================================ */
+.attachment-group{
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  margin-top:10px;
+  overflow:hidden;
+  transition: all 0.2s ease;
+}
+
+.attachment-group:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.attachment-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 14px;
+  cursor:pointer;
+  background:#f9fafb;
+  font-size:.8rem;
+  font-weight:700;
+  transition: all 0.2s ease;
+}
+
+.attachment-header:hover {
+  background:#f3f4f6;
+}
+
+.attachment-header i{
+  transition:transform .2s ease;
+}
+
+.attachment-header.collapsed i{
+  transform:rotate(-90deg);
+}
+
+.attachment-body{
+  display:none;
+  padding:10px;
+  background:#ffffff;
+}
+
+.review-attachment{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 10px;
+  border-radius:8px;
+  background:#f9fafb;
+  font-size:.8rem;
+  margin-bottom:6px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.review-attachment:hover {
+  background:#ffffff;
+  border-color: #e5e7eb;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  transform: translateX(4px);
+}
+
+/* ===============================
+   RIGHT PANEL
+================================ */
+.review-side{
+  position:sticky;
+  top:20px;
+  height:fit-content;
+  background:#ffffff;
+  border-radius:16px;
+  border:1px solid #e5e7eb;
+  box-shadow:0 10px 28px rgba(15,23,42,.08);
+  padding:18px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.review-side:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 12px 32px rgba(15,23,42,.1);
+}
+
+.review-side h6{
+  font-weight:800;
+  margin-bottom:12px;
+}
+
+/* ===============================
+   ACTION BUTTONS
+================================ */
+.review-actions{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.review-btn{
+  width:100%;
+  padding:10px;
+  border-radius:12px;
+  font-weight:700;
+  font-size:.8rem;
+  border:1px solid transparent;
+  transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.review-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s ease;
+}
+
+.review-btn:hover::before {
+  left: 100%;
+}
+
+.review-btn.pending{
+  background:#fef3c7;
+  color:#92400e;
+  border-color:#fde68a;
+}
+
+.review-btn.pending:hover {
+  background:#f59e0b;
+  color:#ffffff;
+  border-color:#f59e0b;
+  box-shadow: 
+    0 6px 20px rgba(245, 158, 11, 0.25),
+    0 0 0 3px rgba(245, 158, 11, 0.15);
+  transform: translateY(-2px);
+}
+
+.review-btn.approved{
+  background:#dbeafe;
+  color:#1e40af;
+  border-color:#93c5fd;
+}
+
+.review-btn.approved:hover {
+  background:#3b82f6;
+  color:#ffffff;
+  border-color:#3b82f6;
+  box-shadow: 
+    0 6px 20px rgba(59, 130, 246, 0.25),
+    0 0 0 3px rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
+}
+
+.review-btn.revision{
+  background:#fee2e2;
+  color:#991b1b;
+  border-color:#fecaca;
+}
+
+.review-btn.revision:hover {
+  background:#ef4444;
+  color:#ffffff;
+  border-color:#ef4444;
+  box-shadow: 
+    0 6px 20px rgba(239, 68, 68, 0.25),
+    0 0 0 3px rgba(239, 68, 68, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Active state for buttons when they match current status */
+.review-btn.active {
+  border-width: 2px;
+  transform: translateY(-1px);
+}
+
+.review-btn.active.pending {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.review-btn.active.approved {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.review-btn.active.revision {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.wc-header-divider {
+  margin: 0.875rem 0;
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* ===============================
+   MOBILE RESPONSIVE
+================================ */
+@media (max-width: 992px) {
+  .review-layout {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+  
+  .review-side {
+    position: static !important;
+    order: -1 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .review-header {
+    flex-direction: column !important;
+    gap: 15px !important;
+  }
+  
+  .review-header .d-flex {
+    width: 100% !important;
+    flex-direction: column !important;
+  }
+  
+  .review-header .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  
+  .review-title h4 {
+    font-size: 1.1rem !important;
+  }
+  
+  .review-sub {
+    font-size: 0.75rem !important;
+  }
+  
+  .review-info {
+    flex-direction: column !important;
+    gap: 10px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .review-main {
+    padding: 15px !important;
+  }
+  
+  .review-side {
+    padding: 15px !important;
+  }
+  
+  .attachment-header {
+    font-size: 0.75rem !important;
+  }
+  
+  .review-attachment {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+  
+  .review-attachment .d-flex {
+    width: 100% !important;
+  }
+  
+  .file-actions {
+    width: 100% !important;
+    display: flex !important;
+    gap: 8px !important;
+  }
+  
+  .file-actions .btn {
+    flex: 1 !important;
+    min-height: 44px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .review-main {
+    border-radius: 12px !important;
+    padding: 12px !important;
+  }
+  
+  .review-side {
+    border-radius: 12px !important;
+    padding: 12px !important;
+  }
+  
+  .review-btn {
+    padding: 12px !important;
+    font-size: 0.85rem !important;
+    min-height: 48px !important;
+  }
+  
+  .review-section-title {
+    font-size: 0.65rem !important;
+  }
+  
+  .review-message {
+    font-size: 0.8rem !important;
+    padding: 12px !important;
+  }
+}
+</style>
+
+<!-- ===============================
+     HEADER
+================================ -->
+<div class="review-header">
+  <div class="review-title">
+    <h4>
+      <i class="fas fa-eye text-primary me-1"></i>
+      Review Submission
+    </h4>
+    <div class="review-sub">
+      {{ work_item.workcycle.title }}
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <a href="#"
+       class="btn btn-sm btn-outline-primary"
+       data-qxdlg-trigger
+       data-qxdlg-url="{% url 'admin_app:work-item-discussion' work_item.id %}"
+       onmouseenter="this.style.boxShadow='0 0 0 3px rgba(59, 130, 246, 0.15), 0 0 0 1px #3b82f6'"
+       onmouseleave="this.style.boxShadow=''">
+      <i class="fas fa-comments me-1"></i> Discussion
+    </a>
+
+    <a href="{% url 'admin_app:done-workers-by-workcycle' work_item.workcycle.id %}"
+       class="btn btn-sm btn-outline-secondary"
+       onmouseenter="this.style.boxShadow='0 0 0 3px rgba(107, 114, 128, 0.15), 0 0 0 1px #6b7280'"
+       onmouseleave="this.style.boxShadow=''">
+      <i class="fas fa-arrow-left me-1"></i> Back
+    </a>
+  </div>
+</div>
+
+ <hr class="wc-header-divider">
+
+<div class="review-layout">
+
+  <!-- ===============================
+       LEFT PANEL
+  ================================ -->
+  <div class="review-main {{ work_item.review_decision }}">
+
+    <div class="review-info">
+      <div>
+        <i class="far fa-user me-1"></i>
+        <strong>{{ work_item.owner.get_full_name|default:work_item.owner.username }}</strong>
+      </div>
+
+      <div>
+        <i class="far fa-clock me-1"></i>
+        {{ work_item.submitted_at|date:"l, F j, Y · g:i A" }}
+      </div>
+
+      <div class="review-pill {{ work_item.review_decision }}">
+        {{ work_item.get_review_decision_display }}
+      </div>
+    </div>
+    
+    <!-- ===============================
+     STATUS LABEL
+================================ -->
+{% if work_item.status_label %}
+<div class="review-section">
+  <div class="review-section-title">
+    <i class="fas fa-tag me-1"></i> Status Label
+  </div>
+  <div class="review-message-short">
+    {{ work_item.status_label }}
+  </div>
+</div>
+{% endif %}
+
+    <div class="review-section">
+      <div class="review-section-title">Worker Message</div>
+      <div class="review-message">
+        {{ work_item.message|default:"No message provided."|linebreaksbr }}
+      </div>
+    </div>
+
+    <!-- ===============================
+         ATTACHMENTS
+    ================================ -->
+    <div class="review-section">
+      <div class="review-section-title d-flex justify-content-between align-items-center">
+        <span>Attachments</span>
+        <div class="bulk-actions" style="display: none;">
+          <button type="button" class="btn btn-sm btn-success me-1" id="bulkAcceptBtn">
+            <i class="fas fa-check"></i> Accept Selected
+          </button>
+          <button type="button" class="btn btn-sm btn-danger" id="bulkRejectBtn">
+            <i class="fas fa-times"></i> Reject Selected
+          </button>
+        </div>
+      </div>
+
+      {% for type, files in attachments_by_type.items %}
+      <div class="attachment-group">
+        <div class="attachment-header collapsed" onclick="toggleAttachment(this)">
+          <span>
+            <i class="fas fa-paperclip me-1"></i> {{ type }}
+            <span class="badge bg-secondary ms-2">{{ files|length }}</span>
+          </span>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+
+        <div class="attachment-body">
+          {% for f in files %}
+          <div class="review-attachment file-item" 
+               data-file-id="{{ f.id }}"
+               data-status="{{ f.acceptance_status }}">
+            
+            <div class="d-flex align-items-center gap-2 flex-grow-1">
+              <input type="checkbox" class="file-checkbox" value="{{ f.id }}">
+              
+              {% if f.is_link %}
+                <!-- Link attachment -->
+                <a href="{{ f.link_url }}" 
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="file-link"
+                   style="text-decoration: none; color: inherit;">
+                  <i class="fas fa-link me-1" style="color: #8b5cf6;"></i>
+                  {{ f.link_url|truncatechars:50 }}
+                  <i class="fas fa-external-link-alt ms-1" style="font-size: 0.75rem; color: #6b7280;"></i>
+                </a>
+              {% else %}
+                <!-- File attachment -->
+                <a href="javascript:void(0)" 
+                   class="file-link file-preview-trigger"
+                   data-attachment-id="{{ f.id }}"
+                   style="text-decoration: none; color: inherit; cursor: pointer;">
+                  <i class="far fa-file me-1"></i>
+                  {{ f.get_filename }}
+                </a>
+              {% endif %}
+              
+              <!-- File Status Badge -->
+              <span class="file-status-badge status-{{ f.acceptance_status }}">
+                {% if f.acceptance_status == 'accepted' %}
+                  <i class="fas fa-check-circle"></i> Accepted
+                {% elif f.acceptance_status == 'rejected' %}
+                  <i class="fas fa-times-circle"></i> Rejected
+                {% else %}
+                  <i class="fas fa-clock"></i> Pending
+                {% endif %}
+              </span>
+            </div>
+            
+            <div class="d-flex align-items-center gap-2">
+              <span class="text-muted small">
+                {{ f.uploaded_at|date:"M d · g:i A" }}
+              </span>
+              
+              <!-- File Actions -->
+              <div class="file-actions">
+                {% if f.acceptance_status == 'pending' %}
+                  <button type="button" 
+                          class="btn btn-sm btn-outline-success file-accept-btn"
+                          data-file-id="{{ f.id }}"
+                          title="Accept {% if f.is_link %}link{% else %}file{% endif %}">
+                    <i class="fas fa-check"></i>
+                  </button>
+                  <button type="button" 
+                          class="btn btn-sm btn-outline-danger file-reject-btn"
+                          data-file-id="{{ f.id }}"
+                          data-bs-toggle="modal"
+                          data-bs-target="#rejectFileModal"
+                          title="Reject {% if f.is_link %}link{% else %}file{% endif %}">
+                    <i class="fas fa-times"></i>
+                  </button>
+                {% else %}
+                  <button type="button" 
+                          class="btn btn-sm btn-outline-secondary file-undo-btn"
+                          data-file-id="{{ f.id }}"
+                          title="Undo">
+                    <i class="fas fa-undo"></i>
+                  </button>
+                {% endif %}
+                
+                <!-- Download Button (only for files, not links) -->
+                {% if f.is_file %}
+                <a href="{{ f.file.url }}" 
+                   class="btn btn-sm btn-outline-primary"
+                   download
+                   title="Download file"
+                   onclick="event.stopPropagation();">
+                  <i class="fas fa-download"></i>
+                </a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% empty %}
+        <div class="text-muted small fst-italic">No attachments submitted.</div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <!-- ===============================
+       RIGHT PANEL
+  ================================ -->
+  <div class="review-side">
+    <h6>Review Decision</h6>
+
+    <form method="post" class="review-actions"
+          data-loading-text="Updating Review..."
+          data-loading-message="Saving review decision and notifying the user.">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_review">
+
+      <button name="review_decision" value="pending" 
+              class="review-btn pending {% if work_item.review_decision == 'pending' %}active{% endif %}">
+        <i class="fas fa-hourglass-half"></i> Mark as Pending
+      </button>
+
+      <button name="review_decision" value="approved" 
+              class="review-btn approved {% if work_item.review_decision == 'approved' %}active{% endif %}">
+        <i class="fas fa-check-circle"></i> Approve Work
+      </button>
+
+      <button name="review_decision" value="revision" 
+              class="review-btn revision {% if work_item.review_decision == 'revision' %}active{% endif %}">
+        <i class="fas fa-undo-alt"></i> Needs Revision
+      </button>
+    </form>
+  </div>
+
+</div>
+
+<script>
+// =====================================================
+// MODAL FLASH PREVENTION - IMMEDIATE EXECUTION
+// =====================================================
+(function() {
+  // CRITICAL: Hide loading modal immediately on page load
+  if (typeof LoadingModal !== 'undefined') {
+    LoadingModal.hide();
+  }
+  
+  // Clean up any lingering modal state from previous page loads
+  document.querySelectorAll('.modal-backdrop').forEach(function(b) { b.remove(); });
+  document.body.classList.remove('modal-open');
+  document.body.classList.remove('loading-active');
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+  
+  // Hide loading modal element directly
+  const loadingModal = document.getElementById('loadingModal');
+  if (loadingModal) {
+    loadingModal.classList.remove('active');
+    loadingModal.setAttribute('aria-hidden', 'true');
+  }
+  
+  // Handle browser back/forward (bfcache)
+  window.addEventListener('pageshow', function(e) {
+    if (e.persisted) {
+      if (typeof LoadingModal !== 'undefined') {
+        LoadingModal.hide();
+      }
+      document.querySelectorAll('.modal').forEach(function(modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+      });
+      document.querySelectorAll('.modal-backdrop').forEach(function(b) { b.remove(); });
+      document.body.classList.remove('modal-open');
+      document.body.classList.remove('loading-active');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
+  });
+  
+  // Listen for Bootstrap modal show events to remove inline styles
+  document.addEventListener('show.bs.modal', function(e) {
+    e.target.style.removeProperty('display');
+  });
+  
+  // Re-add inline style when modal is hidden
+  document.addEventListener('hidden.bs.modal', function(e) {
+    e.target.style.display = 'none';
+    // Clean up backdrops
+    document.querySelectorAll('.modal-backdrop').forEach(function(b) { b.remove(); });
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  });
+})();
+
+function toggleAttachment(header){
+  header.classList.toggle("collapsed");
+  header.nextElementSibling.style.display =
+    header.nextElementSibling.style.display === "block" ? "none" : "block";
+}
+
+// Add active state to buttons that match current review decision
+document.addEventListener('DOMContentLoaded', function() {
+  // CRITICAL: Ensure loading modal is hidden on page load
+  if (typeof LoadingModal !== 'undefined') {
+    LoadingModal.hide();
+  }
+  
+  const currentDecision = '{{ work_item.review_decision }}';
+  const buttons = document.querySelectorAll('.review-btn');
+  
+  buttons.forEach(button => {
+    if (button.value === currentDecision) {
+      button.classList.add('active');
+    }
+  });
+  
+  // Add hover effect to review main panel
+  const reviewMain = document.querySelector('.review-main');
+  if (reviewMain) {
+    reviewMain.addEventListener('mouseenter', function() {
+      const decision = this.classList.contains('approved') ? 'approved' : 
+                      this.classList.contains('revision') ? 'revision' : 
+                      this.classList.contains('pending') ? 'pending' : '';
+      
+      if (decision) {
+        this.style.transform = 'translateY(-4px)';
+      }
+    });
+    
+    reviewMain.addEventListener('mouseleave', function() {
+      this.style.transform = 'translateY(0)';
+    });
+  }
+  
+  // Add ripple effect to buttons
+  const reviewButtons = document.querySelectorAll('.review-btn');
+  reviewButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      const x = e.clientX - e.target.getBoundingClientRect().left;
+      const y = e.clientY - e.target.getBoundingClientRect().top;
+      
+      const ripple = document.createElement('span');
+      ripple.style.left = x + 'px';
+      ripple.style.top = y + 'px';
+      ripple.classList.add('ripple');
+      
+      this.appendChild(ripple);
+      
+      setTimeout(() => {
+        ripple.remove();
+      }, 600);
+    });
+  });
+});
+</script>
+
+<!-- File Review Styles -->
+<style>
+/* File Status Badges */
+.file-status-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.file-status-badge.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.file-status-badge.status-accepted {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.file-status-badge.status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* File Item States */
+.file-item[data-status="accepted"] {
+  background: #f0fdf4 !important;
+  border-left: 3px solid #10b981;
+}
+
+.file-item[data-status="rejected"] {
+  background: #fef2f2 !important;
+  border-left: 3px solid #ef4444;
+  opacity: 0.8;
+}
+
+/* File Actions */
+.file-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.review-attachment:hover .file-actions {
+  opacity: 1;
+}
+
+.file-actions .btn {
+  padding: 2px 6px;
+  font-size: 0.75rem;
+}
+
+/* File Checkbox */
+.file-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Bulk Actions */
+.bulk-actions {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* File Link Hover */
+.file-link:hover {
+  color: #3b82f6 !important;
+}
+</style>
+
+<!-- File Review JavaScript -->
+<script>
+// Global functions for file review
+let reviewFile, bulkReviewFiles, getSelectedFileIds, notify;
+
+// Track if any review action has been taken this session
+let hasReviewedAnyFile = false;
+let hasPendingFiles = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  const bulkActions = document.querySelector('.bulk-actions');
+  
+  // Check if there are any pending files on page load
+  hasPendingFiles = document.querySelectorAll('.file-item[data-status="pending"]').length > 0;
+  
+  // =====================================================
+  // LEAVE PAGE WARNING - No action taken on pending files
+  // =====================================================
+  function shouldWarnOnLeave() {
+    // Only warn if there are pending files AND no review action was taken
+    return hasPendingFiles && !hasReviewedAnyFile;
+  }
+  
+  // Browser's beforeunload event (for refresh, close tab, type URL)
+  window.addEventListener('beforeunload', function(e) {
+    if (shouldWarnOnLeave()) {
+      e.preventDefault();
+      e.returnValue = ''; // Required for Chrome
+      return ''; // Required for some browsers
+    }
+  });
+  
+  // Intercept link clicks to show custom modal
+  document.addEventListener('click', function(e) {
+    const link = e.target.closest('a[href]');
+    if (!link) return;
+    
+    // Skip if it's a download link, modal trigger, or same-page anchor
+    const href = link.getAttribute('href');
+    if (!href || 
+        href.startsWith('#') || 
+        href.startsWith('javascript:') ||
+        link.hasAttribute('download') ||
+        link.hasAttribute('data-qxdlg-trigger') ||
+        link.hasAttribute('data-bs-toggle') ||
+        link.getAttribute('target') === '_blank') {
+      return;
+    }
+    
+    if (shouldWarnOnLeave()) {
+      e.preventDefault();
+      showLeaveConfirmModal(href);
+    }
+  });
+  
+  // Intercept form submissions (except the review form itself)
+  document.addEventListener('submit', function(e) {
+    const form = e.target;
+    // Allow the review decision form to submit WITHOUT WARNING
+    if (form.classList.contains('review-actions')) {
+      // Mark that a review action was taken to prevent warning on redirect
+      hasReviewedAnyFile = true;
+      return;
+    }
+    
+    if (shouldWarnOnLeave()) {
+      e.preventDefault();
+      // Store form reference and show modal
+      window._pendingForm = form;
+      showLeaveConfirmModal(null, true);
+    }
+  });
+  
+  // Toast notification helper
+  notify = function(message, type = 'info') {
+    // Use existing toast system or create simple alert
+    if (window.showToast) {
+      window.showToast(message, type);
+    } else {
+      const alertClass = type === 'success' ? 'alert-success' : 
+                        type === 'error' ? 'alert-danger' : 
+                        type === 'warning' ? 'alert-warning' : 'alert-info';
+      
+      const alertDiv = document.createElement('div');
+      alertDiv.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+      alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+      alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.body.appendChild(alertDiv);
+      
+      setTimeout(() => alertDiv.remove(), 5000);
+    }
+  };
+  
+  // Toggle bulk actions visibility based on checkbox selection
+  function updateBulkActions() {
+    const checked = document.querySelectorAll('.file-checkbox:checked');
+    if (bulkActions) {
+      bulkActions.style.display = checked.length > 0 ? 'block' : 'none';
+    }
+  }
+  
+  // Get selected file IDs
+  getSelectedFileIds = function() {
+    return Array.from(document.querySelectorAll('.file-checkbox:checked'))
+      .map(cb => cb.value);
+  };
+  
+  // Checkbox change handler
+  document.querySelectorAll('.file-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateBulkActions);
+  });
+  
+  // Accept file
+  document.querySelectorAll('.file-accept-btn').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const fileId = this.dataset.fileId;
+      await reviewFile(fileId, 'accept');
+    });
+  });
+  
+  // Reject file - open modal
+  document.querySelectorAll('.file-reject-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      window.setRejectFileId(this.dataset.fileId);
+    });
+  });
+  
+  // Undo file review
+  document.querySelectorAll('.file-undo-btn').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const fileId = this.dataset.fileId;
+      await reviewFile(fileId, 'undo');
+    });
+  });
+  
+  // Bulk accept
+  if (document.getElementById('bulkAcceptBtn')) {
+    document.getElementById('bulkAcceptBtn').addEventListener('click', async function() {
+      const ids = getSelectedFileIds();
+      if (ids.length === 0) return;
+      
+      await bulkReviewFiles(ids, 'accept');
+    });
+  }
+  
+  // Review single file
+  reviewFile = async function(fileId, action, reason = '') {
+    const urls = {
+      'accept': `/admin/api/files/${fileId}/accept/`,
+      'reject': `/admin/api/files/${fileId}/reject/`,
+      'undo': `/admin/api/files/${fileId}/undo/`
+    };
+    
+    try {
+      if (typeof LoadingModal !== 'undefined') {
+        LoadingModal.show('Processing...', 'Updating file status.');
+      }
+      
+      const formData = new FormData();
+      formData.append('csrfmiddlewaretoken', csrfToken);
+      if (reason) formData.append('reason', reason);
+      
+      const response = await fetch(urls[action], {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        updateFileUI(fileId, data.status);
+        notify(data.message, 'success');
+        // Mark that a review action was taken
+        hasReviewedAnyFile = true;
+      } else {
+        notify(data.error || 'Failed to update file', 'error');
+      }
+    } catch (error) {
+      notify('An error occurred', 'error');
+      console.error(error);
+    } finally {
+      if (typeof LoadingModal !== 'undefined') {
+        LoadingModal.hide();
+      }
+    }
+  };
+  
+  // Bulk review files
+  bulkReviewFiles = async function(ids, action, reason = '') {
+    const urls = {
+      'accept': '/admin/api/files/bulk-accept/',
+      'reject': '/admin/api/files/bulk-reject/'
+    };
+    
+    try {
+      if (typeof LoadingModal !== 'undefined') {
+        LoadingModal.show('Processing...', `Updating ${ids.length} files.`);
+      }
+      
+      const formData = new FormData();
+      formData.append('csrfmiddlewaretoken', csrfToken);
+      ids.forEach(id => formData.append('attachment_ids[]', id));
+      if (reason) formData.append('reason', reason);
+      
+      const response = await fetch(urls[action], {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        ids.forEach(id => updateFileUI(id, action === 'accept' ? 'accepted' : 'rejected'));
+        notify(data.message, 'success');
+        // Mark that a review action was taken
+        hasReviewedAnyFile = true;
+        
+        // Uncheck all
+        document.querySelectorAll('.file-checkbox').forEach(cb => cb.checked = false);
+        updateBulkActions();
+      } else {
+        notify(data.error || 'Failed to update files', 'error');
+      }
+    } catch (error) {
+      notify('An error occurred', 'error');
+      console.error(error);
+    } finally {
+      if (typeof LoadingModal !== 'undefined') {
+        LoadingModal.hide();
+      }
+    }
+  };
+  
+  function updateFileUI(fileId, status) {
+    const fileItem = document.querySelector(`.file-item[data-file-id="${fileId}"]`);
+    if (!fileItem) return;
+    
+    fileItem.dataset.status = status;
+    
+    // Update badge
+    const badge = fileItem.querySelector('.file-status-badge');
+    badge.className = `file-status-badge status-${status}`;
+    
+    if (status === 'accepted') {
+      badge.innerHTML = '<i class="fas fa-check-circle"></i> Accepted';
+    } else if (status === 'rejected') {
+      badge.innerHTML = '<i class="fas fa-times-circle"></i> Rejected';
+    } else {
+      badge.innerHTML = '<i class="fas fa-clock"></i> Pending';
+    }
+    
+    // Update action buttons
+    const actionsDiv = fileItem.querySelector('.file-actions');
+    if (status === 'pending') {
+      actionsDiv.innerHTML = `
+        <button type="button" class="btn btn-sm btn-outline-success file-accept-btn" data-file-id="${fileId}" title="Accept file">
+          <i class="fas fa-check"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger file-reject-btn" data-file-id="${fileId}" data-bs-toggle="modal" data-bs-target="#rejectFileModal" title="Reject file">
+          <i class="fas fa-times"></i>
+        </button>
+      `;
+    } else {
+      actionsDiv.innerHTML = `
+        <button type="button" class="btn btn-sm btn-outline-secondary file-undo-btn" data-file-id="${fileId}" title="Undo">
+          <i class="fas fa-undo"></i>
+        </button>
+      `;
+    }
+    
+    // Re-bind event listeners for accept and undo buttons
+    actionsDiv.querySelectorAll('.file-accept-btn').forEach(btn => {
+      btn.addEventListener('click', () => reviewFile(btn.dataset.fileId, 'accept'));
+    });
+    actionsDiv.querySelectorAll('.file-undo-btn').forEach(btn => {
+      btn.addEventListener('click', () => reviewFile(btn.dataset.fileId, 'undo'));
+    });
+    // Note: reject buttons use data-bs-toggle="modal" so Bootstrap handles the modal opening
+    // The click event listener in the modal script captures the file ID
+  }
+});
+</script>
+
+<!-- File Rejection Modal -->
+<div class="modal fade" id="rejectFileModal" tabindex="-1" aria-hidden="true" style="display:none !important;">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-times-circle me-2"></i>
+          Reject File
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-3">
+          <i class="fas fa-info-circle me-1"></i>
+          Rejected files will be automatically deleted after 24 hours.
+        </p>
+        
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Rejection Reason</label>
+          <textarea id="rejectReasonInput" 
+                    class="form-control" 
+                    rows="3" 
+                    placeholder="Enter reason for rejection (optional)"></textarea>
+          <div class="form-text">This will be visible to the user.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-danger" id="confirmRejectBtn">
+          <i class="fas fa-times me-1"></i>
+          Reject File
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Rejection Modal -->
+<div class="modal fade" id="bulkRejectModal" tabindex="-1" aria-hidden="true" style="display:none !important;">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-times-circle me-2"></i>
+          Reject Selected Files
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">
+          <span class="fw-semibold" id="bulkRejectCount">0</span> files will be rejected.
+        </p>
+        
+        <p class="text-muted mb-3">
+          <i class="fas fa-info-circle me-1"></i>
+          Rejected files will be automatically deleted after 24 hours.
+        </p>
+        
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Rejection Reason (applies to all)</label>
+          <textarea id="bulkRejectReasonInput" 
+                    class="form-control" 
+                    rows="3" 
+                    placeholder="Enter reason for rejection (optional)"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-danger" id="confirmBulkRejectBtn">
+          <i class="fas fa-times me-1"></i>
+          Reject All Selected
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Modal-based rejection handling
+(function() {
+  let currentRejectFileId = null;
+  let currentRejectMode = null; // 'single' or 'bulk'
+  
+  const rejectModal = document.getElementById('rejectFileModal');
+  const bulkRejectModal = document.getElementById('bulkRejectModal');
+  const rejectReasonInput = document.getElementById('rejectReasonInput');
+  const bulkRejectReasonInput = document.getElementById('bulkRejectReasonInput');
+  const confirmRejectBtn = document.getElementById('confirmRejectBtn');
+  const confirmBulkRejectBtn = document.getElementById('confirmBulkRejectBtn');
+  const bulkRejectCount = document.getElementById('bulkRejectCount');
+  
+  // Single file reject button click - store file ID
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.file-reject-btn');
+    if (btn) {
+      currentRejectFileId = btn.dataset.fileId;
+      currentRejectMode = 'single';
+      rejectReasonInput.value = '';
+    }
+  });
+  
+  // Bulk reject button click
+  const bulkRejectBtn = document.getElementById('bulkRejectBtn');
+  if (bulkRejectBtn) {
+    bulkRejectBtn.addEventListener('click', function() {
+      const ids = getSelectedFileIds();
+      if (ids.length === 0) {
+        notify('Please select files to reject', 'warning');
+        return;
+      }
+      currentRejectMode = 'bulk';
+      bulkRejectCount.textContent = ids.length;
+      bulkRejectReasonInput.value = '';
+      new bootstrap.Modal(bulkRejectModal).show();
+    });
+  }
+  
+  // Confirm single rejection
+  if (confirmRejectBtn) {
+    confirmRejectBtn.addEventListener('click', async function() {
+      if (!currentRejectFileId) return;
+      
+      const reason = rejectReasonInput.value.trim();
+      bootstrap.Modal.getInstance(rejectModal).hide();
+      
+      await reviewFile(currentRejectFileId, 'reject', reason);
+      currentRejectFileId = null;
+    });
+  }
+  
+  // Confirm bulk rejection
+  if (confirmBulkRejectBtn) {
+    confirmBulkRejectBtn.addEventListener('click', async function() {
+      const ids = getSelectedFileIds();
+      if (ids.length === 0) return;
+      
+      const reason = bulkRejectReasonInput.value.trim();
+      bootstrap.Modal.getInstance(bulkRejectModal).hide();
+      
+      await bulkReviewFiles(ids, 'reject', reason);
+    });
+  }
+  
+  // Clear state when modal is hidden
+  if (rejectModal) {
+    rejectModal.addEventListener('hidden.bs.modal', function() {
+      currentRejectFileId = null;
+      rejectReasonInput.value = '';
+      // Clean up any lingering backdrops
+      document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    });
+  }
+  
+  if (bulkRejectModal) {
+    bulkRejectModal.addEventListener('hidden.bs.modal', function() {
+      document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    });
+  }
+  
+  // Make functions globally accessible for dynamic buttons
+  window.setRejectFileId = function(fileId) {
+    currentRejectFileId = fileId;
+    currentRejectMode = 'single';
+    rejectReasonInput.value = '';
+  };
+})();
+</script>
+
+<!-- Leave Page Confirmation Modal -->
+<div class="modal fade" id="leavePageModal" tabindex="-1" aria-hidden="true" style="display:none !important;">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          No Review Action Taken
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex align-items-start gap-3">
+          <div class="flex-shrink-0">
+            <div class="rounded-circle bg-warning bg-opacity-25 p-3">
+              <i class="fas fa-file-circle-question fa-2x text-warning"></i>
+            </div>
+          </div>
+          <div>
+            <p class="mb-2 fw-semibold">You haven't reviewed any files yet.</p>
+            <p class="text-muted mb-0">
+              There are still pending files that need your review. Are you sure you want to leave this page without accepting or rejecting any files?
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+          <i class="fas fa-clipboard-check me-1"></i>
+          Stay & Review
+        </button>
+        <button type="button" class="btn btn-outline-secondary" id="confirmLeaveBtn">
+          <i class="fas fa-sign-out-alt me-1"></i>
+          Leave Anyway
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Leave page confirmation handler
+(function() {
+  let pendingNavigationUrl = null;
+  let pendingFormSubmit = false;
+  
+  const leaveModal = document.getElementById('leavePageModal');
+  const confirmLeaveBtn = document.getElementById('confirmLeaveBtn');
+  
+  // Show the leave confirmation modal
+  window.showLeaveConfirmModal = function(url, isForm = false) {
+    pendingNavigationUrl = url;
+    pendingFormSubmit = isForm;
+    new bootstrap.Modal(leaveModal).show();
+  };
+  
+  // Handle confirm leave button
+  if (confirmLeaveBtn) {
+    confirmLeaveBtn.addEventListener('click', function() {
+      // Disable the beforeunload warning temporarily
+      hasReviewedAnyFile = true;
+      
+      bootstrap.Modal.getInstance(leaveModal).hide();
+      
+      setTimeout(function() {
+        if (pendingFormSubmit && window._pendingForm) {
+          window._pendingForm.submit();
+        } else if (pendingNavigationUrl) {
+          window.location.href = pendingNavigationUrl;
+        }
+      }, 200);
+    });
+  }
+  
+  // Clean up modal state
+  if (leaveModal) {
+    leaveModal.addEventListener('hidden.bs.modal', function() {
+      pendingNavigationUrl = null;
+      pendingFormSubmit = false;
+      window._pendingForm = null;
+      // Clean up any lingering backdrops
+      document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    });
+  }
+})();
+</script>
+
+<!-- Include File Preview Modal -->
+{% include "admin/page/modals/file_preview_modal.html" %}
+
+<!-- File Preview Integration Script -->
+<script>
+// Initialize file preview triggers
+document.addEventListener('DOMContentLoaded', function() {
+  // Add click handlers to all file preview triggers
+  document.querySelectorAll('.file-preview-trigger').forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const attachmentId = this.dataset.attachmentId;
+      if (attachmentId && window.FilePreview) {
+        FilePreview.show(attachmentId);
+      }
+    });
+  });
+  
+  // Re-bind preview triggers after file UI updates
+  const originalUpdateFileUI = window.updateFileUI;
+  if (typeof originalUpdateFileUI === 'function') {
+    window.updateFileUI = function(fileId, status) {
+      originalUpdateFileUI(fileId, status);
+      
+      // Re-bind preview trigger for this file
+      const fileItem = document.querySelector(`.file-item[data-file-id="${fileId}"]`);
+      if (fileItem) {
+        const previewLink = fileItem.querySelector('.file-preview-trigger');
+        if (previewLink) {
+          previewLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const attachmentId = this.dataset.attachmentId;
+            if (attachmentId && window.FilePreview) {
+              FilePreview.show(attachmentId);
+            }
+          });
+        }
+      }
+    };
+  }
+});
+</script>
+
+{% include "admin/page/modals/message_ui_modal.html" %}
+{% endblock %}

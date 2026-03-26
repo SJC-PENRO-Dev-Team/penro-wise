@@ -1,0 +1,357 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}Work Cycles{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/admin/01.css' %}">
+<link rel="stylesheet" href="{% static 'css/reassign_workcycle_modal.css' %}">
+<script src="{% static 'js/base.js' %}"></script>
+<script src="{% static 'js/realtime-filter.js' %}"></script>
+<script src="{% static 'js/reassign_workcycle_modal.js' %}"></script>
+<!-- =========================
+     HEADER BAR (COMPACT)
+========================= -->
+<div class="wc-unified-header">
+
+  <!-- TOP ROW: Title + Action Buttons -->
+  <div class="wc-header-top">
+    <div class="wc-title-section">
+      <h3 class="wc-main-title">
+        <i class="fas fa-layer-group"></i>
+        Work Cycles
+      </h3>
+      <p class="wc-subtitle">
+    Delegating tasks and establishing accountability through fixed deadlines for designated personnel.
+      </p>
+    </div>
+
+    <!-- ACTION BUTTONS (RIGHT SIDE) -->
+    <div class="wc-action-buttons-top">
+      <button
+        type="button"
+        class="wc-info-btn"
+        data-bs-toggle="modal"
+        data-bs-target="#workcyclePurposeModal">
+        <i class="fas fa-info-circle"></i>
+        What is a Work Cycle?
+      </button>
+
+      <a
+        href="{% url 'admin_app:inactive-workcycles' %}"
+        class="wc-archive-btn">
+        <i class="fas fa-archive"></i>
+        Archived
+      </a>
+
+      <button
+        type="button"
+        class="wc-create-btn"
+        data-bs-toggle="modal"
+        data-bs-target="#createWorkcycleModal">
+        <i class="fas fa-plus"></i>
+        Create New
+      </button>
+    </div>
+  </div>
+
+  <!-- BOTTOM ROW: Filter + Search + Sort (HORIZONTAL) -->
+  <div class="wc-header-bottom">
+
+    <!-- FILTERS (LEFT) -->
+    <div class="wc-filters-section">
+      <span class="wc-section-label">
+        <i class="fas fa-filter"></i>
+        Filter
+      </span>
+      <div class="wc-filters">
+        <a href="{% url 'admin_app:workcycles' %}"
+           class="wc-filter-btn wc-realtime-filter {% if not current_state %}active{% endif %}">
+          <span>All Active</span>
+          <span class="wc-filter-count" id="count-all">{{ active_count }}</span>
+        </a>
+
+        <a href="?state=ongoing"
+           class="wc-filter-btn wc-filter-ongoing wc-realtime-filter {% if current_state == 'ongoing' %}active{% endif %}">
+          <span>Ongoing</span>
+          <span class="wc-filter-count" id="count-ongoing">{{ lifecycle_counts.ongoing }}</span>
+        </a>
+
+        <a href="?state=due_soon"
+           class="wc-filter-btn wc-filter-due-soon wc-realtime-filter {% if current_state == 'due_soon' %}active{% endif %}">
+          <span>Due Soon</span>
+          <span class="wc-filter-count" id="count-due-soon">{{ lifecycle_counts.due_soon }}</span>
+        </a>
+
+        <a href="?state=lapsed"
+           class="wc-filter-btn wc-filter-lapsed wc-realtime-filter {% if current_state == 'lapsed' %}active{% endif %}">
+          <span>Lapsed</span>
+          <span class="wc-filter-count" id="count-lapsed">{{ lifecycle_counts.lapsed }}</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- SEARCH & SORT (RIGHT) -->
+    <div class="wc-search-sort-section">
+
+      <!-- SEARCH -->
+      <form method="get" class="wc-search-form" id="workcycleSearchForm">
+        {% if current_state %}
+          <input type="hidden" name="state" value="{{ current_state }}">
+        {% endif %}
+        {% if current_sort %}
+          <input type="hidden" name="sort" value="{{ current_sort }}">
+        {% endif %}
+
+        <div class="wc-search-wrapper">
+          <i class="fas fa-search wc-search-icon"></i>
+          <input type="search"
+                 name="q"
+                 id="workcycleSearchInput"
+                 value="{{ search_query }}"
+                 class="wc-search-input"
+                 placeholder="Search work cycles…">
+          <button type="submit" class="wc-search-btn">
+            Search
+          </button>
+        </div>
+      </form>
+
+      <!-- SORT -->
+      <div class="wc-sort-wrapper">
+        <span class="wc-sort-label">
+          <i class="fas fa-sort-amount-down"></i>
+          Sort by due
+        </span>
+        <div class="wc-sort-buttons">
+          <a href="?sort=due_asc{% if current_state %}&state={{ current_state }}{% endif %}"
+             class="wc-sort-btn wc-realtime-sort {% if current_sort == 'due_asc' %}active{% endif %}">
+            <i class="fas fa-arrow-up"></i>
+            <span>Asc</span>
+          </a>
+          <a href="?sort=due_desc{% if current_state %}&state={{ current_state }}{% endif %}"
+             class="wc-sort-btn wc-realtime-sort {% if current_sort == 'due_desc' %}active{% endif %}">
+            <i class="fas fa-arrow-down"></i>
+            <span>Desc</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- =========================
+     CONTENT (CARDS)
+========================= -->
+<section class="wc-content-area" id="workcycleContainer">
+  {% include "admin/page/_workcycle_cards.html" %}
+</section>
+
+<!-- =========================
+     MODALS
+========================= -->
+{% include "admin/page/modals/workcycle_purpose_modal.html" %}
+{% include "admin/page/modals/create_workcycle_modal.html" %}
+{% include "admin/page/modals/edit_workcycle_modal.html" %}
+{% include "admin/page/modals/delete_workcycles_modal.html" %}
+{% include "admin/page/modals/reassign_workcycle_modal.html" %}
+
+<!-- Real-time Filtering Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize real-time filter
+  const workcycleFilter = new RealtimeFilter({
+    apiUrl: '{% url "admin_app:api-workcycles" %}',
+    containerSelector: '#workcycleContainer',
+    searchInputSelector: '#workcycleSearchInput',
+    filterSelector: '.wc-realtime-filter',
+    sortSelector: '.wc-realtime-sort',
+    statsCallback: function(data) {
+      // Update filter counts
+      if (data.active_count !== undefined) {
+        document.getElementById('count-all').textContent = data.active_count;
+      }
+      if (data.lifecycle_counts) {
+        document.getElementById('count-ongoing').textContent = data.lifecycle_counts.ongoing || 0;
+        document.getElementById('count-due-soon').textContent = data.lifecycle_counts.due_soon || 0;
+        document.getElementById('count-lapsed').textContent = data.lifecycle_counts.lapsed || 0;
+      }
+    }
+  });
+
+  // Delete Modal Handling
+  const deleteModal = document.getElementById('deleteWorkcycleModal');
+  if (deleteModal) {
+    let currentDeleteUrl = '';
+    let currentWorkcycleTitle = '';
+    let currentWorkcycleId = '';
+
+    // When modal is opened
+    deleteModal.addEventListener('show.bs.modal', function(event) {
+      const button = event.relatedTarget;
+      currentDeleteUrl = button.getAttribute('data-delete-url');
+      currentWorkcycleTitle = button.getAttribute('data-workcycle-title') || 'this work cycle';
+      currentWorkcycleId = button.getAttribute('data-workcycle-id');
+
+      // Reset modal to normal delete state
+      document.getElementById('deleteNormalBody').classList.remove('d-none');
+      document.getElementById('deleteProtectedBody').classList.add('d-none');
+      document.getElementById('normalDeleteBtn').classList.remove('d-none');
+      document.getElementById('forceDeleteBtn').classList.add('d-none');
+      document.getElementById('forceDeleteConfirmInput').value = '';
+    });
+
+    // Normal Delete Button
+    document.getElementById('normalDeleteBtn').addEventListener('click', function() {
+      if (!currentDeleteUrl) return;
+
+      const btn = this;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
+
+      fetch(currentDeleteUrl, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          // Show success toast
+          if (window.notify) {
+            window.notify(data.message, 'success');
+          }
+          // Close modal and reload page
+          bootstrap.Modal.getInstance(deleteModal).hide();
+          setTimeout(() => location.reload(), 500);
+        } else if (data.status === 'protected') {
+          // Update currentWorkcycleTitle from server response
+          currentWorkcycleTitle = data.workcycle_title;
+          
+          // Show force delete option
+          document.getElementById('deleteNormalBody').classList.add('d-none');
+          document.getElementById('deleteProtectedBody').classList.remove('d-none');
+          document.getElementById('normalDeleteBtn').classList.add('d-none');
+          document.getElementById('forceDeleteBtn').classList.remove('d-none');
+          
+          document.getElementById('protectedMessage').textContent = data.message;
+          document.getElementById('confirmationPhrase').textContent = `DELETE ${currentWorkcycleTitle}`;
+          
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-trash me-1"></i>Yes, Delete';
+        } else {
+          if (window.notify) {
+            window.notify(data.message || 'Failed to delete work cycle', 'error');
+          }
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-trash me-1"></i>Yes, Delete';
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        if (window.notify) {
+          window.notify('An error occurred while deleting', 'error');
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash me-1"></i>Yes, Delete';
+      });
+    });
+
+    // Force Delete Confirmation Input
+    const forceDeleteInput = document.getElementById('forceDeleteConfirmInput');
+    const forceDeleteBtn = document.getElementById('forceDeleteBtn');
+    
+    forceDeleteInput.addEventListener('input', function() {
+      const expectedPhrase = `DELETE ${currentWorkcycleTitle}`;
+      const inputValue = this.value.trim();
+      const isMatch = inputValue.toUpperCase() === expectedPhrase.toUpperCase();
+      forceDeleteBtn.disabled = !isMatch;
+      
+      // Debug log
+      console.log('Expected:', expectedPhrase);
+      console.log('Input:', inputValue);
+      console.log('Match:', isMatch);
+    });
+
+    // Force Delete Button
+    forceDeleteBtn.addEventListener('click', function() {
+      if (!currentDeleteUrl) return;
+
+      const btn = this;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Force Deleting...';
+
+      const formData = new FormData();
+      formData.append('force_delete', 'true');
+      formData.append('confirmation_phrase', forceDeleteInput.value.trim());
+
+      fetch(currentDeleteUrl, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          // Show success toast
+          if (window.notify) {
+            window.notify(data.message, 'success');
+          }
+          bootstrap.Modal.getInstance(deleteModal).hide();
+          setTimeout(() => location.reload(), 500);
+        } else {
+          if (window.notify) {
+            window.notify(data.message || 'Failed to force delete work cycle', 'error');
+          }
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-bolt me-1"></i>Force Delete';
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        if (window.notify) {
+          window.notify('An error occurred while force deleting', 'error');
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-bolt me-1"></i>Force Delete';
+      });
+    });
+  }
+});
+</script>
+
+<!-- Loading State Styles -->
+<style>
+#workcycleContainer.loading {
+  opacity: 0.6;
+  pointer-events: none;
+  position: relative;
+}
+
+#workcycleContainer.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #8b5cf6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+</style>
+
+{% endblock %}

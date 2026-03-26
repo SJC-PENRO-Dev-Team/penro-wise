@@ -1,0 +1,105 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}{{ action }} Section - Document Tracking Settings{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/document-tracking.css' %}">
+
+<div class="dt-page">
+    <!-- UNIFIED HEADER -->
+    <div class="dt-unified-header">
+        <div class="dt-header-top">
+            <div class="dt-title-section">
+                <h3 class="dt-main-title">
+                    <i class="fas fa-folder-tree"></i>
+                    {{ action }} Section
+                </h3>
+                <p class="dt-subtitle">{{ action }} section for File Manager organization</p>
+            </div>
+            <div class="dt-action-buttons-top">
+                <a href="{% url 'document_tracking:settings_sections' %}" class="dt-btn dt-btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Sections
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="dt-card">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Name -->
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">
+                            Name <span class="text-danger">*</span>
+                        </label>
+                        {{ form.name }}
+                        <small class="form-text text-muted">{{ form.name.help_text }}</small>
+                        {% if form.name.errors %}
+                        <div class="text-danger">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Display Name -->
+                    <div class="mb-3">
+                        <label for="{{ form.display_name.id_for_label }}" class="form-label">
+                            Display Name <span class="text-danger">*</span>
+                        </label>
+                        {{ form.display_name }}
+                        <small class="form-text text-muted">{{ form.display_name.help_text }}</small>
+                        {% if form.display_name.errors %}
+                        <div class="text-danger">{{ form.display_name.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Is Active -->
+                    <div class="mb-3 form-check">
+                        {{ form.is_active }}
+                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                            Active
+                        </label>
+                        <br><small class="form-text text-muted">{{ form.is_active.help_text }}</small>
+                        {% if form.is_active.errors %}
+                        <div class="text-danger">{{ form.is_active.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'document_tracking:settings_sections' %}" class="dt-btn dt-btn-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="dt-btn dt-btn-primary">
+                            <i class="fas fa-save"></i> {{ action }} Section
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Help Panel -->
+        <div class="col-md-4">
+            <div class="dt-card">
+                <div style="background: #3b82f6; color: white; padding: 12px; border-radius: 8px 8px 0 0; margin: -20px -20px 16px -20px;">
+                    <h5 class="mb-0"><i class="fas fa-question-circle"></i> Help</h5>
+                </div>
+                
+                <h6 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 8px;">Section Name</h6>
+                <p class="small" style="margin-bottom: 16px;">Unique identifier used internally. Use lowercase letters, numbers, hyphens, or underscores only.</p>
+                
+                <h6 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 8px;">Display Name</h6>
+                <p class="small" style="margin-bottom: 16px;">The name shown to users throughout the system and in File Manager.</p>
+                
+                <h6 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 8px;">Storage Path</h6>
+                <p class="small" style="margin-bottom: 8px;">Approved submissions will be stored in File Manager at:</p>
+                <code class="small" style="background: #f1f5f9; padding: 8px; border-radius: 4px; display: block; font-size: 0.75rem;">ROOT / {{ current_year }} / Submissions / [Display Name] / [Title]</code>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

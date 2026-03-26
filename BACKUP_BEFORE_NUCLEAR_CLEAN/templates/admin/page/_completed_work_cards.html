@@ -1,0 +1,553 @@
+<div class="wc-card-grid">
+
+{% for row in summary %}
+<article class="wc-summary-card">
+
+  <!-- ================= HEADER ================= -->
+  <header class="wc-card-header lifecycle-bg-{{ row.lifecycle_state }}">
+    <div class="wc-title">
+      <i class="fas fa-briefcase"></i>
+      {{ row.workcycle__title }}
+    </div>
+
+    <div class="wc-meta">
+      <span>
+        <i class="fas fa-calendar-day"></i>
+        {{ row.workcycle__due_at|date:"M d, Y · h:i A" }}
+      </span>
+      <span class="dot">•</span>
+      <span>
+        <i class="fas fa-users"></i>
+        {{ row.total_workers }} Workers
+      </span>
+    </div>
+  </header>
+
+  <!-- ================= BODY ================= -->
+  <section class="wc-card-body">
+
+    <!-- WORK STATUS -->
+    {% if row.done_count > 0 or row.not_finished_count > 0 %}
+    <div class="wc-block">
+      <div class="wc-block-title">
+        <i class="fas fa-tasks"></i>
+        Work Progress
+      </div>
+
+      <div class="wc-status-bar">
+        <div class="wc-status-done"
+             style="width: {{ row.done_pct|default:0 }}%"></div>
+        <div class="wc-status-not-finished"
+             style="width: {{ row.not_finished_pct|default:0 }}%"></div>
+      </div>
+
+      <div class="wc-pills">
+        {% if row.done_count > 0 %}
+        <span class="pill done">
+          <i class="fas fa-check-circle"></i>
+          {{ row.done_count }} Submitted
+        </span>
+        {% endif %}
+        {% if row.not_finished_count > 0 %}
+        <span class="pill not-finished">
+          <i class="fas fa-hourglass-half"></i>
+          {{ row.not_finished_count }} In Progress
+        </span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- DIVIDER -->
+    {% if row.done_count > 0 or row.not_finished_count > 0 %}
+      {% if row.approved_count > 0 or row.pending_review_count > 0 or row.revision_count > 0 %}
+      <div class="wc-divider"></div>
+      {% endif %}
+    {% endif %}
+
+    <!-- REVIEW STATUS -->
+    {% if row.approved_count > 0 or row.pending_review_count > 0 or row.revision_count > 0 %}
+    <div class="wc-block">
+      <div class="wc-block-title">
+        <i class="fas fa-clipboard-check"></i>
+        Review Decisions
+      </div>
+
+      <!-- UPDATED: Centered review section -->
+      <div class="wc-review-grid-centered">
+
+        <!-- DONUT CHART -->
+        <div class="wc-donut-wrap-centered">
+          <div class="wc-donut tooltip-container">
+            <svg viewBox="0 0 36 36" aria-hidden="true">
+              <path class="wc-donut-bg"
+                d="M18 2.084
+                   a 15.915 15.915 0 0 1 0 31.832
+                   a 15.915 15.915 0 0 1 0 -31.832"/>
+              <path class="wc-donut-approved"
+                stroke-dasharray="{{ row.approval_pct|floatformat:1 }}, 100"
+                d="M18 2.084
+                   a 15.915 15.915 0 0 1 0 31.832
+                   a 15.915 15.915 0 0 1 0 -31.832"/>
+            </svg>
+            <div class="wc-donut-center">
+              {{ row.approval_pct|floatformat:0 }}%
+            </div>
+            <div class="tooltip tooltip-detailed">
+              <div class="tooltip-title">Approval Rate</div>
+              <div class="tooltip-value">{{ row.approval_pct|floatformat:1 }}%</div>
+              <div class="tooltip-breakdown">
+                {{ row.approved_count }} of {{ row.done_count }} submissions approved
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- REVIEW COUNTS - Now below the donut -->
+        <div class="wc-review-stats-centered">
+          {% if row.approved_count > 0 %}
+          <div class="review approved">
+            <i class="fas fa-check-circle"></i>
+            <span class="review-text">{{ row.approved_count }} Approved</span>
+          </div>
+          {% endif %}
+          {% if row.pending_review_count > 0 %}
+          <div class="review pending">
+            <i class="fas fa-clock"></i>
+            <span class="review-text">{{ row.pending_review_count }} Pending</span>
+          </div>
+          {% endif %}
+          {% if row.revision_count > 0 %}
+          <div class="review revision">
+            <i class="fas fa-times-circle"></i>
+            <span class="review-text">{{ row.revision_count }} Revision</span>
+          </div>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+    {% endif %}
+
+  </section>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="wc-card-footer">
+    <!-- LIFECYCLE BADGE -->
+    <span class="wc-lifecycle lifecycle-{{ row.lifecycle_state }}">
+      {% if row.lifecycle_state == 'ongoing' %}
+        <i class="fas fa-sync-alt"></i> Ongoing
+      {% elif row.lifecycle_state == 'due_soon' %}
+        <i class="fas fa-hourglass-half"></i> Due Soon
+      {% elif row.lifecycle_state == 'lapsed' %}
+        <i class="fas fa-exclamation-triangle"></i> Lapsed
+      {% elif row.lifecycle_state == 'archived' %}
+        <i class="fas fa-archive"></i> Archived
+      {% endif %}
+    </span>
+
+    <a class="wc-btn"
+       href="{% url 'admin_app:done-workers-by-workcycle' row.workcycle_id %}">
+      <i class="fas fa-comments"></i>
+      Review Workers
+    </a>
+  </footer>
+
+</article>
+{% endfor %}
+
+</div>
+
+<style>
+/* =============================
+   GRID
+============================= */
+.wc-card-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
+  gap:20px;
+}
+
+/* =============================
+   CARD
+============================= */
+.wc-summary-card{
+  background:#fff;
+  border-radius:18px;
+  border:1px solid #e5e7eb;
+  box-shadow:0 8px 24px rgba(15,23,42,.08);
+  display:flex;
+  flex-direction:column;
+  transition:.25s ease;
+}
+
+.wc-summary-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 16px 36px rgba(15,23,42,.14);
+}
+
+/* =============================
+   HEADER WITH LIFECYCLE BG
+============================= */
+.wc-card-header{
+  padding:14px 18px;
+  border-bottom:1px solid #e5e7eb;
+  border-radius:18px 18px 0 0;
+}
+
+/* ONGOING - LIGHT BLUE */
+.lifecycle-bg-ongoing{
+  background:linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+
+/* DUE SOON - YELLOW/ORANGE */
+.lifecycle-bg-due_soon{
+  background:linear-gradient(135deg, #fef3c7 0%, #fef9c3 100%);
+}
+
+/* LAPSED - RED */
+.lifecycle-bg-lapsed{
+  background:linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+}
+
+/* ARCHIVED - GREY */
+.lifecycle-bg-archived{
+  background:linear-gradient(135deg, #f3f4f6 0%, #f9fafb 100%);
+}
+
+.wc-title{
+  font-weight:700;
+  font-size:.95rem;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  color:#1e293b;
+  letter-spacing:0.01em;
+}
+
+.wc-meta{
+  margin-top:4px;
+  font-size:.7rem;
+  font-weight:400;
+  color:#64748b;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  letter-spacing:0.01em;
+}
+
+.dot{ opacity:.4; }
+
+/* =============================
+   BODY - COMPACT
+============================= */
+.wc-card-body{
+  padding:14px 18px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  flex:1;
+}
+
+.wc-block-title{
+  font-size:.65rem;
+  font-weight:700;
+  text-transform:uppercase;
+  color:#6b7280;
+  margin-bottom:6px;
+  display:flex;
+  gap:6px;
+  align-items:center;
+  letter-spacing:0.05em;
+}
+
+/* =============================
+   WORK STATUS - COMPACT
+============================= */
+.wc-status-bar{
+  height:6px;
+  background:#e5e7eb;
+  border-radius:999px;
+  overflow:hidden;
+  display:flex;
+}
+
+.wc-status-done{ background:#10b981; }
+.wc-status-not-finished{ background:#9ca3af; }
+
+.wc-pills{
+  display:flex;
+  gap:5px;
+  margin-top:5px;
+  flex-wrap:wrap;
+}
+
+.pill{
+  font-size:.65rem;
+  font-weight:600;
+  padding:3px 8px;
+  border-radius:999px;
+  display:inline-flex;
+  gap:5px;
+  align-items:center;
+  letter-spacing:0.01em;
+}
+
+.pill.done{
+  background:#d1fae5;
+  color:#065f46;
+}
+
+.pill.not-finished{
+  background:#e5e7eb;
+  color:#374151;
+}
+
+/* =============================
+   DIVIDER
+============================= */
+.wc-divider{
+  height:1px;
+  background:#e5e7eb;
+}
+
+/* =============================
+   REVIEW - CENTERED & COMPACT
+============================= */
+.wc-review-grid-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.wc-donut-wrap-centered {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.wc-donut{
+  position:relative;
+  width:70px;
+  height:70px;
+}
+
+.wc-donut svg{
+  width:100%;
+  height:100%;
+  transform:rotate(-90deg);
+}
+
+.wc-donut-bg{
+  fill:none;
+  stroke:#e5e7eb;
+  stroke-width:3.6;
+}
+
+.wc-donut-approved{
+  fill:none;
+  stroke:#2563eb;
+  stroke-width:3.6;
+  stroke-linecap:round;
+}
+
+.wc-donut-center{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.85rem;
+  font-weight:800;
+  color:#2563eb;
+  letter-spacing:-0.02em;
+}
+
+.wc-review-stats-centered{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:8px;
+  width:100%;
+}
+
+.wc-review-stats-centered .review{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:.68rem;
+  font-weight:600;
+  white-space:nowrap;
+  letter-spacing:0.01em;
+}
+
+.review-text{
+  font-size:.68rem;
+  font-weight:600;
+}
+
+.wc-review-stats-centered .review.approved{
+  background:#eff6ff;
+  color:#2563eb;
+  border:1px solid #bfdbfe;
+}
+
+.wc-review-stats-centered .review.pending{
+  background:#fffbeb;
+  color:#d97706;
+  border:1px solid #fde68a;
+}
+
+.wc-review-stats-centered .review.revision{
+  background:#fef2f2;
+  color:#dc2626;
+  border:1px solid #fecaca;
+}
+
+/* =============================
+   FOOTER - SPACE BETWEEN
+============================= */
+.wc-card-footer{
+  padding:12px 18px;
+  border-top:1px solid #e5e7eb;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+}
+
+/* LIFECYCLE BADGE IN FOOTER */
+.wc-lifecycle{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 10px;
+  border-radius:999px;
+  font-size:.65rem;
+  font-weight:700;
+  white-space:nowrap;
+  letter-spacing:0.01em;
+}
+
+.lifecycle-ongoing{
+  background:#f0f9ff;
+  color:#0369a1;
+  border:1px solid #bae6fd;
+}
+
+.lifecycle-due_soon{
+  background:#fef3c7;
+  color:#92400e;
+  border:1px solid #fde68a;
+}
+
+.lifecycle-lapsed{
+  background:#fee2e2;
+  color:#991b1b;
+  border:1px solid #fecaca;
+}
+
+.lifecycle-archived{
+  background:#f3f4f6;
+  color:#374151;
+  border:1px solid #e5e7eb;
+}
+
+.wc-btn{
+  display:inline-flex;
+  gap:6px;
+  align-items:center;
+  font-size:.7rem;
+  font-weight:600;
+  padding:6px 12px;
+  border-radius:999px;
+  background:#eff6ff;
+  color:#2563eb;
+  border:1px solid #bfdbfe;
+  text-decoration:none;
+  transition:.2s ease;
+  letter-spacing:0.01em;
+}
+
+.wc-btn:hover{
+  background:#2563eb;
+  color:#fff;
+}
+
+/* =============================
+   ENHANCED TOOLTIP STYLES
+============================= */
+.wc-donut.tooltip-container{
+  position:relative;
+  cursor:pointer;
+}
+
+.wc-donut .tooltip-detailed{
+  position:absolute;
+  top:-70px;
+  left:50%;
+  transform:translateX(-50%) translateY(-10px);
+  background:#1f2937;
+  color:white;
+  padding:10px 14px;
+  border-radius:8px;
+  font-size:.7rem;
+  white-space:nowrap;
+  opacity:0;
+  visibility:hidden;
+  transition:all .2s ease;
+  pointer-events:none;
+  z-index:100;
+  box-shadow:0 4px 12px rgba(0,0,0,.15);
+  min-width:180px;
+  text-align:center;
+}
+
+.wc-donut .tooltip-detailed::after{
+  content:'';
+  position:absolute;
+  top:100%;
+  left:50%;
+  transform:translateX(-50%);
+  border-width:5px;
+  border-style:solid;
+  border-color:#1f2937 transparent transparent transparent;
+}
+
+.wc-donut .tooltip-title{
+  font-weight:700;
+  font-size:.75rem;
+  margin-bottom:3px;
+  color:#e5e7eb;
+  letter-spacing:0.01em;
+}
+
+.wc-donut .tooltip-value{
+  font-weight:800;
+  font-size:1rem;
+  color:#60a5fa;
+  margin-bottom:5px;
+  letter-spacing:-0.02em;
+}
+
+.wc-donut .tooltip-breakdown{
+  font-size:.65rem;
+  font-weight:400;
+  color:#9ca3af;
+  border-top:1px solid #374151;
+  padding-top:5px;
+  margin-top:5px;
+  letter-spacing:0.01em;
+}
+
+.wc-donut:hover .tooltip-detailed{
+  opacity:1;
+  visibility:visible;
+  transform:translateX(-50%) translateY(0);
+}
+</style>

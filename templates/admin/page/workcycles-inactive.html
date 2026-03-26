@@ -1,0 +1,1050 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}Archived Work Cycles{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/reassign_workcycle_modal.css' %}">
+<script src="{% static 'js/reassign_workcycle_modal.js' %}"></script>
+
+<!-- =========================
+     HEADER BAR (UNIFIED) - ARCHIVED THEME
+========================= -->
+<div class="wc-unified-header wc-header-archived">
+
+  <!-- TOP ROW: Title + Action Buttons -->
+  <div class="wc-header-top">
+    <div class="wc-title-section">
+      <h3 class="wc-main-title">
+        <i class="fas fa-archive"></i>
+        Archived Work Cycles
+      </h3>
+      <p class="wc-subtitle">
+        TIWI Reference · Task Management & Deadline Tracking
+      </p>
+    </div>
+
+    <!-- ACTION BUTTONS (RIGHT SIDE) -->
+    <div class="wc-action-buttons-top">
+      <!-- TOTAL BADGE -->
+      <a href="{% url 'admin_app:inactive-workcycles' %}"
+         class="wc-total-badge-archived">
+        <span class="wc-badge-count">{{ inactive_count }}</span>
+        <span class="wc-badge-label">Total Archived</span>
+      </a>
+      
+      <button
+        type="button"
+        class="wc-info-btn-archived"
+        data-bs-toggle="modal"
+        data-bs-target="#workcyclePurposeModal">
+        <i class="fas fa-info-circle"></i>
+        What is a Work Cycle?
+      </button>
+
+      <a href="{% url 'admin_app:workcycles' %}"
+         class="wc-back-btn-archived">
+        <i class="fas fa-arrow-left"></i>
+        Back to Active
+      </a>
+    </div>
+  </div>
+
+  <!-- BOTTOM ROW: Year/Month Filters + Search + Sort (HORIZONTAL) -->
+  <div class="wc-header-bottom">
+
+    <!-- YEAR/MONTH FILTERS (LEFT) -->
+    <div class="wc-filters-section">
+      <span class="wc-section-label-archived">
+        <i class="fas fa-filter"></i>
+        Filter by Period
+      </span>
+
+      <form method="get" class="wc-filters-form">
+        <!-- PRESERVE OTHER PARAMS -->
+        {% if request.GET.q %}
+          <input type="hidden" name="q" value="{{ request.GET.q }}">
+        {% endif %}
+        {% if request.GET.sort %}
+          <input type="hidden" name="sort" value="{{ request.GET.sort }}">
+        {% endif %}
+
+        <div class="wc-filters-row">
+          <!-- YEAR -->
+          <div class="wc-filter-group">
+            <select name="year" class="wc-year-select-archived">
+              <option value="">All Years</option>
+              {% for year in years %}
+                <option value="{{ year }}"
+                  {% if request.GET.year == year|stringformat:"s" %}selected{% endif %}>
+                  {{ year }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- MONTH -->
+          <div class="wc-filter-group">
+            <select name="month" class="wc-month-select-archived">
+              <option value="">All Months</option>
+              {% for m in months %}
+                <option value="{{ m.value }}"
+                  {% if request.GET.month == m.value|stringformat:"s" %}selected{% endif %}>
+                  {{ m.label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- ACTION BUTTONS -->
+          <div class="wc-filter-actions">
+            <button type="submit"
+                    class="wc-filter-apply-archived">
+              <i class="fas fa-check"></i>
+              Apply
+            </button>
+
+            <a href="{% url 'admin_app:inactive-workcycles' %}"
+               class="wc-filter-reset-archived">
+              <i class="fas fa-undo"></i>
+              Reset
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- SEARCH & SORT (RIGHT) -->
+    <div class="wc-search-sort-section">
+
+      <!-- SEARCH -->
+      <form method="get" class="wc-search-form">
+        <!-- Preserve year/month filters in search -->
+        {% if request.GET.year %}
+          <input type="hidden" name="year" value="{{ request.GET.year }}">
+        {% endif %}
+        {% if request.GET.month %}
+          <input type="hidden" name="month" value="{{ request.GET.month }}">
+        {% endif %}
+        {% if request.GET.sort %}
+          <input type="hidden" name="sort" value="{{ request.GET.sort }}">
+        {% endif %}
+
+        <div class="wc-search-wrapper-archived">
+          <i class="fas fa-search wc-search-icon-archived"></i>
+          <input type="search"
+                 name="q"
+                 value="{{ request.GET.q }}"
+                 class="wc-search-input-archived"
+                 placeholder="Search archived work cycles…">
+          <button type="submit" class="wc-search-btn-archived">
+            Search
+          </button>
+        </div>
+      </form>
+
+      <!-- SORT -->
+      <div class="wc-sort-wrapper">
+        <span class="wc-sort-label-archived">
+          <i class="fas fa-sort-amount-down"></i>
+          Sort by due
+        </span>
+        <div class="wc-sort-buttons-archived">
+          <a href="?sort=due_asc{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}"
+             class="wc-sort-btn-archived {% if request.GET.sort == 'due_asc' %}active{% endif %}">
+            <i class="fas fa-arrow-up"></i>
+            <span>Asc</span>
+          </a>
+          <a href="?sort=due_desc{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}"
+             class="wc-sort-btn-archived {% if request.GET.sort == 'due_desc' %}active{% endif %}">
+            <i class="fas fa-arrow-down"></i>
+            <span>Desc</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- =========================
+     CONTENT (CARDS)
+========================= -->
+<section class="wc-content-area">
+
+  {% if workcycles %}
+    <section class="wc-grid wc-grid-archived" aria-label="Archived work cycle list">
+
+      {% for wc in workcycles %}
+        {% include "admin/page/_workcycle_card_single.html" with wc=wc %}
+      {% endfor %}
+
+    </section>
+  {% else %}
+    <section class="wc-empty-state-archived">
+      <div class="wc-empty-icon-archived">
+        <i class="fas fa-inbox"></i>
+      </div>
+      <h3 class="wc-empty-title-archived">No Archived Work Cycles Found</h3>
+      <p class="wc-empty-text-archived">No archived work cycles match your filters.</p>
+      <a href="{% url 'admin_app:inactive-workcycles' %}" class="wc-empty-action-archived">
+        <i class="fas fa-times"></i>
+        Clear Filters
+      </a>
+    </section>
+  {% endif %}
+
+</section>
+
+
+<!-- =========================
+     MODALS
+========================= -->
+{% include "admin/page/modals/workcycle_purpose_modal.html" %}
+{% include "admin/page/modals/edit_workcycle_modal.html" %}
+{% include "admin/page/modals/reassign_workcycle_modal.html" %}
+{% include "admin/page/modals/delete_workcycles_modal.html" %}
+
+<!-- =========================
+     STYLES - ARCHIVED THEME
+========================= -->
+<style>
+/* =============================
+   PROTECT FONT AWESOME ICONS
+============================= */
+.fa,
+.fas,
+.far,
+.fab,
+.fal,
+.fa-solid,
+.fa-regular,
+.fa-brands {
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+  font-style: normal;
+  font-weight: 900;
+}
+
+/* Ensure Font Awesome icons in header classes keep their font */
+.wc-main-title .fa,
+.wc-section-label-archived .fa,
+.wc-search-icon-archived,
+.wc-sort-label-archived .fa,
+.wc-sort-btn-archived .fa,
+.wc-action-buttons-top .fa {
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+}
+
+/* =============================
+   UNIFIED HEADER - ARCHIVED THEME
+============================= */
+.wc-header-archived {
+  background: #ffffff; /* WHITE BACKGROUND */
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  margin-bottom: 24px;
+  color: #1f2937; /* Dark text on white */
+}
+
+/* TOP ROW - ARCHIVED */
+.wc-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb; /* Light grey border */
+  min-height: 60px;
+}
+
+.wc-title-section {
+  flex: 1;
+}
+
+.wc-main-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937; /* Dark text */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.01em;
+}
+
+.wc-main-title i {
+  color: #dc2626; /* Red for archived icon */
+  font-size: 1.3rem;
+}
+
+.wc-subtitle {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #6b7280; /* Medium grey subtitle */
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+/* TOTAL BADGE - ARCHIVED */
+.wc-total-badge-archived {
+  background: #fef2f2; /* Light red background */
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  padding: 12px 16px;
+  text-align: center;
+  min-width: 140px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.wc-total-badge-archived:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.1);
+}
+
+.wc-badge-count {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #dc2626; /* Red count */
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.wc-badge-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #dc2626; /* Red label */
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+}
+
+/* TOP ACTION BUTTONS - ARCHIVED */
+.wc-action-buttons-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.wc-info-btn-archived,
+.wc-back-btn-archived {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  height: 40px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.wc-info-btn-archived {
+  background: #1f2937; /* DARK BUTTON */
+  border-color: #374151;
+  color: #f9fafb; /* Light text */
+}
+
+.wc-info-btn-archived:hover {
+  background: #374151;
+  border-color: #4b5563;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(31, 41, 55, 0.2);
+}
+
+.wc-back-btn-archived {
+  background: #dc2626; /* RED BUTTON */
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+.wc-back-btn-archived:hover {
+  background: #ef4444; /* Brighter red */
+  border-color: #f87171;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+/* BOTTOM ROW - HORIZONTAL ALIGNMENT */
+.wc-header-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  min-height: 60px;
+  align-items: stretch;
+}
+
+/* FILTERS SECTION - ARCHIVED */
+.wc-filters-section {
+  flex: 1;
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.wc-section-label-archived {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #6b7280; /* Grey label */
+  margin-bottom: 10px;
+  letter-spacing: 0.05em;
+  height: 20px;
+}
+
+.wc-section-label-archived i {
+  font-size: 0.65rem;
+  color: #dc2626; /* Red icon */
+}
+
+.wc-filters-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wc-filters-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  flex-grow: 1;
+}
+
+.wc-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* YEAR/MONTH SELECTS - ARCHIVED */
+.wc-year-select-archived,
+.wc-month-select-archived {
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #374151; /* Dark text */
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-width: 120px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.wc-year-select-archived:hover,
+.wc-month-select-archived:hover {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.wc-year-select-archived:focus,
+.wc-month-select-archived:focus {
+  outline: none;
+  border-color: #dc2626; /* Red focus */
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* FILTER ACTION BUTTONS */
+.wc-filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.wc-filter-apply-archived,
+.wc-filter-reset-archived {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  height: 40px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.wc-filter-apply-archived {
+  background: #1f2937; /* DARK BUTTON */
+  border-color: #374151;
+  color: #ffffff;
+}
+
+.wc-filter-apply-archived:hover {
+  background: #374151;
+  border-color: #4b5563;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(31, 41, 55, 0.2);
+}
+
+.wc-filter-reset-archived {
+  background: #ffffff;
+  border-color: #d1d5db;
+  color: #6b7280;
+}
+
+.wc-filter-reset-archived:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #374151;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(107, 114, 128, 0.1);
+}
+
+/* SEARCH & SORT SECTION (RIGHT) - ARCHIVED */
+.wc-search-sort-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+  min-height: 60px;
+  align-items: flex-start;
+}
+
+/* SEARCH - ARCHIVED */
+.wc-search-form {
+  min-width: 280px;
+}
+
+.wc-search-wrapper-archived {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 2px;
+  height: 40px;
+  min-width: 280px;
+}
+
+.wc-search-icon-archived {
+  color: #9ca3af;
+  margin: 0 10px;
+  font-size: 0.9rem;
+}
+
+.wc-search-input-archived {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 0;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #374151; /* Dark text */
+  min-width: 0;
+  letter-spacing: 0.01em;
+}
+
+.wc-search-input-archived::placeholder {
+  font-weight: 400;
+  color: #9ca3af;
+  letter-spacing: 0.01em;
+}
+
+.wc-search-input-archived:focus {
+  outline: none;
+}
+
+.wc-search-btn-archived {
+  background: #dc2626; /* RED BUTTON */
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  height: 100%;
+  letter-spacing: 0.01em;
+}
+
+.wc-search-btn-archived:hover {
+  background: #ef4444; /* Brighter red */
+}
+
+/* SORT - ARCHIVED */
+.wc-sort-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  align-items: flex-start;
+}
+
+.wc-sort-label-archived {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #6b7280;
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+  height: 20px;
+  margin-top: 10px;
+}
+
+.wc-sort-label-archived i {
+  color: #dc2626; /* Red icon */
+}
+
+.wc-sort-buttons-archived {
+  display: flex;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 2px;
+  height: 40px;
+  align-items: center;
+}
+
+.wc-sort-btn-archived {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  text-decoration: none;
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  height: 32px;
+  letter-spacing: 0.01em;
+}
+
+.wc-sort-btn-archived:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.wc-sort-btn-archived.active {
+  background: #dc2626; /* RED active state */
+  color: white;
+  font-weight: 600;
+}
+
+.wc-sort-btn-archived i {
+  font-size: 0.7rem;
+}
+
+/* CONTENT AREA */
+.wc-content-area {
+  min-height: 400px;
+}
+
+/* EMPTY STATE - ARCHIVED */
+.wc-empty-state-archived {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: #ffffff;
+  border: 2px dashed #e5e7eb;
+  border-radius: 20px;
+  margin-top: 24px;
+  color: #374151;
+}
+
+.wc-empty-icon-archived {
+  font-size: 3rem;
+  color: #d1d5db;
+  margin-bottom: 20px;
+}
+
+.wc-empty-title-archived {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.wc-empty-text-archived {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #9ca3af;
+  margin-bottom: 20px;
+}
+
+.wc-empty-action-archived {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #1f2937; /* DARK BUTTON */
+  color: white;
+  text-decoration: none;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.wc-empty-action-archived:hover {
+  background: #374151;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(31, 41, 55, 0.2);
+  color: white;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1200px) {
+  .wc-search-sort-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .wc-search-form {
+    min-width: 100%;
+  }
+  
+  .wc-sort-wrapper {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 992px) {
+  .wc-header-bottom {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+  }
+  
+  .wc-filters-section,
+  .wc-search-form {
+    min-width: 100%;
+  }
+  
+  .wc-search-sort-section {
+    width: 100%;
+  }
+  
+  .wc-filters-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .wc-filter-group {
+    width: 100%;
+  }
+  
+  .wc-year-select-archived,
+  .wc-month-select-archived {
+    width: 100%;
+  }
+  
+  .wc-filter-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .wc-header-top {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .wc-action-buttons-top {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 12px;
+  }
+  
+  .wc-total-badge-archived {
+    min-width: 120px;
+  }
+  
+  .wc-search-wrapper-archived {
+    min-width: 100%;
+  }
+  
+  .wc-search-sort-section {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .wc-sort-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .wc-sort-buttons-archived {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .wc-header-archived {
+    padding: 16px;
+  }
+  
+  .wc-action-buttons-top {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .wc-info-btn-archived,
+  .wc-back-btn-archived,
+  .wc-total-badge-archived {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .wc-search-wrapper-archived {
+    flex-direction: column;
+    height: auto;
+    border-radius: 12px;
+    padding: 12px;
+  }
+  
+  .wc-search-input-archived {
+    width: 100%;
+    margin: 8px 0;
+    text-align: center;
+  }
+  
+  .wc-search-btn-archived {
+    width: 100%;
+    border-radius: 8px;
+  }
+  
+  .wc-filter-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .wc-filter-apply-archived,
+  .wc-filter-reset-archived {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Card hover effects
+  document.querySelectorAll('.wc-card').forEach(card => {
+    card.addEventListener('mouseenter', () => card.style.zIndex = '10');
+    card.addEventListener('mouseleave', () => card.style.zIndex = '1');
+  });
+
+  // Card keyboard navigation
+  document.querySelectorAll('.wc-card').forEach(card => {
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const link = card.querySelector('.wc-dropdown-item');
+        if (link) {
+          e.preventDefault();
+          link.click();
+        }
+      }
+    });
+  });
+
+  // Edit modal handling
+  const editModal = document.getElementById('editWorkcycleModal');
+  if (editModal) {
+    editModal.addEventListener('show.bs.modal', e => {
+      const btn = e.relatedTarget;
+      editModal.querySelector('#edit_workcycle_id').value = btn.dataset.id;
+      editModal.querySelector('#edit_title').value = btn.dataset.title;
+      editModal.querySelector('#edit_description').value = btn.dataset.description;
+      editModal.querySelector('#edit_due_at').value = btn.dataset.due;
+    });
+  }
+
+  // Delete Modal Handling
+  const deleteModal = document.getElementById('deleteWorkcycleModal');
+  if (deleteModal) {
+    let currentDeleteUrl = '';
+    let currentWorkcycleTitle = '';
+    let currentWorkcycleId = '';
+
+    // When modal is opened
+    deleteModal.addEventListener('show.bs.modal', function(event) {
+      const button = event.relatedTarget;
+      currentDeleteUrl = button.getAttribute('data-delete-url');
+      currentWorkcycleTitle = button.getAttribute('data-workcycle-title') || 'this work cycle';
+      currentWorkcycleId = button.getAttribute('data-workcycle-id');
+
+      // Reset modal to normal delete state
+      document.getElementById('deleteNormalBody').classList.remove('d-none');
+      document.getElementById('deleteProtectedBody').classList.add('d-none');
+      document.getElementById('normalDeleteBtn').classList.remove('d-none');
+      document.getElementById('forceDeleteBtn').classList.add('d-none');
+      document.getElementById('forceDeleteConfirmInput').value = '';
+    });
+
+    // Normal Delete Button
+    document.getElementById('normalDeleteBtn').addEventListener('click', function() {
+      if (!currentDeleteUrl) return;
+
+      const btn = this;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
+
+      fetch(currentDeleteUrl, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          // Show success toast
+          if (window.notify) {
+            window.notify(data.message, 'success');
+          }
+          // Close modal and reload page
+          bootstrap.Modal.getInstance(deleteModal).hide();
+          setTimeout(() => location.reload(), 500);
+        } else if (data.status === 'protected') {
+          // Update currentWorkcycleTitle from server response
+          currentWorkcycleTitle = data.workcycle_title;
+          
+          // Show force delete option
+          document.getElementById('deleteNormalBody').classList.add('d-none');
+          document.getElementById('deleteProtectedBody').classList.remove('d-none');
+          document.getElementById('normalDeleteBtn').classList.add('d-none');
+          document.getElementById('forceDeleteBtn').classList.remove('d-none');
+          
+          document.getElementById('protectedMessage').textContent = data.message;
+          document.getElementById('confirmationPhrase').textContent = `DELETE ${currentWorkcycleTitle}`;
+          
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-trash me-1"></i>Yes, Delete';
+        } else {
+          if (window.notify) {
+            window.notify(data.message || 'Failed to delete work cycle', 'error');
+          }
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-trash me-1"></i>Yes, Delete';
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        if (window.notify) {
+          window.notify('An error occurred while deleting', 'error');
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash me-1"></i>Yes, Delete';
+      });
+    });
+
+    // Force Delete Confirmation Input
+    const forceDeleteInput = document.getElementById('forceDeleteConfirmInput');
+    const forceDeleteBtn = document.getElementById('forceDeleteBtn');
+    
+    forceDeleteInput.addEventListener('input', function() {
+      const expectedPhrase = `DELETE ${currentWorkcycleTitle}`;
+      const inputValue = this.value.trim();
+      const isMatch = inputValue.toUpperCase() === expectedPhrase.toUpperCase();
+      forceDeleteBtn.disabled = !isMatch;
+      
+      // Debug log
+      console.log('Expected:', expectedPhrase);
+      console.log('Input:', inputValue);
+      console.log('Match:', isMatch);
+    });
+
+    // Force Delete Button
+    forceDeleteBtn.addEventListener('click', function() {
+      if (!currentDeleteUrl) return;
+
+      const btn = this;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Force Deleting...';
+
+      const formData = new FormData();
+      formData.append('force_delete', 'true');
+      formData.append('confirmation_phrase', forceDeleteInput.value.trim());
+
+      fetch(currentDeleteUrl, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          // Show success toast
+          if (window.notify) {
+            window.notify(data.message, 'success');
+          }
+          bootstrap.Modal.getInstance(deleteModal).hide();
+          setTimeout(() => location.reload(), 500);
+        } else {
+          if (window.notify) {
+            window.notify(data.message || 'Failed to force delete work cycle', 'error');
+          }
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-bolt me-1"></i>Force Delete';
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        if (window.notify) {
+          window.notify('An error occurred while force deleting', 'error');
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-bolt me-1"></i>Force Delete';
+      });
+    });
+  }
+});
+</script>
+{% endblock %}

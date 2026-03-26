@@ -1,0 +1,212 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}Work Assignment Analytics{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin/completed_work_analytics.css' %}">
+{% endblock %}
+
+{% block content %}
+<script src="{% static 'js/realtime-filter.js' %}"></script>
+
+<!-- =========================
+     HEADER BAR (COMPACT)
+========================= -->
+<div class="wc-unified-header">
+
+  <!-- TOP ROW: Title + Stats -->
+  <div class="wc-header-top">
+    <div class="wc-title-section">
+      <h3 class="wc-main-title">
+        <i class="fas fa-chart-bar"></i>
+        Work Assignment Analytics
+      </h3>
+      <p class="wc-subtitle">
+        Status and review breakdown per active work cycle
+      </p>
+    </div>
+
+    <div class="wc-total-badge">
+      <span class="wc-badge-count" id="total-count">{{ totals.total_workcycles }}</span>
+      <span class="wc-badge-label">Total Work Cycles</span>
+    </div>
+  </div>
+
+  <!-- BOTTOM ROW: Filter + Search + Sort -->
+  <div class="wc-header-bottom">
+
+    <!-- FILTERS -->
+    <div class="wc-filters-section">
+      <span class="wc-section-label">
+        <i class="fas fa-filter"></i>
+        Filter
+      </span>
+      <div class="wc-filters">
+        <a href="?"
+           class="wc-filter-btn analytics-filter {% if not request.GET.state %}active{% endif %}">
+          <span>All</span>
+          <span class="wc-filter-count" id="count-all">{{ totals.total_workcycles }}</span>
+        </a>
+
+        <a href="?state=ongoing"
+           class="wc-filter-btn wc-filter-ongoing analytics-filter {% if request.GET.state == 'ongoing' %}active{% endif %}">
+          <span>Ongoing</span>
+          <span class="wc-filter-count" id="count-ongoing">{{ totals.ongoing }}</span>
+        </a>
+
+        <a href="?state=due_soon"
+           class="wc-filter-btn wc-filter-due-soon analytics-filter {% if request.GET.state == 'due_soon' %}active{% endif %}">
+          <span>Due Soon</span>
+          <span class="wc-filter-count" id="count-due-soon">{{ totals.due_soon }}</span>
+        </a>
+
+        <a href="?state=lapsed"
+           class="wc-filter-btn wc-filter-lapsed analytics-filter {% if request.GET.state == 'lapsed' %}active{% endif %}">
+          <span>Lapsed</span>
+          <span class="wc-filter-count" id="count-lapsed">{{ totals.lapsed }}</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- SEARCH & SORT -->
+    <div class="wc-actions-section">
+
+      <!-- SEARCH -->
+      <form method="get" class="wc-search-form" id="analyticsSearchForm">
+        {% if request.GET.state %}
+          <input type="hidden" name="state" value="{{ request.GET.state }}">
+        {% endif %}
+        {% if request.GET.sort %}
+          <input type="hidden" name="sort" value="{{ request.GET.sort }}">
+        {% endif %}
+
+        <div class="wc-search-wrapper">
+          <i class="fas fa-search wc-search-icon"></i>
+          <input type="search"
+                 name="q"
+                 id="analyticsSearchInput"
+                 value="{{ request.GET.q }}"
+                 class="wc-search-input"
+                 placeholder="Search work cycles…">
+          <button type="submit" class="wc-search-btn">
+            Search
+          </button>
+        </div>
+      </form>
+
+      <!-- SORT -->
+      <div class="wc-sort-wrapper">
+        <span class="wc-sort-label">
+          <i class="fas fa-sort-amount-down"></i>
+          Sort by due
+        </span>
+
+        <div class="wc-sort-buttons">
+          <!-- ASC -->
+          <a href="?{% if request.GET.state %}state={{ request.GET.state }}&{% endif %}{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=due_asc"
+             class="wc-sort-btn analytics-sort {% if request.GET.sort == 'due_asc' %}active{% endif %}">
+            <i class="fas fa-arrow-up"></i>
+            <span>Asc</span>
+          </a>
+
+          <!-- DESC -->
+          <a href="?{% if request.GET.state %}state={{ request.GET.state }}&{% endif %}{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}sort=due_desc"
+             class="wc-sort-btn analytics-sort {% if request.GET.sort == 'due_desc' %}active{% endif %}">
+            <i class="fas fa-arrow-down"></i>
+            <span>Desc</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- =========================
+     CONTENT (CARDS)
+========================= -->
+<div id="analyticsContainer">
+{% if summary %}
+  {% include "admin/page/_completed_work_cards.html" %}
+{% else %}
+  <div class="wc-empty-state">
+    <div class="wc-empty-icon">
+      <i class="far fa-folder-open"></i>
+    </div>
+    <h4 class="wc-empty-title">No analytics data available</h4>
+    <p class="wc-empty-text">No work cycles match your current filters</p>
+  </div>
+{% endif %}
+</div>
+
+<!-- =========================
+     CHART SUPPORT
+========================= -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function initCharts() {
+  document.querySelectorAll(".progressPie").forEach(canvas => {
+    // Destroy existing chart if any
+    if (canvas.chart) {
+      canvas.chart.destroy();
+    }
+    
+    const done = Number(canvas.dataset.done || 0);
+    const total = Number(canvas.dataset.total || 0);
+    const remaining = Math.max(total - done, 0);
+
+    canvas.chart = new Chart(canvas, {
+      type: "doughnut",
+      data: {
+        datasets: [{
+          data: [done, remaining],
+          backgroundColor: ["#10b981", "#e5e7eb"],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        cutout: "70%",
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: true }
+        }
+      }
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  initCharts();
+  
+  // Initialize real-time filter
+  const analyticsFilter = new RealtimeFilter({
+    apiUrl: '{% url "admin_app:api-analytics" %}',
+    containerSelector: '#analyticsContainer',
+    searchInputSelector: '#analyticsSearchInput',
+    filterSelector: '.analytics-filter',
+    sortSelector: '.analytics-sort',
+    statsCallback: function(data) {
+      // Update filter counts
+      if (data.count !== undefined) {
+        document.getElementById('total-count').textContent = data.count;
+      }
+      if (data.lifecycle_counts) {
+        document.getElementById('count-all').textContent = 
+          (data.lifecycle_counts.ongoing || 0) + 
+          (data.lifecycle_counts.due_soon || 0) + 
+          (data.lifecycle_counts.lapsed || 0);
+        document.getElementById('count-ongoing').textContent = data.lifecycle_counts.ongoing || 0;
+        document.getElementById('count-due-soon').textContent = data.lifecycle_counts.due_soon || 0;
+        document.getElementById('count-lapsed').textContent = data.lifecycle_counts.lapsed || 0;
+      }
+      
+      // Re-initialize charts after content update
+      setTimeout(initCharts, 100);
+    }
+  });
+});
+</script>
+
+{% endblock %}

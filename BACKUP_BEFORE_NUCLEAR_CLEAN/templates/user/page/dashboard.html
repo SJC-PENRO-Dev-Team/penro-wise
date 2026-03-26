@@ -1,0 +1,479 @@
+{% extends "user/layout/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/user/dashboard.css' %}?v=2">
+{% endblock %}
+
+{% block content %}
+<!-- Dashboard Hero Section -->
+<div class="dashboard-hero">
+  <div class="hero-content">
+    <h1 class="hero-title">
+      <i class="fas fa-home"></i>
+      Welcome Back, {{ user.get_full_name|default:user.username }}
+    </h1>
+    <p class="hero-subtitle">
+      <i class="far fa-clock"></i>
+      {{ now|date:"l, F j, Y · g:i A" }}
+    </p>
+  </div>
+  <div class="hero-actions">
+    <a href="{% url 'user_app:work-items' %}" class="hero-btn primary">
+      <i class="fas fa-tasks"></i>
+      <span>My Work Items</span>
+    </a>
+    <a href="{% url 'user_app:user-notifications' %}" class="hero-btn secondary">
+      <i class="fas fa-bell"></i>
+      <span>Notifications</span>
+    </a>
+  </div>
+</div>
+
+<!-- Main Stats Grid -->
+<div class="main-stats-grid">
+  <!-- Total Active Work Items -->
+  <a href="{% url 'user_app:work-items' %}" class="main-stat-card primary">
+    <div class="stat-icon-wrapper">
+      <div class="stat-icon">
+        <i class="fas fa-clipboard-list"></i>
+      </div>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ work_item_stats.total }}</div>
+      <div class="stat-label">Active Work Items</div>
+    </div>
+    <div class="stat-arrow">
+      <i class="fas fa-arrow-right"></i>
+    </div>
+  </a>
+
+  <!-- Lifecycle States -->
+  <a href="{% url 'user_app:work-items' %}?lifecycle=ongoing" class="main-stat-card success">
+    <div class="stat-icon-wrapper">
+      <div class="stat-icon">
+        <i class="fas fa-play-circle"></i>
+      </div>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ lifecycle_counts.ongoing }}</div>
+      <div class="stat-label">Ongoing</div>
+    </div>
+    <div class="stat-arrow">
+      <i class="fas fa-arrow-right"></i>
+    </div>
+  </a>
+
+  <a href="{% url 'user_app:work-items' %}?lifecycle=due_soon" class="main-stat-card warning">
+    <div class="stat-icon-wrapper">
+      <div class="stat-icon">
+        <i class="fas fa-clock"></i>
+      </div>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ lifecycle_counts.due_soon }}</div>
+      <div class="stat-label">Due Soon</div>
+    </div>
+    <div class="stat-arrow">
+      <i class="fas fa-arrow-right"></i>
+    </div>
+  </a>
+
+  <a href="{% url 'user_app:work-items' %}?lifecycle=lapsed" class="main-stat-card danger">
+    <div class="stat-icon-wrapper">
+      <div class="stat-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ lifecycle_counts.lapsed }}</div>
+      <div class="stat-label">Lapsed</div>
+    </div>
+    <div class="stat-arrow">
+      <i class="fas fa-arrow-right"></i>
+    </div>
+  </a>
+</div>
+
+<!-- Status Overview Section -->
+<div class="status-overview-section">
+  <div class="section-header-modern">
+    <h2 class="section-title-modern">
+      <i class="fas fa-chart-pie"></i>
+      Status Overview
+    </h2>
+  </div>
+
+  <div class="status-grid">
+    <!-- Work Item Status -->
+    <div class="status-group-card">
+      <div class="status-group-header">
+        <i class="fas fa-tasks"></i>
+        <span>Work Item Status</span>
+      </div>
+      <div class="status-items">
+        <a href="{% url 'user_app:work-items' %}?status=not_started" class="status-item">
+          <div class="status-item-icon gray">
+            <i class="fas fa-pause-circle"></i>
+          </div>
+          <div class="status-item-content">
+            <div class="status-item-label">Not Started</div>
+            <div class="status-item-value">{{ work_item_stats.not_started }}</div>
+          </div>
+          <div class="status-item-arrow">
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </a>
+
+        <a href="{% url 'user_app:work-items' %}?status=working_on_it" class="status-item">
+          <div class="status-item-icon orange">
+            <i class="fas fa-spinner"></i>
+          </div>
+          <div class="status-item-content">
+            <div class="status-item-label">In Progress</div>
+            <div class="status-item-value">{{ work_item_stats.working_on_it }}</div>
+          </div>
+          <div class="status-item-arrow">
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </a>
+
+        <a href="{% url 'user_app:work-items' %}?status=done" class="status-item">
+          <div class="status-item-icon green">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="status-item-content">
+            <div class="status-item-label">Completed</div>
+            <div class="status-item-value">{{ work_item_stats.done }}</div>
+          </div>
+          <div class="status-item-arrow">
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Review Decision -->
+    <div class="status-group-card">
+      <div class="status-group-header">
+        <i class="fas fa-user-shield"></i>
+        <span>Review Decision by Admin</span>
+      </div>
+      <div class="status-items">
+        <a href="{% url 'user_app:work-items' %}?review=pending" class="status-item">
+          <div class="status-item-icon purple">
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+          <div class="status-item-content">
+            <div class="status-item-label">Pending</div>
+            <div class="status-item-value">{{ review_stats.pending }}</div>
+          </div>
+          <div class="status-item-arrow">
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </a>
+
+        <a href="{% url 'user_app:work-items' %}?review=approved" class="status-item">
+          <div class="status-item-icon teal">
+            <i class="fas fa-check-double"></i>
+          </div>
+          <div class="status-item-content">
+            <div class="status-item-label">Approved</div>
+            <div class="status-item-value">{{ review_stats.approved }}</div>
+          </div>
+          <div class="status-item-arrow">
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </a>
+
+        <a href="{% url 'user_app:work-items' %}?review=revision" class="status-item">
+          <div class="status-item-icon red">
+            <i class="fas fa-edit"></i>
+          </div>
+          <div class="status-item-content">
+            <div class="status-item-label">Needs Revision</div>
+            <div class="status-item-value">{{ review_stats.revision }}</div>
+          </div>
+          <div class="status-item-arrow">
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="dashboard-main-grid">
+  <!-- Left Column -->
+  <div class="dashboard-left-column">
+    <!-- Needs Attention -->
+    {% if needs_attention %}
+    <div class="modern-card urgent-card">
+      <div class="modern-card-header urgent">
+        <div class="card-header-content">
+          <i class="fas fa-exclamation-circle"></i>
+          <h3>Needs Your Attention</h3>
+        </div>
+        <span class="card-badge urgent">{{ needs_attention|length }}</span>
+      </div>
+      <div class="modern-card-body">
+        {% for item in needs_attention %}
+        <div class="attention-item">
+          <div class="attention-icon {{ item.priority }}">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div class="attention-content">
+            <div class="attention-title">{{ item.item.workcycle.title }}</div>
+            <div class="attention-reason">{{ item.reason }}</div>
+          </div>
+          <span class="attention-badge {{ item.priority }}">{{ item.priority|title }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Upcoming Deadlines -->
+    <div class="modern-card">
+      <div class="modern-card-header">
+        <div class="card-header-content">
+          <i class="fas fa-calendar-alt"></i>
+          <h3>Upcoming Deadlines</h3>
+        </div>
+      </div>
+      <div class="modern-card-body">
+        {% for item in upcoming_deadlines %}
+        <div class="deadline-item">
+          <div class="deadline-icon">
+            <i class="far fa-calendar"></i>
+          </div>
+          <div class="deadline-content">
+            <div class="deadline-title">{{ item.workcycle.title }}</div>
+            <div class="deadline-date">
+              <i class="far fa-clock"></i>
+              {{ item.workcycle.due_at|date:"M d, Y · g:i A" }}
+            </div>
+          </div>
+          <a href="{% url 'user_app:work-item-detail' item.id %}" class="deadline-btn">
+            <i class="fas fa-arrow-right"></i>
+          </a>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+          <i class="fas fa-calendar-check"></i>
+          <p>No upcoming deadlines</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Recent File Reviews -->
+    <div class="modern-card">
+      <div class="modern-card-header">
+        <div class="card-header-content">
+          <i class="fas fa-file-alt"></i>
+          <h3>Recent File Reviews</h3>
+        </div>
+      </div>
+      <div class="modern-card-body">
+        {% for file in recent_file_reviews %}
+        <div class="file-review-item">
+          <div class="file-icon {{ file.acceptance_status }}">
+            {% if file.acceptance_status == 'accepted' %}
+              <i class="fas fa-check"></i>
+            {% else %}
+              <i class="fas fa-times"></i>
+            {% endif %}
+          </div>
+          <div class="file-content">
+            <div class="file-name">{{ file.get_filename }}</div>
+            <div class="file-workcycle">{{ file.work_item.workcycle.title }}</div>
+          </div>
+          <span class="file-status-badge {{ file.acceptance_status }}">
+            {% if file.acceptance_status == 'accepted' %}
+              Accepted
+            {% else %}
+              Rejected
+            {% endif %}
+          </span>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+          <i class="fas fa-file-alt"></i>
+          <p>No recent file reviews</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="modern-card">
+      <div class="modern-card-header">
+        <div class="card-header-content">
+          <i class="fas fa-history"></i>
+          <h3>Recent Activity</h3>
+        </div>
+      </div>
+      <div class="modern-card-body">
+        {% for activity in recent_activity %}
+        <div class="activity-item-modern">
+          <div class="activity-icon-modern {{ activity.color }}">
+            <i class="fas fa-{{ activity.icon }}"></i>
+          </div>
+          <div class="activity-content-modern">
+            <div class="activity-action">{{ activity.action }}</div>
+            <div class="activity-title-modern">{{ activity.item.workcycle.title }}</div>
+            <div class="activity-time">
+              <i class="far fa-clock"></i>
+              {{ activity.time|timesince }} ago
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+          <i class="fas fa-history"></i>
+          <p>No recent activity</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column -->
+  <div class="dashboard-right-column">
+    <!-- Performance Card -->
+    <div class="modern-card performance-card-modern">
+      <div class="modern-card-header">
+        <div class="card-header-content">
+          <i class="fas fa-chart-line"></i>
+          <h3>My Performance</h3>
+        </div>
+      </div>
+      <div class="modern-card-body">
+        <div class="performance-item">
+          <div class="performance-header">
+            <span class="performance-label">On-Time Submission Rate</span>
+            <span class="performance-value">{{ performance.on_time_ratio }}%</span>
+          </div>
+          <div class="performance-detail">{{ analytics.on_time_submissions }}/{{ analytics.completed_work_items }} items</div>
+          <div class="performance-bar-wrapper">
+            <div class="performance-bar-fill green" style="width: {{ performance.on_time_ratio }}%"></div>
+          </div>
+        </div>
+
+        <div class="performance-item">
+          <div class="performance-header">
+            <span class="performance-label">Approval Rate</span>
+            <span class="performance-value">{{ performance.approval_ratio }}%</span>
+          </div>
+          <div class="performance-detail">{{ analytics.approved_work_items }}/{{ analytics.approved_work_items|add:analytics.revision_requests }} items</div>
+          <div class="performance-bar-wrapper">
+            <div class="performance-bar-fill blue" style="width: {{ performance.approval_ratio }}%"></div>
+          </div>
+        </div>
+
+        <div class="performance-item">
+          <div class="performance-header">
+            <span class="performance-label">File Acceptance Rate</span>
+            <span class="performance-value">{{ performance.file_acceptance_ratio }}%</span>
+          </div>
+          <div class="performance-detail">{{ analytics.accepted_files }}/{{ analytics.accepted_files|add:analytics.rejected_files }} files</div>
+          <div class="performance-bar-wrapper">
+            <div class="performance-bar-fill purple" style="width: {{ performance.file_acceptance_ratio }}%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- File Stats Card -->
+    <div class="modern-card files-card-modern">
+      <div class="modern-card-header">
+        <div class="card-header-content">
+          <i class="fas fa-folder-open"></i>
+          <h3>My Files</h3>
+        </div>
+      </div>
+      <div class="modern-card-body">
+        <div class="file-stat-item">
+          <div class="file-stat-icon total">
+            <i class="fas fa-file"></i>
+          </div>
+          <div class="file-stat-content">
+            <div class="file-stat-label">Total Uploaded</div>
+            <div class="file-stat-value">{{ file_stats.total }}</div>
+          </div>
+        </div>
+
+        <div class="file-stat-item">
+          <div class="file-stat-icon pending">
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+          <div class="file-stat-content">
+            <div class="file-stat-label">Pending Review</div>
+            <div class="file-stat-value">{{ file_stats.pending }}</div>
+          </div>
+        </div>
+
+        <div class="file-stat-item">
+          <div class="file-stat-icon accepted">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="file-stat-content">
+            <div class="file-stat-label">Accepted</div>
+            <div class="file-stat-value">{{ file_stats.accepted }}</div>
+          </div>
+        </div>
+
+        <div class="file-stat-item">
+          <div class="file-stat-icon rejected">
+            <i class="fas fa-times-circle"></i>
+          </div>
+          <div class="file-stat-content">
+            <div class="file-stat-label">Rejected</div>
+            <div class="file-stat-value">{{ file_stats.rejected }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions Card -->
+    <div class="modern-card quick-actions-card">
+      <div class="modern-card-header">
+        <div class="card-header-content">
+          <i class="fas fa-bolt"></i>
+          <h3>Quick Actions</h3>
+        </div>
+      </div>
+      <div class="modern-card-body">
+        <a href="{% url 'user_app:work-items' %}" class="quick-action-item">
+          <div class="quick-action-icon">
+            <i class="fas fa-tasks"></i>
+          </div>
+          <span>View All Work Items</span>
+          <i class="fas fa-chevron-right"></i>
+        </a>
+
+        <a href="{% url 'user_app:discussions-list' %}" class="quick-action-item">
+          <div class="quick-action-icon">
+            <i class="fas fa-comments"></i>
+          </div>
+          <span>Discussions</span>
+          <i class="fas fa-chevron-right"></i>
+        </a>
+
+        <a href="{% url 'user_app:file-manager' %}" class="quick-action-item">
+          <div class="quick-action-icon">
+            <i class="fas fa-folder"></i>
+          </div>
+          <span>My Documents</span>
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

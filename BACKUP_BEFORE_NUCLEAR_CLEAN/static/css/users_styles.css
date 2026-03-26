@@ -1,0 +1,94 @@
+/**
+ * Users Page Styles
+ * Unified styling for the admin users management page
+ */
+
+/* =========================
+   FONTS - LOCAL MONTSERRAT
+========================= */
+@font-face {
+  font-family: "Montserrat";
+  src: url("../fonts/Montserrat-VariableFont_wght.ttf")
+       format("truetype-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* =============================
+   PROTECT FONT AWESOME ICONS
+============================== */
+.fa,
+.fas,
+.far,
+.fab,
+.fal,
+.fa-solid,
+.fa-regular,
+.fa-brands {
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+  font-style: normal;
+  font-weight: 900;
+}
+
+/* Base font family */
+* {
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Alternative font for headings */
+h1, h2, h3, h4, h5, h6, .fw-bold {
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* ===========================
+   MUTED BLUEVIOLET COLOR PALETTE
+=========================== */
+:root {
+  /* Primary BlueViolet Shades */
+  --blueviolet-50: #f8f7ff;
+  --blueviolet-100: #f0eeff;
+  --blueviolet-200: #e2deff;
+  --blueviolet-300: #cac4ff;
+  --blueviolet-400: #a89fff;
+  --blueviolet-500: #8b7dff;
+  --blueviolet-600: #7b69ff;
+  --blueviolet-700: #6b54fa;
+  --blueviolet-800: #5a43e8;
+  --blueviolet-900: #4b36c7;
+  
+  /* Neutral Muted Shades */
+  --muted-50: #f9fafb;
+  --muted-100: #f3f4f6;
+  --muted-200: #e5e7eb;
+  --muted-300: #d1d5db;
+  --muted-400: #9ca3af;
+  --muted-500: #6b7280;
+  --muted-600: #4b5563;
+  --muted-700: #374151;
+  --muted-800: #1f2937;
+  --muted-900: #111827;
+  
+  /* Accent Colors */
+  --accent-violet: #8b5cf6;
+  --accent-indigo: #6366f1;
+  --accent-lavender: #c4b5fd;
+  --accent-teal: #14b8a6;
+}
+
+/* ===========================
+   MODAL FLASH PREVENTION
+=========================== */
+.modal {
+  display: none;
+}
+
+.modal.show {
+  display: block;
+}
+
+/* Ensure modals don't flash on page load */
+.modal:not(.show) {
+  opacity: 0;
+  pointer-events: none;
+}

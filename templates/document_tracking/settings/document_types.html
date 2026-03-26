@@ -1,0 +1,232 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Document Types - Settings{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/document-tracking.css' %}">
+
+<div class="dt-page">
+  <!-- UNIFIED HEADER -->
+  <div class="dt-unified-header">
+    <div class="dt-header-top">
+      <div class="dt-title-section">
+        <h3 class="dt-main-title">
+          <i class="fas fa-file-alt"></i>
+          Document Types
+        </h3>
+        <p class="dt-subtitle">Manage document types and tracking number prefixes</p>
+      </div>
+      <div class="dt-action-buttons-top">
+        <a href="{% url 'document_tracking:settings' %}" class="dt-btn dt-btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to Settings
+        </a>
+        <a href="{% url 'document_tracking:document-type-add' %}" class="dt-btn dt-btn-primary">
+          <i class="fas fa-plus"></i>
+          Add Document Type
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSTRUCTIONS -->
+  <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+    <div style="display: flex; gap: 12px;">
+      <i class="fas fa-info-circle" style="color: #3b82f6; font-size: 1.2rem; margin-top: 2px;"></i>
+      <div style="flex: 1;">
+        <div style="font-size: 0.85rem; font-weight: 600; color: #1e40af; margin-bottom: 4px;">
+          Drag to Reorder
+        </div>
+        <div style="font-size: 0.8rem; color: #1e40af; line-height: 1.5;">
+          Drag and drop document types to change their display order. Changes are saved automatically.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCUMENT TYPES LIST -->
+  {% if document_types %}
+    <div id="document-types-list" style="background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden;">
+      {% for doc_type in document_types %}
+        <div class="dt-type-item" data-id="{{ doc_type.id }}" style="display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease; cursor: move;">
+          
+          <!-- DRAG HANDLE -->
+          <div class="drag-handle" style="color: #cbd5e1; cursor: grab;">
+            <i class="fas fa-grip-vertical"></i>
+          </div>
+
+          <!-- ORDER NUMBER -->
+          <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; min-width: 30px;">
+            #{{ doc_type.order }}
+          </div>
+
+          <!-- PREFIX BADGE -->
+          <div style="background: #f5f3ff; border: 1px solid #e9d5ff; color: #8b5cf6; font-size: 0.75rem; font-weight: 700; padding: 6px 12px; border-radius: 8px; min-width: 60px; text-align: center;">
+            {{ doc_type.prefix }}
+          </div>
+
+          <!-- TYPE INFO -->
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 0.875rem; font-weight: 600; color: #1e293b; margin-bottom: 2px;">
+              {{ doc_type.name }}
+            </div>
+            {% if doc_type.description %}
+              <div style="font-size: 0.75rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {{ doc_type.description }}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- STATS -->
+          <div style="display: flex; gap: 16px; font-size: 0.75rem; color: #64748b;">
+            <div style="text-align: center;">
+              <div style="font-weight: 700; color: #1e293b;">{{ stats|get_item:doc_type.id|get_item:'total_submissions' }}</div>
+              <div style="font-size: 0.7rem;">Submissions</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="font-weight: 700; color: #1e293b;">{{ stats|get_item:doc_type.id|get_item:'current_year_count' }}</div>
+              <div style="font-size: 0.7rem;">This Year</div>
+            </div>
+          </div>
+
+          <!-- STATUS BADGE -->
+          {% if doc_type.is_active %}
+            <span style="background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 999px;">
+              <i class="fas fa-check-circle"></i> Active
+            </span>
+          {% else %}
+            <span style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 999px;">
+              <i class="fas fa-times-circle"></i> Inactive
+            </span>
+          {% endif %}
+
+          <!-- ACTIONS -->
+          <div style="display: flex; gap: 6px;">
+            <a href="{% url 'document_tracking:document-type-edit' doc_type.id %}" class="dt-btn dt-btn-secondary" style="font-size: 0.7rem; padding: 4px 10px; height: 28px;">
+              <i class="fas fa-edit"></i>
+              Edit
+            </a>
+            
+            {% if stats|get_item:doc_type.id|get_item:'can_delete' %}
+              <form method="post" action="{% url 'document_tracking:document-type-delete' doc_type.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this document type?');">
+                {% csrf_token %}
+                <button type="submit" class="dt-btn" style="background: #fee2e2; border-color: #fecaca; color: #991b1b; font-size: 0.7rem; padding: 4px 10px; height: 28px;">
+                  <i class="fas fa-trash"></i>
+                  Delete
+                </button>
+              </form>
+            {% else %}
+              <button type="button" class="dt-btn" style="background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8; font-size: 0.7rem; padding: 4px 10px; height: 28px; cursor: not-allowed;" disabled title="Cannot delete: has existing submissions">
+                <i class="fas fa-lock"></i>
+                Delete
+              </button>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 60px 20px; background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;">
+      <i class="fas fa-inbox" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 16px;"></i>
+      <p style="color: #64748b; font-size: 1rem; margin: 0 0 16px 0;">No document types configured</p>
+      <a href="{% url 'document_tracking:document-type-add' %}" class="dt-btn dt-btn-primary">
+        <i class="fas fa-plus"></i>
+        Add Your First Document Type
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- SORTABLE.JS FOR DRAG-AND-DROP -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const list = document.getElementById('document-types-list');
+  
+  if (list) {
+    const sortable = new Sortable(list, {
+      animation: 150,
+      handle: '.drag-handle',
+      ghostClass: 'sortable-ghost',
+      onEnd: function(evt) {
+        // Get new order
+        const items = list.querySelectorAll('.dt-type-item');
+        const typeIds = Array.from(items).map(item => parseInt(item.dataset.id));
+        
+        // Send to server
+        fetch('{% url "document_tracking:document-types-reorder" %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: JSON.stringify({ type_ids: typeIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            // Update order numbers
+            items.forEach((item, index) => {
+              const orderNum = item.querySelector('div[style*="min-width: 30px"]');
+              if (orderNum) {
+                orderNum.textContent = '#' + (index + 1);
+              }
+            });
+            
+            // Show success feedback
+            showToast('Order updated successfully', 'success');
+          } else {
+            showToast('Failed to update order: ' + data.message, 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showToast('Failed to update order', 'error');
+        });
+      }
+    });
+  }
+});
+
+// Simple toast notification
+function showToast(message, type) {
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${type === 'success' ? '#10b981' : '#ef4444'};
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  `;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Add CSS for drag ghost
+const style = document.createElement('style');
+style.textContent = `
+  .sortable-ghost {
+    opacity: 0.4;
+    background: #f8fafc;
+  }
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

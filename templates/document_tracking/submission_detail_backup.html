@@ -1,0 +1,815 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}{{ submission.title }} - Admin View{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/document-tracking.css' %}">
+
+<div class="dt-page">
+  <!-- SIMPLE HEADER WITH BACK BUTTON -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div></div>
+    <a href="{% url 'document_tracking:admin_submissions' %}" class="dt-btn dt-btn-secondary">
+      <i class="fas fa-arrow-left"></i>
+      Back to All Submissions
+    </a>
+  </div>
+
+  <div class="row">
+    <!-- LEFT COLUMN: Main Content -->
+    <div class="col-lg-8">
+      <!-- Document Information Card -->
+      <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; margin-bottom: 20px;">
+        <h4 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-file-alt" style="color: #8b5cf6;"></i>
+          {{ submission.title }}
+        </h4>
+        
+        <div style="display: grid; gap: 18px;">
+          <!-- Tracking Number -->
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="min-width: 150px; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Tracking Number</div>
+            <div style="flex: 1;">
+              {% if submission.tracking_number %}
+                <span style="display: inline-flex; align-items: center; gap: 6px; background: #ede9fe; color: #6b21a8; padding: 6px 12px; border-radius: 999px; font-size: 0.85rem; font-weight: 600;">
+                  <i class="fas fa-hashtag" style="font-size: 0.75rem;"></i>
+                  {{ submission.tracking_number }}
+                  {% if submission.tracking_locked %}
+                    <i class="fas fa-lock" style="font-size: 0.7rem;"></i>
+                  {% endif %}
+                </span>
+              {% else %}
+                <span style="color: #94a3b8; font-size: 0.875rem; font-style: italic;">Not assigned yet</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Status -->
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="min-width: 150px; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Status</div>
+            <div style="flex: 1;">
+              <span class="dt-status-badge dt-status-{{ submission.status }}">
+                {{ submission.get_status_display }}
+              </span>
+              {% if submission.is_locked %}
+                <i class="fas fa-lock" style="color: #94a3b8; margin-left: 8px; font-size: 0.75rem;" title="Record locked"></i>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Document Type -->
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="min-width: 150px; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Document Type</div>
+            <div style="flex: 1; font-size: 0.9rem; color: #1e293b;">{{ submission.get_document_type_display }}</div>
+          </div>
+
+          <!-- Submitted By -->
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="min-width: 150px; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Submitted By</div>
+            <div style="flex: 1; font-size: 0.9rem; color: #1e293b;">
+              {{ submission.submitted_by.get_full_name }}<br>
+              <span style="color: #64748b; font-size: 0.8rem;">{{ submission.submitted_by.email }}</span>
+            </div>
+          </div>
+
+          <!-- Submitted At -->
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="min-width: 150px; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Submitted At</div>
+            <div style="flex: 1; font-size: 0.9rem; color: #1e293b;">{{ submission.created_at|date:"F d, Y g:i A" }}</div>
+          </div>
+
+          {% if submission.assigned_section %}
+          <!-- Routed To -->
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="min-width: 150px; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Routed To</div>
+            <div style="flex: 1; font-size: 0.9rem; color: #1e293b;">{{ submission.assigned_section.get_name_display }}</div>
+          </div>
+          {% endif %}
+
+          <!-- Purpose -->
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="min-width: 150px; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Purpose</div>
+            <div style="flex: 1; font-size: 0.9rem; color: #1e293b; line-height: 1.6;">{{ submission.purpose|linebreaks }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attached Files Card -->
+      <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 20px; margin-bottom: 20px;">
+        <h4 style="font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-paperclip" style="color: #8b5cf6;"></i>
+          Attached Files & Links
+        </h4>
+        
+        {% if submission.is_stored_in_file_manager and submission.file_manager_folder %}
+          <!-- Files are in File Manager -->
+          {% if submission.file_manager_folder.files.all %}
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              {% for attachment in submission.file_manager_folder.files.all %}
+                {% if attachment.link_url %}
+                  <!-- Link Attachment -->
+                  {% if attachment.link_title %}
+                    <!-- Grouped Links -->
+                    <div onclick="showGroupedLinksModal('{{ attachment.link_title|escapejs }}', {{ submission.file_manager_folder.id }})" 
+                       style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; transition: all 0.2s ease; cursor: pointer;"
+                       onmouseover="this.style.background='#ede9fe'; this.style.borderColor='#8b5cf6';"
+                       onmouseout="this.style.background='#f5f3ff'; this.style.borderColor='#ddd6fe';">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-layer-group" style="color: #8b5cf6; font-size: 1rem;"></i>
+                        <span style="font-size: 0.875rem; color: #1e293b; font-weight: 500;">{{ attachment.link_title }}</span>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 0.75rem; color: #64748b;">{{ attachment.uploaded_at|date:"M d, Y" }}</span>
+                        <i class="fas fa-external-link-alt" style="color: #8b5cf6; font-size: 0.75rem;"></i>
+                      </div>
+                    </div>
+                  {% else %}
+                    <!-- Single Link -->
+                    <div onclick="showSingleLinkModal({{ attachment.id }}, '{{ attachment.link_url|escapejs }}', '{{ attachment.link_title|default:"Link"|escapejs }}')" 
+                       style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; transition: all 0.2s ease; cursor: pointer;"
+                       onmouseover="this.style.background='#ede9fe'; this.style.borderColor='#8b5cf6';"
+                       onmouseout="this.style.background='#f5f3ff'; this.style.borderColor='#ddd6fe';">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-link" style="color: #8b5cf6; font-size: 1rem;"></i>
+                        <span style="font-size: 0.875rem; color: #1e293b;">{{ attachment.link_title|default:"Link" }}</span>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 0.75rem; color: #64748b;">{{ attachment.uploaded_at|date:"M d, Y" }}</span>
+                        <i class="fas fa-external-link-alt" style="color: #8b5cf6; font-size: 0.75rem;"></i>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% else %}
+                  <!-- File Attachment -->
+                  <div onclick="FilePreview.show({{ attachment.id }})" 
+                     style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; transition: all 0.2s ease; cursor: pointer;"
+                     onmouseover="this.style.background='#e0f2fe'; this.style.borderColor='#0ea5e9';"
+                     onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#e2e8f0';">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <i class="fas fa-file" style="color: #10b981; font-size: 1rem;"></i>
+                      <span style="font-size: 0.875rem; color: #1e293b;">{{ attachment.get_filename }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <span style="font-size: 0.75rem; color: #64748b;">{{ attachment.uploaded_at|date:"M d, Y" }}</span>
+                      <i class="fas fa-eye" style="color: #94a3b8; font-size: 0.75rem;"></i>
+                    </div>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+            <div style="margin-top: 12px; padding: 10px; background: #d1fae5; border: 1px solid #a7f3d0; border-radius: 8px; font-size: 0.8rem; color: #065f46;">
+              <i class="fas fa-info-circle"></i> Files are stored in File Manager. Click a file to preview or use "Open in File Manager" below.
+            </div>
+          {% else %}
+            <p style="color: #94a3b8; font-size: 0.875rem; margin: 0;">No files in File Manager</p>
+          {% endif %}
+        {% elif submission.primary_folder and submission.primary_folder.files.all %}
+          <!-- Files are in primary folder (not yet approved) -->
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            {% for attachment in submission.primary_folder.files.all %}
+              {% if attachment.link_url %}
+                <!-- Link Attachment -->
+                {% if attachment.link_title %}
+                  <!-- Grouped Links -->
+                  <div onclick="showGroupedLinksModal('{{ attachment.link_title|escapejs }}', {{ submission.primary_folder.id }})" 
+                     style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; transition: all 0.2s ease; cursor: pointer;"
+                     onmouseover="this.style.background='#ede9fe'; this.style.borderColor='#8b5cf6';"
+                     onmouseout="this.style.background='#f5f3ff'; this.style.borderColor='#ddd6fe';">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <i class="fas fa-layer-group" style="color: #8b5cf6; font-size: 1rem;"></i>
+                      <span style="font-size: 0.875rem; color: #1e293b; font-weight: 500;">{{ attachment.link_title }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <span style="font-size: 0.75rem; color: #64748b;">{{ attachment.uploaded_at|date:"M d, Y" }}</span>
+                      <i class="fas fa-external-link-alt" style="color: #8b5cf6; font-size: 0.75rem;"></i>
+                    </div>
+                  </div>
+                {% else %}
+                  <!-- Single Link -->
+                  <div onclick="showSingleLinkModal({{ attachment.id }}, '{{ attachment.link_url|escapejs }}', '{{ attachment.link_title|default:"Link"|escapejs }}')" 
+                     style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; transition: all 0.2s ease; cursor: pointer;"
+                     onmouseover="this.style.background='#ede9fe'; this.style.borderColor='#8b5cf6';"
+                     onmouseout="this.style.background='#f5f3ff'; this.style.borderColor='#ddd6fe';">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <i class="fas fa-link" style="color: #8b5cf6; font-size: 1rem;"></i>
+                      <span style="font-size: 0.875rem; color: #1e293b;">{{ attachment.link_title|default:"Link" }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <span style="font-size: 0.75rem; color: #64748b;">{{ attachment.uploaded_at|date:"M d, Y" }}</span>
+                      <i class="fas fa-external-link-alt" style="color: #8b5cf6; font-size: 0.75rem;"></i>
+                    </div>
+                  </div>
+                {% endif %}
+              {% else %}
+                <!-- File Attachment -->
+                <div onclick="FilePreview.show({{ attachment.id }})" 
+                   style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; transition: all 0.2s ease; cursor: pointer;"
+                   onmouseover="this.style.background='#f5f3ff'; this.style.borderColor='#8b5cf6';"
+                   onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#e2e8f0';">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-file" style="color: #8b5cf6; font-size: 1rem;"></i>
+                    <span style="font-size: 0.875rem; color: #1e293b;">{{ attachment.get_filename }}</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 0.75rem; color: #64748b;">{{ attachment.uploaded_at|date:"M d, Y" }}</span>
+                    <i class="fas fa-eye" style="color: #94a3b8; font-size: 0.75rem;"></i>
+                  </div>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="color: #94a3b8; font-size: 0.875rem; margin: 0;">No files or links attached</p>
+        {% endif %}
+
+        {% if submission.archive_folder and submission.archive_folder.files.all %}
+          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <h5 style="font-size: 0.875rem; font-weight: 600; color: #64748b; margin-bottom: 12px;">Archived Files</h5>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              {% for attachment in submission.archive_folder.files.all %}
+                {% if attachment.link_url %}
+                  <!-- Archived Link -->
+                  <div onclick="showSingleLinkModal({{ attachment.id }}, '{{ attachment.link_url|escapejs }}', '{{ attachment.link_title|default:"Link"|escapejs }}')" 
+                     style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; transition: all 0.2s ease; cursor: pointer;"
+                     onmouseover="this.style.background='#f1f5f9'; this.style.borderColor='#64748b';"
+                     onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#e2e8f0';">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <i class="fas fa-link" style="color: #64748b; font-size: 1rem;"></i>
+                      <span style="font-size: 0.875rem; color: #1e293b;">{{ attachment.link_title|default:"Link" }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <span style="font-size: 0.75rem; color: #64748b;">{{ attachment.uploaded_at|date:"M d, Y" }}</span>
+                      <i class="fas fa-external-link-alt" style="color: #64748b; font-size: 0.75rem;"></i>
+                    </div>
+                  </div>
+                {% else %}
+                  <!-- Archived File -->
+                  <div onclick="FilePreview.show({{ attachment.id }})" 
+                     style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; transition: all 0.2s ease; cursor: pointer;"
+                     onmouseover="this.style.background='#f1f5f9'; this.style.borderColor='#64748b';"
+                     onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#e2e8f0';">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <i class="fas fa-archive" style="color: #64748b; font-size: 1rem;"></i>
+                      <span style="font-size: 0.875rem; color: #1e293b;">{{ attachment.get_filename }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <span style="font-size: 0.75rem; color: #64748b;">{{ attachment.uploaded_at|date:"M d, Y" }}</span>
+                      <i class="fas fa-eye" style="color: #94a3b8; font-size: 0.75rem;"></i>
+                    </div>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- File Manager Link Card (shown when stored in File Manager) -->
+      {% if submission.is_stored_in_file_manager and submission.file_manager_folder %}
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: 1px solid #059669; border-radius: 14px; padding: 20px; margin-bottom: 20px; color: white;">
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+            <div style="width: 48px; height: 48px; background: rgba(255, 255, 255, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+              <i class="fas fa-folder-open" style="font-size: 1.5rem;"></i>
+            </div>
+            <div style="flex: 1;">
+              <h4 style="font-size: 1rem; font-weight: 700; margin: 0 0 4px 0;">
+                Files Stored in File Manager
+              </h4>
+              <p style="font-size: 0.8rem; margin: 0; opacity: 0.9;">
+                This submission has been approved and files are now managed in the File Manager system
+              </p>
+            </div>
+          </div>
+          
+          <div style="background: rgba(255, 255, 255, 0.15); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+            <div style="font-size: 0.75rem; font-weight: 600; opacity: 0.8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">
+              <i class="fas fa-map-marker-alt"></i> File Location
+            </div>
+            <div style="font-size: 0.875rem; font-weight: 500; font-family: 'Courier New', monospace; word-break: break-all;">
+              {{ submission.file_manager_folder.get_path_string }}
+            </div>
+          </div>
+          
+          <a href="{% url 'admin_app:file-manager-folder' submission.file_manager_folder.id %}" 
+             class="dt-btn" 
+             style="width: 100%; justify-content: center; background: white; color: #059669; border: 2px solid white; font-weight: 600; transition: all 0.2s ease;">
+            <i class="fas fa-folder-open"></i>
+            Open in File Manager
+          </a>
+        </div>
+      {% endif %}
+
+      <!-- Activity Log Card -->
+      <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 20px;">
+        <h4 style="font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-history" style="color: #8b5cf6;"></i>
+          Activity Log
+        </h4>
+        
+        {% if logbook_entries %}
+          <div class="dt-timeline">
+            {% for entry in logbook_entries %}
+              <div class="dt-timeline-item">
+                <div class="dt-timeline-marker"></div>
+                <div class="dt-timeline-content">
+                  <div style="font-weight: 600; font-size: 0.875rem; color: #1e293b; margin-bottom: 4px;">
+                    {{ entry.get_action_display }}
+                  </div>
+                  <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 6px;">
+                    {{ entry.actor.get_full_name }} • {{ entry.timestamp|date:"M d, Y g:i A" }}
+                  </div>
+                  {% if entry.remarks %}
+                    <div style="font-size: 0.8rem; color: #475569; background: #f8fafc; padding: 8px 12px; border-radius: 6px; margin-top: 6px;">
+                      {{ entry.remarks }}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="color: #94a3b8; font-size: 0.875rem; margin: 0;">No activity recorded</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Workflow & Actions -->
+    <div class="col-lg-4">
+      <!-- IMPROVED Workflow Progress Card -->
+      <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; margin-bottom: 20px;">
+        <div style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); padding: 16px;">
+          <h5 style="font-size: 0.95rem; font-weight: 600; color: white; margin: 0; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-route"></i>
+            Workflow Progress
+          </h5>
+        </div>
+        <div style="padding: 20px;">
+          <!-- Progress Bar -->
+          <div style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 0.75rem; color: #64748b; font-weight: 600;">PROGRESS</span>
+              <span style="background: #ede9fe; color: #6b21a8; padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700;">{{ progress_percentage }}%</span>
+            </div>
+            <div style="height: 8px; background: #e5e7eb; border-radius: 999px; overflow: hidden;">
+              <div style="height: 100%; background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%); width: {{ progress_percentage }}%; transition: width 0.3s ease;"></div>
+            </div>
+          </div>
+
+          <!-- Current Status -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #8b5cf6; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+            <div style="font-size: 0.75rem; color: #64748b; font-weight: 600; margin-bottom: 4px;">CURRENT STATUS</div>
+            <div style="font-size: 0.95rem; font-weight: 600; color: #1e293b;">{{ current_status_info.label }}</div>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">Level {{ current_status_info.level }} of 5</div>
+          </div>
+
+          <!-- Available Actions -->
+          {% if status_actions and not is_terminal %}
+            <div style="margin-bottom: 20px;">
+              <div style="font-size: 0.75rem; color: #64748b; font-weight: 600; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+                <i class="fas fa-hand-pointer"></i> Available Actions
+              </div>
+              
+              {% if not submission.tracking_number %}
+                <!-- Warning: Tracking number required -->
+                <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                  <div style="display: flex; align-items: start; gap: 8px;">
+                    <i class="fas fa-exclamation-triangle" style="color: #92400e; margin-top: 2px;"></i>
+                    <div style="font-size: 0.8rem; color: #92400e;">
+                      <strong>Tracking number required</strong><br>
+                      Please assign a tracking number before changing status.
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+              
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                {% for action in status_actions %}
+                  <button type="button" 
+                          class="status-action-btn" 
+                          data-status="{{ action.code }}"
+                          data-label="{{ action.label }}"
+                          data-color="{{ action.color }}"
+                          title="{{ action.description }}"
+                          {% if not submission.tracking_number %}disabled{% endif %}
+                          style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: {% if not submission.tracking_number %}#f1f5f9{% else %}#fff{% endif %}; border: 2px solid #e2e8f0; border-radius: 10px; cursor: {% if not submission.tracking_number %}not-allowed{% else %}pointer{% endif %}; transition: all 0.2s ease; font-size: 0.875rem; font-weight: 600; color: {% if not submission.tracking_number %}#94a3b8{% else %}#1e293b{% endif %}; opacity: {% if not submission.tracking_number %}0.5{% else %}1{% endif %};">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                      <i class="fas fa-arrow-right" style="color: {% if not submission.tracking_number %}#cbd5e1{% else %}#8b5cf6{% endif %};"></i>
+                      {{ action.label }}
+                    </span>
+                    <i class="fas fa-chevron-right" style="color: #cbd5e1; font-size: 0.75rem;"></i>
+                  </button>
+                {% endfor %}
+              </div>
+              <p style="font-size: 0.7rem; color: #94a3b8; margin-top: 12px; margin-bottom: 0;">
+                <i class="fas fa-info-circle"></i> Click an action to proceed with status change
+              </p>
+            </div>
+          {% elif is_terminal %}
+            <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+              <div style="font-size: 0.8rem; color: #475569; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-flag-checkered"></i>
+                <span>Terminal state reached</span>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if not submission.is_locked %}
+        <!-- Tracking Assignment -->
+        {% if not submission.tracking_number %}
+          <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; margin-bottom: 20px;">
+            <div style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); padding: 16px;">
+              <h5 style="font-size: 0.95rem; font-weight: 600; color: white; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-hashtag"></i>
+                Assign Tracking Number
+              </h5>
+            </div>
+            <div style="padding: 20px;">
+              <form method="post" action="{% url 'document_tracking:assign_tracking' submission.id %}" id="trackingForm">
+                {% csrf_token %}
+                
+                <div style="margin-bottom: 16px;">
+                  <label style="font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 8px; display: block;">{{ tracking_form.mode.label }}</label>
+                  {% for radio in tracking_form.mode %}
+                    <div style="margin-bottom: 8px;">
+                      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.875rem; color: #1e293b;">
+                        {{ radio.tag }}
+                        <span>{{ radio.choice_label }}</span>
+                      </label>
+                    </div>
+                  {% endfor %}
+                </div>
+
+                <div id="manualNumberField" style="display: none; margin-bottom: 16px;">
+                  <label style="font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 8px; display: block;">
+                    {{ tracking_form.manual_tracking_number.label }}
+                  </label>
+                  {{ tracking_form.manual_tracking_number }}
+                </div>
+
+                <button type="submit" class="dt-btn dt-btn-primary" style="width: 100%; justify-content: center;">
+                  <i class="fas fa-hashtag"></i>
+                  Assign Tracking Number
+                </button>
+              </form>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Status Change Form -->
+        {% if submission.tracking_number and not is_terminal %}
+          <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; margin-bottom: 20px; transition: all 0.3s ease;" id="status-change-form">
+            <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 16px;">
+              <h5 style="font-size: 0.95rem; font-weight: 600; color: white; margin: 0; display: flex; align-items: center; gap: 8px;" id="status-form-title">
+                <i class="fas fa-exchange-alt"></i>
+                Change Status
+              </h5>
+            </div>
+            <div style="padding: 20px;">
+              {% if status_actions %}
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 16px;" id="status-form-instruction">
+                  Select an action from above, then add optional remarks and submit.
+                </p>
+                <form method="post" action="{% url 'document_tracking:change_status' submission.id %}">
+                  {% csrf_token %}
+                  {{ status_form.new_status }}
+                  
+                  <div style="margin-bottom: 16px;">
+                    <label style="font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 8px; display: block;">
+                      {{ status_form.remarks.label }}
+                    </label>
+                    {{ status_form.remarks }}
+                  </div>
+                  
+                  <button type="submit" class="dt-btn dt-btn-primary" style="width: 100%; justify-content: center; background: #3b82f6; border-color: #3b82f6;">
+                    <i class="fas fa-check"></i>
+                    Confirm Status Change
+                  </button>
+                </form>
+              {% else %}
+                <p style="color: #94a3b8; font-size: 0.875rem; margin: 0;">No status changes available.</p>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% else %}
+        <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 12px; padding: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <i class="fas fa-lock" style="color: #92400e; font-size: 1.5rem;"></i>
+            <div>
+              <div style="font-weight: 600; font-size: 0.875rem; color: #92400e; margin-bottom: 2px;">Record Locked</div>
+              <div style="font-size: 0.75rem; color: #92400e;">This submission is locked and cannot be modified.</div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+/* Timeline Styles */
+.dt-timeline {
+  position: relative;
+}
+
+.dt-timeline-item {
+  position: relative;
+  padding-left: 30px;
+  padding-bottom: 20px;
+}
+
+.dt-timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.dt-timeline-marker {
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #8b5cf6;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #e5e7eb;
+}
+
+.dt-timeline-content {
+  padding-left: 15px;
+  margin-left: 6px;
+  border-left: 2px solid #e5e7eb;
+  padding-bottom: 4px;
+}
+
+.dt-timeline-item:last-child .dt-timeline-content {
+  border-left: 2px solid transparent;
+}
+
+/* Form Styles */
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #1e293b;
+  transition: all 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+input[type="radio"] {
+  accent-color: #8b5cf6;
+}
+
+/* Status Action Button Hover */
+.status-action-btn:hover {
+  border-color: #8b5cf6;
+  background: #f5f3ff;
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
+}
+
+.status-action-btn:active {
+  transform: translateX(2px);
+}
+
+/* Pulse Animation for Status Form */
+@keyframes pulse-border {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(139, 92, 246, 0);
+  }
+}
+
+.pulse-highlight {
+  animation: pulse-border 1.5s ease-in-out 3;
+  border-color: #8b5cf6 !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Handle tracking form mode switching
+  const trackingForm = document.getElementById('trackingForm');
+  if (trackingForm) {
+    const modeRadios = document.querySelectorAll('input[name="mode"]');
+    const manualNumberField = document.getElementById('manualNumberField');
+    const manualNumberInput = document.querySelector('input[name="manual_tracking_number"]');
+    
+    function toggleManualField() {
+      const selectedMode = document.querySelector('input[name="mode"]:checked');
+      if (selectedMode && selectedMode.value === 'manual') {
+        manualNumberField.style.display = 'block';
+        manualNumberInput.required = true;
+      } else {
+        manualNumberField.style.display = 'none';
+        manualNumberInput.required = false;
+        manualNumberInput.value = '';
+      }
+    }
+    
+    modeRadios.forEach(radio => {
+      radio.addEventListener('change', toggleManualField);
+    });
+    
+    toggleManualField();
+  }
+
+  // Handle status action button clicks with animation
+  const statusButtons = document.querySelectorAll('.status-action-btn');
+  
+  statusButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      // Check if button is disabled
+      if (this.disabled) {
+        return; // Do nothing if disabled
+      }
+      
+      const statusCode = this.dataset.status;
+      const statusLabel = this.dataset.label;
+      
+      // Set the hidden input value
+      const statusInput = document.querySelector('input[name="new_status"]');
+      if (statusInput) {
+        statusInput.value = statusCode;
+      }
+      
+      // Update form title
+      const formTitle = document.getElementById('status-form-title');
+      if (formTitle) {
+        formTitle.innerHTML = `<i class="fas fa-arrow-right"></i> Change Status to: ${statusLabel}`;
+      }
+      
+      // Update instruction text
+      const instruction = document.getElementById('status-form-instruction');
+      if (instruction) {
+        instruction.innerHTML = `<strong>Selected:</strong> ${statusLabel}. Add optional remarks below and click confirm.`;
+        instruction.style.color = '#8b5cf6';
+        instruction.style.fontWeight = '600';
+      }
+      
+      // Scroll to form with animation
+      const statusForm = document.getElementById('status-change-form');
+      if (statusForm) {
+        statusForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Add pulse animation
+        setTimeout(() => {
+          statusForm.classList.add('pulse-highlight');
+          setTimeout(() => {
+            statusForm.classList.remove('pulse-highlight');
+          }, 4500);
+        }, 500);
+      }
+    });
+  });
+});
+</script>
+
+<!-- LINK MODALS -->
+<!-- Single Link Modal -->
+<div id="singleLinkModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: white; border-radius: 12px; padding: 0; max-width: 600px; width: 90%; overflow: hidden;">
+    <div style="padding: 1.25rem 1.5rem; background: linear-gradient(135deg, #ede9fe, #ddd6fe); border-bottom: 2px solid #8b5cf6; display: flex; justify-content: space-between; align-items: center;">
+      <h6 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: #5b21b6;" id="singleLinkTitle">
+        <i class="fas fa-link" style="margin-right: 0.5rem;"></i>
+        Link
+      </h6>
+      <button onclick="closeSingleLinkModal()" type="button" style="background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer; padding: 0; line-height: 1;">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div style="padding: 1.5rem;">
+      <div id="singleLinkContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Grouped Links Modal -->
+<div id="groupedLinksModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: white; border-radius: 12px; padding: 0; max-width: 700px; width: 90%; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;">
+    <div style="padding: 1.25rem 1.5rem; background: linear-gradient(135deg, #ede9fe, #ddd6fe); border-bottom: 2px solid #8b5cf6; display: flex; justify-content: space-between; align-items: center;">
+      <h6 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: #5b21b6;" id="groupedLinksTitle">
+        <i class="fas fa-layer-group" style="margin-right: 0.5rem;"></i>
+        Grouped Links
+      </h6>
+      <button onclick="closeGroupedLinksModal()" type="button" style="background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer; padding: 0; line-height: 1;">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div style="margin: 1.5rem; padding: 1rem; background: #dbeafe; border: 1px solid #3b82f6; border-radius: 8px; display: flex; align-items: center; gap: 0.75rem; color: #1e40af;">
+      <i class="fas fa-info-circle" style="font-size: 1.25rem;"></i>
+      <span style="font-size: 0.875rem;">Click any link below to open it in a new tab</span>
+    </div>
+    <div id="groupedLinksContent" style="padding: 0 1.5rem 1.5rem; overflow-y: auto; flex: 1;"></div>
+  </div>
+</div>
+
+<script>
+// Link Modal Functions
+function showSingleLinkModal(attachmentId, linkUrl, linkTitle) {
+  const modal = document.getElementById('singleLinkModal');
+  const title = document.getElementById('singleLinkTitle');
+  const content = document.getElementById('singleLinkContent');
+  
+  title.innerHTML = `<i class="fas fa-link" style="margin-right: 0.5rem;"></i>${linkTitle}`;
+  content.innerHTML = `
+    <a href="${linkUrl}" target="_blank" 
+       style="display: flex; align-items: center; padding: 1rem; background: #f8fafc; border: 2px solid #8b5cf6; border-radius: 10px; text-decoration: none; transition: all 0.2s ease;"
+       onmouseover="this.style.background='#f5f3ff'; this.style.transform='translateX(4px)';"
+       onmouseout="this.style.background='#f8fafc'; this.style.transform='translateX(0)';">
+      <i class="fas fa-external-link-alt" style="color: #8b5cf6; font-size: 1.25rem; margin-right: 1rem;"></i>
+      <div style="flex: 1;">
+        <div style="font-weight: 600; color: #5b21b6; margin-bottom: 0.25rem;">${linkTitle}</div>
+        <div style="font-size: 0.85rem; color: #64748b; word-break: break-all;">${linkUrl}</div>
+      </div>
+    </a>
+  `;
+  
+  modal.style.display = 'flex';
+}
+
+function closeSingleLinkModal() {
+  document.getElementById('singleLinkModal').style.display = 'none';
+}
+
+async function showGroupedLinksModal(groupName, folderId) {
+  const modal = document.getElementById('groupedLinksModal');
+  const title = document.getElementById('groupedLinksTitle');
+  const content = document.getElementById('groupedLinksContent');
+  
+  title.innerHTML = `<i class="fas fa-layer-group" style="margin-right: 0.5rem;"></i>${groupName}`;
+  content.innerHTML = '<div style="text-align: center; padding: 2rem; color: #64748b;"><i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i><div style="margin-top: 1rem;">Loading links...</div></div>';
+  
+  modal.style.display = 'flex';
+  
+  try {
+    const response = await fetch(`/admin/documents/files/grouped-links/${folderId}/${encodeURIComponent(groupName)}/`);
+    const data = await response.json();
+    
+    if (data.links && data.links.length > 0) {
+      let linksHTML = '<div style="display: flex; flex-direction: column; gap: 0.75rem;">';
+      data.links.forEach((link, index) => {
+        linksHTML += `
+          <a href="${link.url}" target="_blank" 
+             style="display: flex; align-items: center; padding: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; transition: all 0.2s ease;"
+             onmouseover="this.style.background='#f5f3ff'; this.style.borderColor='#8b5cf6';"
+             onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#e2e8f0';">
+            <i class="fas fa-external-link-alt" style="color: #8b5cf6; margin-right: 0.75rem;"></i>
+            <div style="flex: 1;">
+              <div style="font-weight: 600; color: #1e293b; margin-bottom: 0.25rem;">Link ${index + 1}</div>
+              <div style="font-size: 0.8rem; color: #64748b; word-break: break-all;">${link.url}</div>
+            </div>
+          </a>
+        `;
+      });
+      linksHTML += '</div>';
+      content.innerHTML = linksHTML;
+    } else {
+      content.innerHTML = '<div style="text-align: center; padding: 2rem; color: #94a3b8;">No links found</div>';
+    }
+  } catch (error) {
+    console.error('Error loading grouped links:', error);
+    content.innerHTML = '<div style="text-align: center; padding: 2rem; color: #ef4444;"><i class="fas fa-exclamation-triangle"></i><div style="margin-top: 0.5rem;">Error loading links</div></div>';
+  }
+}
+
+function closeGroupedLinksModal() {
+  document.getElementById('groupedLinksModal').style.display = 'none';
+}
+
+// Close modals on outside click
+document.getElementById('singleLinkModal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeSingleLinkModal();
+});
+
+document.getElementById('groupedLinksModal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeGroupedLinksModal();
+});
+</script>
+
+<!-- Include File Preview Modal -->
+{% include "admin/page/modals/file_preview_modal.html" %}
+
+{% endblock %}

@@ -1,0 +1,865 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}Admin Dashboard - WISE{% endblock %}
+
+{% block content %}
+<style>
+.main-dash-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.main-dash-header {
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.main-dash-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.main-dash-subtitle {
+  font-size: 1.1rem;
+  color: #64748b;
+}
+
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.module-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.module-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.module-card.doc-tracking {
+  border-color: #8b5cf6;
+}
+
+.module-card.workstate {
+  border-color: #3b82f6;
+}
+
+.module-card.file-manager {
+  border-color: #f59e0b;
+  grid-column: 1 / -1;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.module-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.module-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+}
+
+.module-icon.doc-tracking {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.module-icon.workstate {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.module-icon.file-manager {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.module-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.module-description {
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.module-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  display: block;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.25rem;
+}
+
+.module-workflow {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.workflow-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.workflow-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.workflow-step {
+  padding: 0.4rem 0.6rem;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #475569;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.workflow-arrow {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+/* File Manager Feature Badges */
+.file-manager-features {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.feature-badges {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.75rem;
+}
+
+.feature-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  text-decoration: none;
+  color: inherit;
+}
+
+.feature-badge:hover {
+  transform: translateY(-3px);
+  border-color: #f59e0b;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+  text-decoration: none;
+}
+
+.feature-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.feature-badge:hover .feature-icon {
+  transform: scale(1.1);
+}
+
+.feature-icon.drag-drop {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  animation: dragPulse 2s ease-in-out infinite;
+}
+
+.feature-icon.preview {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  animation: eyeBlink 3s ease-in-out infinite;
+}
+
+.feature-icon.bulk {
+  background: linear-gradient(135deg, #10b981, #059669);
+  animation: checkBounce 2s ease-in-out infinite;
+}
+
+.feature-icon.zip {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  animation: zipCompress 2.5s ease-in-out infinite;
+}
+
+.feature-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  text-align: center;
+}
+
+/* Animations */
+@keyframes dragPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+  }
+}
+
+@keyframes eyeBlink {
+  0%, 90%, 100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes checkBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes zipCompress {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(0.95) rotate(-2deg);
+  }
+  75% {
+    transform: scale(1.05) rotate(2deg);
+  }
+}
+
+/* Workflow Step Badges */
+.doc-tracking-workflow {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+}
+
+.workstate-workflow {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.workflow-step-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.step-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.5rem;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  flex: 1;
+  min-width: 80px;
+  position: relative;
+  text-decoration: none;
+  color: inherit;
+}
+
+.step-badge:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+}
+
+.doc-tracking-workflow .step-badge:hover {
+  border-color: #8b5cf6;
+}
+
+.workstate-workflow .step-badge:hover {
+  border-color: #3b82f6;
+}
+
+.step-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.doc-tracking-workflow .step-icon {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.workstate-workflow .step-icon {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+/* Document Tracking Step Animations */
+.doc-step-1 {
+  animation: plusRotate 2s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.doc-step-2 {
+  animation: inboxShake 2s ease-in-out infinite;
+  animation-delay: 0.4s;
+}
+
+.doc-step-3 {
+  animation: clockTick 2s ease-in-out infinite;
+  animation-delay: 0.8s;
+}
+
+.doc-step-4 {
+  animation: searchZoom 2s ease-in-out infinite;
+  animation-delay: 1.2s;
+}
+
+.doc-step-5 {
+  animation: checkPop 2s ease-in-out infinite;
+  animation-delay: 1.6s;
+}
+
+/* Workstate Step Animations */
+.work-step-1 {
+  animation: calendarFlip 2s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.work-step-2 {
+  animation: userBounce 2s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+.work-step-3 {
+  animation: chartGrow 2s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.work-step-4 {
+  animation: clipboardCheck 2s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+.step-badge:hover .step-icon {
+  transform: scale(1.15);
+}
+
+.step-name {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #475569;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Workflow Animations */
+@keyframes plusRotate {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(90deg) scale(1.1);
+  }
+}
+
+@keyframes inboxShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes clockTick {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(15deg);
+  }
+  75% {
+    transform: rotate(-15deg);
+  }
+}
+
+@keyframes searchZoom {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes checkPop {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+@keyframes calendarFlip {
+  0%, 100% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(180deg);
+  }
+}
+
+@keyframes userBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes chartGrow {
+  0%, 100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.2);
+  }
+}
+
+@keyframes clipboardCheck {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-10deg) scale(1.05);
+  }
+  75% {
+    transform: rotate(10deg) scale(1.05);
+  }
+}
+
+@keyframes docPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(139, 92, 246, 0);
+  }
+}
+
+@keyframes workPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+  }
+}
+
+.module-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.module-btn {
+  flex: 1;
+  min-width: 140px;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.module-btn-primary {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+}
+
+.module-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.3);
+  color: white;
+}
+
+.module-btn-secondary {
+  background: white;
+  color: #8b5cf6;
+  border: 2px solid #8b5cf6;
+}
+
+.module-btn-secondary:hover {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.module-btn.workstate-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.module-btn.workstate-primary:hover {
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+}
+
+.module-btn.workstate-secondary {
+  color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.module-btn.workstate-secondary:hover {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.module-btn.file-manager-primary {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.module-btn.file-manager-primary:hover {
+  box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3);
+}
+
+.module-btn.file-manager-secondary {
+  color: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.module-btn.file-manager-secondary:hover {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+@media (max-width: 768px) {
+  .modules-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .main-dash-title {
+    font-size: 2rem;
+  }
+  
+  .module-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+</style>
+
+<div class="main-dash-container">
+  <div class="main-dash-header">
+    <h1 class="main-dash-title">
+      <i class="fas fa-th-large"></i> Admin Dashboard
+    </h1>
+    <p class="main-dash-subtitle">Central hub for managing all system modules</p>
+  </div>
+
+  <div class="modules-grid">
+    <!-- Document Tracking Module -->
+    <div class="module-card doc-tracking">
+      <div class="module-header">
+        <div class="module-icon doc-tracking">
+          <i class="fas fa-file-alt"></i>
+        </div>
+        <div>
+          <h2 class="module-title">Document Tracking</h2>
+        </div>
+      </div>
+
+      <p class="module-description">
+        Manage document submissions, track status through approval workflows, and maintain comprehensive audit trails for all submissions.
+      </p>
+
+      <div class="module-stats">
+        <div class="stat-item">
+          <span class="stat-value">{{ doc_tracking_stats.total_submissions }}</span>
+          <span class="stat-label">Total</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ doc_tracking_stats.pending_tracking }}</span>
+          <span class="stat-label">Pending</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ doc_tracking_stats.under_review }}</span>
+          <span class="stat-label">In Review</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ doc_tracking_stats.approved }}</span>
+          <span class="stat-label">Approved</span>
+        </div>
+      </div>
+
+      <div class="module-workflow doc-tracking-workflow">
+        <div class="workflow-title">Workflow Process</div>
+        <div class="workflow-step-badges">
+          <a href="{% url 'document_tracking:submit_document' %}" class="step-badge" title="User submits a new document">
+            <div class="step-icon doc-step-1">
+              <i class="fas fa-plus-circle"></i>
+            </div>
+            <span class="step-name">Submission Created</span>
+          </a>
+          <a href="{% url 'document_tracking:admin_submissions' %}" class="step-badge" title="Admin receives the submission">
+            <div class="step-icon doc-step-2">
+              <i class="fas fa-inbox"></i>
+            </div>
+            <span class="step-name">Received</span>
+          </a>
+          <a href="{% url 'document_tracking:admin_submissions' %}?status=pending_tracking" class="step-badge" title="Awaiting tracking assignment">
+            <div class="step-icon doc-step-3">
+              <i class="fas fa-clock"></i>
+            </div>
+            <span class="step-name">Pending Tracking</span>
+          </a>
+          <a href="{% url 'document_tracking:admin_submissions' %}?status=under_review" class="step-badge" title="Under admin review">
+            <div class="step-icon doc-step-4">
+              <i class="fas fa-search"></i>
+            </div>
+            <span class="step-name">In Review</span>
+          </a>
+          <a href="{% url 'document_tracking:admin_submissions' %}?status=approved" class="step-badge" title="Final decision made">
+            <div class="step-icon doc-step-5">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <span class="step-name">Approved/Rejected</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="module-actions">
+        <a href="{% url 'document_tracking:admin_submissions' %}" class="module-btn module-btn-secondary">
+          <i class="fas fa-list"></i> View Submissions
+        </a>
+        <a href="{% url 'document_tracking:admin_overview' %}" class="module-btn module-btn-primary">
+          <i class="fas fa-tachometer-alt"></i> Go to Overview
+        </a>
+      </div>
+    </div>
+
+    <!-- Workstate Module -->
+    <div class="module-card workstate">
+      <div class="module-header">
+        <div class="module-icon workstate">
+          <i class="fas fa-tasks"></i>
+        </div>
+        <div>
+          <h2 class="module-title">Workstate Management</h2>
+        </div>
+      </div>
+
+      <p class="module-description">
+        Manage work cycles, assign tasks to teams, track progress, and review completed work items across the organization.
+      </p>
+
+      <div class="module-stats">
+        <div class="stat-item">
+          <span class="stat-value">{{ workstate_stats.active_workcycles }}</span>
+          <span class="stat-label">Active Cycles</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ workstate_stats.total_work_items }}</span>
+          <span class="stat-label">Work Items</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ workstate_stats.pending_reviews }}</span>
+          <span class="stat-label">Pending Reviews</span>
+        </div>
+      </div>
+
+      <div class="module-workflow workstate-workflow">
+        <div class="workflow-title">Workflow Process</div>
+        <div class="workflow-step-badges">
+          <a href="{% url 'admin_app:workcycles' %}" class="step-badge" title="Create a new work cycle">
+            <div class="step-icon work-step-1">
+              <i class="fas fa-calendar-plus"></i>
+            </div>
+            <span class="step-name">Create Workcycle</span>
+          </a>
+          <a href="{% url 'admin_app:workcycles' %}" class="step-badge" title="Assign tasks to team members">
+            <div class="step-icon work-step-2">
+              <i class="fas fa-user-plus"></i>
+            </div>
+            <span class="step-name">Assign Tasks</span>
+          </a>
+          <a href="{% url 'admin_app:completed-work-summary' %}" class="step-badge" title="Monitor work progress">
+            <div class="step-icon work-step-3">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <span class="step-name">Track Progress</span>
+          </a>
+          <a href="{% url 'admin_app:completed-work-summary' %}" class="step-badge" title="Review and complete work">
+            <div class="step-icon work-step-4">
+              <i class="fas fa-clipboard-check"></i>
+            </div>
+            <span class="step-name">Review & Complete</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="module-actions">
+        <a href="{% url 'admin_app:workcycles' %}" class="module-btn module-btn-secondary workstate-secondary">
+          <i class="fas fa-sync-alt"></i> Manage Workcycles
+        </a>
+        <a href="{% url 'admin_app:workstate-overview' %}" class="module-btn module-btn-primary workstate-primary">
+          <i class="fas fa-tachometer-alt"></i> Go to Overview
+        </a>
+      </div>
+    </div>
+
+    <!-- File Manager Module -->
+    <div class="module-card file-manager">
+      <div class="module-header">
+        <div class="module-icon file-manager">
+          <i class="fas fa-folder-open"></i>
+        </div>
+        <div>
+          <h2 class="module-title">File Manager</h2>
+        </div>
+      </div>
+
+      <p class="module-description">
+        Organize and manage all system files with drag-and-drop functionality, bulk operations, file preview, and structured folder hierarchies.
+      </p>
+
+      <div class="module-stats">
+        <div class="stat-item">
+          <span class="stat-value">{{ file_manager_stats.total_files }}</span>
+          <span class="stat-label">Total Files</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ file_manager_stats.total_folders }}</span>
+          <span class="stat-label">Folders</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ file_manager_stats.total_links }}</span>
+          <span class="stat-label">Links</span>
+        </div>
+      </div>
+
+      <div class="module-workflow file-manager-features">
+        <div class="workflow-title">Key Features</div>
+        <div class="feature-badges">
+          <a href="{% url 'admin_app:file-manager' %}" class="feature-badge" title="Move files and folders with intuitive drag-and-drop">
+            <div class="feature-icon drag-drop">
+              <i class="fas fa-hand-pointer"></i>
+            </div>
+            <span class="feature-name">Drag & Drop</span>
+          </a>
+          <a href="{% url 'admin_app:file-manager' %}" class="feature-badge" title="Preview documents, images, PDFs, and Office files">
+            <div class="feature-icon preview">
+              <i class="fas fa-eye"></i>
+            </div>
+            <span class="feature-name">File Preview</span>
+          </a>
+          <a href="{% url 'admin_app:routed-documents' %}" class="feature-badge" title="Select multiple files for move, delete, or download">
+            <div class="feature-icon bulk">
+              <i class="fas fa-check-double"></i>
+            </div>
+            <span class="feature-name">Bulk Operations</span>
+          </a>
+          <a href="{% url 'admin_app:workstate-assets' %}" class="feature-badge" title="Download multiple files as compressed ZIP archive">
+            <div class="feature-icon zip">
+              <i class="fas fa-file-archive"></i>
+            </div>
+            <span class="feature-name">ZIP Download</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="module-actions">
+        <a href="{% url 'admin_app:routed-documents' %}" class="module-btn module-btn-secondary file-manager-secondary">
+          <i class="fas fa-route"></i> Routed Documents
+        </a>
+        <a href="{% url 'admin_app:workstate-assets' %}" class="module-btn module-btn-secondary file-manager-secondary">
+          <i class="fas fa-layer-group"></i> Workstate Assets
+        </a>
+        <a href="{% url 'admin_app:file-manager' %}" class="module-btn module-btn-primary file-manager-primary">
+          <i class="fas fa-folder-open"></i> Open File Manager
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

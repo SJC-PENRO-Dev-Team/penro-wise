@@ -1,0 +1,577 @@
+/**
+ * Document Tracking Admin UI Styles
+ * Matches Workstate design system
+ * Font: Montserrat (local)
+ */
+
+/* =============================
+   TYPOGRAPHY - MONTSERRAT
+============================= */
+@font-face {
+  font-family: 'Montserrat';
+  src: url('../fonts/Montserrat-VariableFont_wght.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  src: url('../fonts/Montserrat-Italic-VariableFont_wght.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: italic;
+}
+
+/* Apply Montserrat to Document Tracking pages */
+.dt-page {
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* =============================
+   STATUS COLOR SYSTEM
+============================= */
+:root {
+  --dt-pending: #f59e0b;
+  --dt-pending-bg: #fef3c7;
+  --dt-pending-border: #fde68a;
+  
+  --dt-received: #3b82f6;
+  --dt-received-bg: #dbeafe;
+  --dt-received-border: #bfdbfe;
+  
+  --dt-review: #8b5cf6;
+  --dt-review-bg: #ede9fe;
+  --dt-review-border: #ddd6fe;
+  
+  --dt-compliance: #ec4899;
+  --dt-compliance-bg: #fce7f3;
+  --dt-compliance-border: #fbcfe8;
+  
+  --dt-returned: #f97316;
+  --dt-returned-bg: #ffedd5;
+  --dt-returned-border: #fed7aa;
+  
+  --dt-approved: #10b981;
+  --dt-approved-bg: #d1fae5;
+  --dt-approved-border: #a7f3d0;
+  
+  --dt-rejected: #ef4444;
+  --dt-rejected-bg: #fee2e2;
+  --dt-rejected-border: #fecaca;
+  
+  --dt-archived: #64748b;
+  --dt-archived-bg: #f1f5f9;
+  --dt-archived-border: #e2e8f0;
+}
+
+/* =============================
+   UNIFIED HEADER (MATCHES WORKSTATE)
+============================= */
+.dt-unified-header {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+/* TOP ROW */
+.dt-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  min-height: 50px;
+}
+
+.dt-title-section {
+  flex: 1;
+}
+
+.dt-main-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.01em;
+}
+
+.dt-main-title i {
+  color: #8b5cf6;
+  font-size: 1.1rem;
+}
+
+.dt-subtitle {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #64748b;
+  margin: 0;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+}
+
+/* ACTION BUTTONS */
+.dt-action-buttons-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.dt-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  height: 36px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dt-btn-primary {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: white;
+  font-weight: 700;
+}
+
+.dt-btn-primary:hover {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(139, 92, 246, 0.25);
+}
+
+.dt-btn-secondary {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+.dt-btn-secondary:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1);
+}
+
+/* BOTTOM ROW - FILTERS & SEARCH */
+.dt-header-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  min-height: 50px;
+}
+
+/* FILTERS SECTION */
+.dt-filters-section {
+  flex: 1;
+  min-width: 350px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dt-section-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+.dt-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dt-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 6px 14px;
+  text-decoration: none;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  height: 36px;
+}
+
+.dt-filter-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  transform: translateY(-1px);
+}
+
+.dt-filter-btn.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: white;
+  font-weight: 700;
+}
+
+.dt-filter-count {
+  background: rgba(255, 255, 255, 0.3);
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.dt-filter-btn.active .dt-filter-count {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* SEARCH & SORT */
+.dt-search-sort-section {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dt-search-form {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dt-search-input {
+  width: 240px;
+  height: 36px;
+  padding: 0 12px 0 36px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: #1e293b;
+  transition: all 0.2s ease;
+}
+
+.dt-search-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.dt-search-icon {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+/* =============================
+   STATUS BADGES
+============================= */
+.dt-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid;
+}
+
+.dt-status-pending_tracking {
+  background: var(--dt-pending-bg);
+  color: #92400e;
+  border-color: var(--dt-pending-border);
+}
+
+.dt-status-received {
+  background: var(--dt-received-bg);
+  color: #1e40af;
+  border-color: var(--dt-received-border);
+}
+
+.dt-status-under_review {
+  background: var(--dt-review-bg);
+  color: #6b21a8;
+  border-color: var(--dt-review-border);
+}
+
+.dt-status-for_compliance {
+  background: var(--dt-compliance-bg);
+  color: #9f1239;
+  border-color: var(--dt-compliance-border);
+}
+
+.dt-status-returned_to_sender {
+  background: var(--dt-returned-bg);
+  color: #9a3412;
+  border-color: var(--dt-returned-border);
+}
+
+.dt-status-approved {
+  background: var(--dt-approved-bg);
+  color: #065f46;
+  border-color: var(--dt-approved-border);
+}
+
+.dt-status-rejected {
+  background: var(--dt-rejected-bg);
+  color: #991b1b;
+  border-color: var(--dt-rejected-border);
+}
+
+.dt-status-archived {
+  background: var(--dt-archived-bg);
+  color: #475569;
+  border-color: var(--dt-archived-border);
+}
+
+/* =============================
+   DASHBOARD STATS CARDS
+============================= */
+.dt-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.dt-stat-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.dt-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.dt-stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.dt-stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.dt-stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.dt-stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* =============================
+   SUBMISSIONS LIST
+============================= */
+.dt-submissions-list {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.dt-submission-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.dt-submission-item:last-child {
+  border-bottom: none;
+}
+
+.dt-submission-item:hover {
+  background: #f8fafc;
+}
+
+.dt-submission-id {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #8b5cf6;
+  background: #f5f3ff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  min-width: 60px;
+  text-align: center;
+}
+
+.dt-submission-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.dt-submission-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dt-submission-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.dt-submission-meta i {
+  font-size: 0.65rem;
+}
+
+.dt-submission-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* =============================
+   VIEW ALL BUTTON
+============================= */
+.dt-view-all-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  margin-top: 16px;
+}
+
+.dt-view-all-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  transform: translateY(-1px);
+}
+
+/* =============================
+   RESPONSIVE
+============================= */
+@media (max-width: 770px) {
+  .dt-stats-grid {
+    gap: 5px;
+  }
+  
+  .dt-stat-card {
+    padding: 5px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dt-header-top {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .dt-action-buttons-top {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .dt-header-bottom {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .dt-filters-section {
+    min-width: 100%;
+  }
+  
+  .dt-search-sort-section {
+    width: 100%;
+  }
+  
+  .dt-search-input {
+    width: 100%;
+  }
+  
+  .dt-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .dt-unified-header {
+    padding: 12px 16px;
+  }
+  
+  .dt-main-title {
+    font-size: 1.1rem;
+  }
+  
+  .dt-subtitle {
+    font-size: 0.75rem;
+  }
+  
+  .dt-btn {
+    font-size: 0.7rem;
+    padding: 5px 10px;
+    height: 32px;
+  }
+  
+  .dt-filter-btn {
+    font-size: 0.7rem;
+    padding: 5px 10px;
+    height: 32px;
+  }
+}

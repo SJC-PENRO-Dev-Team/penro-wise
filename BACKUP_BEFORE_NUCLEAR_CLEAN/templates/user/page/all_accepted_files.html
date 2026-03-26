@@ -1,0 +1,471 @@
+{% extends "user/layout/base.html" %}
+{% load static %}
+
+{% block title %}All Accepted Files{% endblock %}
+{% block page_title %}All Accepted Files{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="files-header">
+  <div class="files-header-left">
+    <a href="{% url 'user_app:documents' %}" class="files-back-btn">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+    <div>
+      <h4 class="files-title">
+        <i class="fas fa-check-circle me-2 text-success"></i>All Accepted Files
+      </h4>
+      <p class="files-subtitle">
+        <span id="fileCount">{{ total_files }}</span> accepted files
+      </p>
+    </div>
+  </div>
+  <div class="files-header-right">
+    <span class="files-badge view-only">
+      <i class="fas fa-eye me-1"></i>View Only
+    </span>
+  </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="files-filter-bar">
+  <!-- Search -->
+  <div class="files-search">
+    <i class="fas fa-search"></i>
+    <input type="text" id="filesSearchInput" placeholder="Search files..." value="{{ active.search }}">
+  </div>
+  
+  <!-- Filters -->
+  <div class="files-filters">
+    <select id="filterYear" class="files-filter-select">
+      <option value="">All Years</option>
+      {% for y in filters.years %}
+        <option value="{{ y }}" {% if active.year|stringformat:"s" == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    
+    <select id="filterType" class="files-filter-select">
+      <option value="">All Types</option>
+      {% for val, label in filters.attachment_types %}
+        <option value="{{ val }}" {% if active.type == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    
+    <select id="filterDivision" class="files-filter-select">
+      <option value="">All Divisions</option>
+      {% for d in filters.divisions %}
+        <option value="{{ d }}" {% if active.division == d %}selected{% endif %}>{{ d }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  
+  <!-- Sort -->
+  <div class="files-sort">
+    <span class="files-sort-label">Sort:</span>
+    <select id="filterSort" class="files-filter-select">
+      <option value="date_desc" {% if active.sort == 'date_desc' %}selected{% endif %}>Newest First</option>
+      <option value="date_asc" {% if active.sort == 'date_asc' %}selected{% endif %}>Oldest First</option>
+      <option value="name_asc" {% if active.sort == 'name_asc' %}selected{% endif %}>Name A-Z</option>
+      <option value="name_desc" {% if active.sort == 'name_desc' %}selected{% endif %}>Name Z-A</option>
+    </select>
+  </div>
+  
+  <!-- Reset -->
+  <button type="button" id="resetFilters" class="files-reset-btn">
+    <i class="fas fa-times"></i> Reset
+  </button>
+</div>
+
+<!-- Files Table -->
+<div class="files-table-container" id="filesContainer">
+  {% include "user/page/partials/_all_files_table.html" %}
+</div>
+
+<!-- Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('filesContainer');
+  const searchInput = document.getElementById('filesSearchInput');
+  const filterYear = document.getElementById('filterYear');
+  const filterType = document.getElementById('filterType');
+  const filterDivision = document.getElementById('filterDivision');
+  const filterSort = document.getElementById('filterSort');
+  const resetBtn = document.getElementById('resetFilters');
+  const fileCountEl = document.getElementById('fileCount');
+  
+  let debounceTimer;
+  
+  function fetchFiles() {
+    const params = new URLSearchParams();
+    
+    if (searchInput.value) params.set('q', searchInput.value);
+    if (filterYear.value) params.set('year', filterYear.value);
+    if (filterType.value) params.set('type', filterType.value);
+    if (filterDivision.value) params.set('division', filterDivision.value);
+    if (filterSort.value) params.set('sort', filterSort.value);
+    
+    container.classList.add('loading');
+    
+    fetch(`{% url 'user_app:all-accepted-files' %}?${params.toString()}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+      container.innerHTML = data.html;
+      fileCountEl.textContent = data.count;
+      
+      const newUrl = params.toString() 
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    })
+    .finally(() => {
+      container.classList.remove('loading');
+    });
+  }
+  
+  function debounce(fn, delay = 300) {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(fn, delay);
+  }
+  
+  searchInput.addEventListener('input', () => debounce(fetchFiles));
+  filterYear.addEventListener('change', fetchFiles);
+  filterType.addEventListener('change', fetchFiles);
+  filterDivision.addEventListener('change', fetchFiles);
+  filterSort.addEventListener('change', fetchFiles);
+  
+  resetBtn.addEventListener('click', function() {
+    searchInput.value = '';
+    filterYear.value = '';
+    filterType.value = '';
+    filterDivision.value = '';
+    filterSort.value = 'date_desc';
+    fetchFiles();
+  });
+});
+</script>
+
+<!-- Styles -->
+<style>
+:root {
+  --cyan-50: #ecfeff;
+  --cyan-100: #cffafe;
+  --cyan-500: #06b6d4;
+  --cyan-600: #0891b2;
+  --cyan-700: #0e7490;
+  --muted-50: #f9fafb;
+  --muted-100: #f3f4f6;
+  --muted-200: #e5e7eb;
+  --muted-400: #9ca3af;
+  --muted-500: #6b7280;
+  --muted-600: #4b5563;
+  --muted-700: #374151;
+  --muted-800: #1f2937;
+}
+
+.files-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.files-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.files-header-right {
+  display: flex;
+  align-items: center;
+}
+
+.files-back-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--muted-100);
+  color: var(--muted-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.files-back-btn:hover {
+  background: var(--cyan-100);
+  color: var(--cyan-700);
+}
+
+.files-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--muted-800);
+  margin: 0;
+}
+
+.files-subtitle {
+  font-size: 0.85rem;
+  color: var(--muted-500);
+  margin: 4px 0 0 0;
+}
+
+.files-badge.view-only {
+  background: var(--cyan-100);
+  color: var(--cyan-700);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Filter Bar */
+.files-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--muted-200);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.files-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--muted-50);
+  border: 1px solid var(--muted-200);
+  border-radius: 8px;
+  padding: 8px 14px;
+  min-width: 250px;
+}
+
+.files-search i { color: var(--muted-400); }
+
+.files-search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.85rem;
+  width: 100%;
+  color: var(--muted-700);
+}
+
+.files-search input::placeholder { color: var(--muted-400); }
+
+.files-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.files-filter-select {
+  padding: 8px 12px;
+  border: 1px solid var(--muted-200);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--muted-600);
+  background: #fff;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.files-filter-select:focus {
+  outline: none;
+  border-color: var(--cyan-500);
+}
+
+.files-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.files-sort-label {
+  font-size: 0.8rem;
+  color: var(--muted-500);
+}
+
+.files-reset-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--muted-200);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--muted-600);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.files-reset-btn:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+/* Table Container */
+.files-table-container {
+  background: #fff;
+  border: 1px solid var(--muted-200);
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 400px;
+  position: relative;
+}
+
+.files-table-container.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.files-table-container.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--muted-200);
+  border-top-color: var(--cyan-500);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Table Styles */
+.files-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.files-table th {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--muted-500);
+  border-bottom: 1px solid var(--muted-200);
+  padding: 12px 16px;
+  text-align: left;
+  white-space: nowrap;
+  background: var(--muted-50);
+}
+
+.files-table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--muted-100);
+  font-size: 0.85rem;
+  color: var(--muted-700);
+}
+
+.files-table tr:hover {
+  background: var(--muted-50);
+}
+
+.file-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  color: var(--muted-800);
+}
+
+.file-icon {
+  font-size: 1.25rem;
+}
+
+.file-type-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.file-type-badge.matrix_a { background: #d1fae5; color: #059669; }
+.file-type-badge.matrix_b { background: #dbeafe; color: #2563eb; }
+.file-type-badge.mov { background: #fee2e2; color: #dc2626; }
+.file-type-badge.other { background: var(--muted-100); color: var(--muted-600); }
+
+.file-meta {
+  font-size: 0.75rem;
+  color: var(--muted-400);
+}
+
+.file-download-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--cyan-50);
+  color: var(--cyan-600);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.file-download-btn:hover {
+  background: var(--cyan-500);
+  color: #fff;
+}
+
+.files-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted-500);
+}
+
+.files-empty i {
+  font-size: 48px;
+  color: var(--muted-300);
+  margin-bottom: 16px;
+}
+
+.files-empty h5 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted-600);
+  margin-bottom: 8px;
+}
+
+.files-empty p {
+  font-size: 0.85rem;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .files-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .files-search { min-width: 100%; }
+  .files-filters { width: 100%; }
+  .files-sort { margin-left: 0; width: 100%; justify-content: space-between; }
+}
+
+@media (max-width: 768px) {
+  .files-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .files-filter-select { min-width: calc(50% - 4px); }
+  .files-table { font-size: 0.8rem; }
+  .files-table th, .files-table td { padding: 10px 12px; }
+}
+</style>
+
+{% endblock %}

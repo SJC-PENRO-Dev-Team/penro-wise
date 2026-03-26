@@ -1,0 +1,894 @@
+{% extends base_layout %}
+{% load static %}
+
+{% block title %}Submit Document - Document Tracking{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/document-tracking.css' %}">
+
+<div class="dt-page">
+  <!-- BACK BUTTON (TOP RIGHT) -->
+  <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+    <a href="{% url 'document_tracking:my_submissions' %}" class="dt-btn dt-btn-secondary">
+      <i class="fas fa-arrow-left"></i>
+      Back to My Submissions
+    </a>
+  </div>
+
+  <!-- FORM CONTAINER -->
+  <div style="max-width: 800px; margin: 0 auto;">
+    <div class="dt-submit-form-card">
+      <!-- FORM HEADER INSIDE CARD -->
+      <div style="margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #e5e7eb;">
+        <h3 style="font-size: 1.5rem; font-weight: 700; color: #1e293b; margin: 0 0 8px 0; display: flex; align-items: center; gap: 12px;">
+          <i class="fas fa-file-upload" style="color: #8b5cf6;"></i>
+          Submit New Document
+        </h3>
+        <p style="font-size: 0.95rem; color: #64748b; margin: 0;">
+          Fill out the form below to submit your document for tracking
+        </p>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" id="submitForm">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+          <div class="dt-alert dt-alert-error">
+            <i class="fas fa-exclamation-circle"></i>
+            <div>{{ form.non_field_errors }}</div>
+          </div>
+        {% endif %}
+
+        <!-- DOCUMENT TITLE -->
+        <div class="dt-form-group">
+          <label for="{{ form.title.id_for_label }}" class="dt-form-label">
+            <i class="fas fa-heading"></i>
+            Document Title
+            <span class="dt-required">*</span>
+          </label>
+          {{ form.title }}
+          {% if form.title.errors %}
+            <div class="dt-form-error">
+              <i class="fas fa-exclamation-triangle"></i>
+              {{ form.title.errors.0 }}
+            </div>
+          {% endif %}
+          {% if form.title.help_text %}
+            <div class="dt-form-help">{{ form.title.help_text }}</div>
+          {% endif %}
+        </div>
+
+        <!-- DOCUMENT TYPE -->
+        <div class="dt-form-group">
+          <label for="{{ form.doc_type.id_for_label }}" class="dt-form-label">
+            <i class="fas fa-tag"></i>
+            Document Type
+            <span class="dt-required">*</span>
+          </label>
+          {{ form.doc_type }}
+          {% if form.doc_type.errors %}
+            <div class="dt-form-error">
+              <i class="fas fa-exclamation-triangle"></i>
+              {{ form.doc_type.errors.0 }}
+            </div>
+          {% endif %}
+          {% if form.doc_type.help_text %}
+            <div class="dt-form-help">
+              <i class="fas fa-info-circle"></i>
+              {{ form.doc_type.help_text }}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- PURPOSE -->
+        <div class="dt-form-group">
+          <label for="{{ form.purpose.id_for_label }}" class="dt-form-label">
+            <i class="fas fa-bullseye"></i>
+            Purpose
+            <span class="dt-required">*</span>
+          </label>
+          {{ form.purpose }}
+          {% if form.purpose.errors %}
+            <div class="dt-form-error">
+              <i class="fas fa-exclamation-triangle"></i>
+              {{ form.purpose.errors.0 }}
+            </div>
+          {% endif %}
+          {% if form.purpose.help_text %}
+            <div class="dt-form-help">{{ form.purpose.help_text }}</div>
+          {% endif %}
+        </div>
+
+        <!-- FILE UPLOAD & LINK ATTACHMENT -->
+        <div class="dt-form-group">
+          <label class="dt-form-label">
+            <i class="fas fa-paperclip"></i>
+            Attachments
+            <span class="dt-required">*</span>
+          </label>
+          <p class="dt-form-help" style="margin-top: 0; margin-bottom: 12px;">
+            Upload files or attach links to external documents (at least one required)
+          </p>
+          
+          <!-- UPLOAD OPTIONS -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <!-- Upload Files Button -->
+            <div class="dt-file-upload-area" id="fileUploadArea" style="padding: 24px 16px;">
+              <div class="dt-file-upload-icon" style="font-size: 2rem; margin-bottom: 8px;">
+                <i class="fas fa-cloud-upload-alt"></i>
+              </div>
+              <div class="dt-file-upload-text" style="font-size: 0.875rem;">
+                <strong>Upload Files</strong>
+              </div>
+              <div class="dt-file-upload-hint" style="font-size: 0.75rem;">
+                Click or drag & drop
+              </div>
+              <input type="file" name="files" id="{{ form.files.id_for_label }}" class="dt-file-input" multiple>
+            </div>
+            
+            <!-- Attach Link Button -->
+            <div class="dt-link-attach-area" onclick="openLinkModal()" style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 24px 16px; text-align: center; background: #f8fafc; cursor: pointer; transition: all 0.3s ease;">
+              <div style="font-size: 2rem; color: #8b5cf6; margin-bottom: 8px;">
+                <i class="fas fa-link"></i>
+              </div>
+              <div style="font-size: 0.875rem; color: #475569; margin-bottom: 4px;">
+                <strong style="color: #8b5cf6;">Attach Links</strong>
+              </div>
+              <div style="font-size: 0.75rem; color: #94a3b8;">
+                Add external URLs
+              </div>
+            </div>
+          </div>
+          
+          <!-- File List -->
+          <div id="fileList" class="dt-file-list"></div>
+          
+          <!-- Link List -->
+          <div id="linkList" class="dt-file-list"></div>
+          
+          <!-- Hidden inputs for links -->
+          <div id="linkInputsContainer"></div>
+          
+          {% if form.files.errors %}
+            <div class="dt-form-error">
+              <i class="fas fa-exclamation-triangle"></i>
+              {{ form.files.errors.0 }}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- INFO BOX -->
+        <div class="dt-alert dt-alert-info">
+          <i class="fas fa-info-circle"></i>
+          <div>
+            <strong>What happens next?</strong>
+            <p style="margin: 4px 0 0 0; font-size: 0.85rem;">After submission, your document will be pending tracking number assignment by an administrator. You'll receive email notifications as your document progresses through the workflow.</p>
+          </div>
+        </div>
+
+        <!-- FORM ACTIONS -->
+        <div class="dt-form-actions">
+          <a href="{% url 'document_tracking:my_submissions' %}" class="dt-btn dt-btn-secondary">
+            <i class="fas fa-times"></i>
+            Cancel
+          </a>
+          <button type="submit" class="dt-btn dt-btn-primary" id="submitBtn">
+            <i class="fas fa-paper-plane"></i>
+            Submit Document
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- LINK MODAL -->
+<div id="linkModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: white; border-radius: 12px; padding: 0; max-width: 600px; width: 90%; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;">
+    <!-- Header -->
+    <div style="padding: 1.25rem 1.5rem; background: linear-gradient(135deg, #ede9fe, #ddd6fe); border-bottom: 2px solid #8b5cf6; display: flex; justify-content: space-between; align-items: center;">
+      <h6 style="margin: 0; font-size: 1.1rem; font-weight: 600; color: #5b21b6;">
+        <i class="fas fa-link" style="margin-right: 0.5rem;"></i>
+        Attach Links
+      </h6>
+      <button onclick="closeLinkModal()" type="button" style="background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer; padding: 0; line-height: 1;">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <!-- Body -->
+    <div style="padding: 1.5rem; overflow-y: auto; flex: 1;">
+      <!-- Title/Name Field -->
+      <div style="margin-bottom: 1.5rem;">
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; font-size: 0.9rem;">
+          <i class="fas fa-tag" style="margin-right: 0.25rem;"></i>
+          Title/Name
+          <span style="color: #ef4444;">*</span>
+        </label>
+        <input type="text" id="linkTitle" placeholder="e.g., Project Documents, Reference Materials" 
+               style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; font-family: 'Montserrat', sans-serif;"
+               autocomplete="off">
+        <small style="display: block; margin-top: 0.5rem; color: #64748b; font-size: 0.8rem;">
+          This will be displayed as the item name
+        </small>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0;">
+      
+      <!-- Link URLs -->
+      <div id="modalLinkInputsContainer">
+        <div class="modal-link-input-group" style="margin-bottom: 1rem;">
+          <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; font-size: 0.9rem;">
+            Link URL 1
+            <span style="color: #ef4444;">*</span>
+          </label>
+          <input type="url" class="modal-link-url" placeholder="example.com or https://example.com/document" 
+                 style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; font-family: 'Montserrat', sans-serif;"
+                 autocomplete="off">
+          <small style="display: block; margin-top: 0.5rem; color: #64748b; font-size: 0.75rem;">
+            <i class="fas fa-info-circle"></i>
+            Enter a domain (e.g., google.com) or full URL. Protocol (https://) will be added automatically.
+          </small>
+        </div>
+      </div>
+      
+      <button type="button" onclick="addModalLinkInput()" 
+              style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; font-size: 0.875rem; color: #3b82f6; background: white; border: 1px solid #3b82f6; border-radius: 8px; cursor: pointer; margin-bottom: 1rem; font-family: 'Montserrat', sans-serif; font-weight: 600;">
+        <i class="fas fa-plus"></i>
+        Add Another Link
+      </button>
+    </div>
+    
+    <!-- Footer -->
+    <div style="padding: 1rem 1.5rem; border-top: 1px solid #e5e7eb; background: #f8fafc; display: flex; justify-content: flex-end; gap: 0.75rem;">
+      <button type="button" onclick="closeLinkModal()" 
+              style="padding: 0.6rem 1.25rem; font-size: 0.875rem; color: #475569; background: white; border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; font-family: 'Montserrat', sans-serif; font-weight: 600;">
+        Cancel
+      </button>
+      <button type="button" onclick="submitModalLinks()" 
+              style="padding: 0.6rem 1.25rem; font-size: 0.875rem; font-weight: 600; color: white; background: #8b5cf6; border: none; border-radius: 8px; cursor: pointer; font-family: 'Montserrat', sans-serif;">
+        <i class="fas fa-save" style="margin-right: 0.35rem;"></i>
+        Save Links
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Submit Form Styles */
+.dt-submit-form-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 32px;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
+}
+
+.dt-form-group {
+  margin-bottom: 24px;
+}
+
+.dt-form-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.dt-form-label i {
+  color: #8b5cf6;
+  font-size: 0.85rem;
+}
+
+.dt-required {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.dt-form-group input[type="text"],
+.dt-form-group select,
+.dt-form-group textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  color: #1e293b;
+  transition: all 0.2s ease;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.dt-form-group input[type="text"]:focus,
+.dt-form-group select:focus,
+.dt-form-group textarea:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.dt-form-group textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.dt-form-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.dt-form-help {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-top: 6px;
+}
+
+/* File Upload Area */
+.dt-file-upload-area {
+  position: relative;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  background: #f8fafc;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.dt-file-upload-area:hover {
+  border-color: #8b5cf6;
+  background: #f5f3ff;
+}
+
+.dt-file-upload-area.drag-over {
+  border-color: #8b5cf6;
+  background: #ede9fe;
+  transform: scale(1.02);
+}
+
+.dt-file-upload-icon {
+  font-size: 3rem;
+  color: #8b5cf6;
+  margin-bottom: 12px;
+  animation: floatIcon 3s ease-in-out infinite;
+}
+
+@keyframes floatIcon {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.dt-file-upload-text {
+  font-size: 0.95rem;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.dt-file-upload-text strong {
+  color: #8b5cf6;
+  font-weight: 600;
+}
+
+.dt-file-upload-hint {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.dt-file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Link Attach Area */
+.dt-link-attach-area:hover {
+  border-color: #8b5cf6;
+  background: #f5f3ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+}
+
+/* File List */
+.dt-file-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dt-file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  animation: slideIn 0.3s ease;
+  transition: all 0.2s ease;
+}
+
+.dt-file-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateX(2px);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dt-file-item i {
+  color: #8b5cf6;
+  font-size: 1.1rem;
+}
+
+.dt-file-name {
+  flex: 1;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.dt-file-size {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.dt-file-remove {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.dt-file-remove:hover {
+  background: #fee2e2;
+}
+
+/* Alerts */
+.dt-alert {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  font-size: 0.875rem;
+}
+
+.dt-alert i {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.dt-alert-info {
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.dt-alert-info i {
+  color: #3b82f6;
+}
+
+.dt-alert-error {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.dt-alert-error i {
+  color: #ef4444;
+}
+
+/* Form Actions */
+.dt-form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dt-submit-form-card {
+    padding: 20px;
+  }
+  
+  .dt-form-actions {
+    flex-direction: column-reverse;
+  }
+  
+  .dt-form-actions .dt-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .dt-file-upload-area,
+  .dt-link-attach-area {
+    padding: 20px 12px !important;
+  }
+}
+</style>
+
+<script>
+// ===== FILE UPLOAD DRAG AND DROP =====
+const fileUploadArea = document.getElementById('fileUploadArea');
+const fileInput = document.getElementById('{{ form.files.id_for_label }}');
+const fileList = document.getElementById('fileList');
+
+// Prevent default drag behaviors
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+  fileUploadArea.addEventListener(eventName, preventDefaults, false);
+  document.body.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+
+// Highlight drop area
+['dragenter', 'dragover'].forEach(eventName => {
+  fileUploadArea.addEventListener(eventName, () => {
+    fileUploadArea.classList.add('drag-over');
+  }, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+  fileUploadArea.addEventListener(eventName, () => {
+    fileUploadArea.classList.remove('drag-over');
+  }, false);
+});
+
+// Handle dropped files
+fileUploadArea.addEventListener('drop', (e) => {
+  const dt = e.dataTransfer;
+  const files = dt.files;
+  fileInput.files = files;
+  displayFiles(files);
+}, false);
+
+// Handle file input change
+fileInput.addEventListener('change', (e) => {
+  displayFiles(e.target.files);
+});
+
+// Display selected files
+function displayFiles(files) {
+  fileList.innerHTML = '';
+  Array.from(files).forEach(file => {
+    const fileItem = document.createElement('div');
+    fileItem.className = 'dt-file-item';
+    
+    const icon = getFileIcon(file.name);
+    const size = formatFileSize(file.size);
+    
+    fileItem.innerHTML = `
+      <i class="${icon}"></i>
+      <span class="dt-file-name">${file.name}</span>
+      <span class="dt-file-size">${size}</span>
+    `;
+    
+    fileList.appendChild(fileItem);
+  });
+}
+
+function getFileIcon(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  const iconMap = {
+    'pdf': 'fas fa-file-pdf',
+    'doc': 'fas fa-file-word',
+    'docx': 'fas fa-file-word',
+    'xls': 'fas fa-file-excel',
+    'xlsx': 'fas fa-file-excel',
+    'jpg': 'fas fa-file-image',
+    'jpeg': 'fas fa-file-image',
+    'png': 'fas fa-file-image',
+    'gif': 'fas fa-file-image',
+    'zip': 'fas fa-file-archive',
+    'rar': 'fas fa-file-archive'
+  };
+  return iconMap[ext] || 'fas fa-file';
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+// ===== LINK MODAL FUNCTIONS =====
+let modalLinkCounter = 1;
+let attachedLinks = [];
+
+function openLinkModal() {
+  document.getElementById('linkModal').style.display = 'flex';
+  document.getElementById('linkTitle').value = '';
+  resetModalLinkInputs();
+  window.editingLinkIndex = null; // Ensure we're adding, not editing
+}
+
+function closeLinkModal() {
+  document.getElementById('linkModal').style.display = 'none';
+  document.getElementById('linkTitle').value = '';
+  resetModalLinkInputs();
+  window.editingLinkIndex = null; // Reset editing index
+}
+
+function resetModalLinkInputs() {
+  const container = document.getElementById('modalLinkInputsContainer');
+  container.innerHTML = `
+    <div class="modal-link-input-group" style="margin-bottom: 1rem;">
+      <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; font-size: 0.9rem;">
+        Link URL 1
+        <span style="color: #ef4444;">*</span>
+      </label>
+      <input type="url" class="modal-link-url" placeholder="example.com or https://example.com/document" 
+             style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; font-family: 'Montserrat', sans-serif;"
+             autocomplete="off">
+      <small style="display: block; margin-top: 0.5rem; color: #64748b; font-size: 0.75rem;">
+        <i class="fas fa-info-circle"></i>
+        Enter a domain (e.g., google.com) or full URL. Protocol (https://) will be added automatically.
+      </small>
+    </div>
+  `;
+  modalLinkCounter = 1;
+}
+
+function addModalLinkInput() {
+  modalLinkCounter++;
+  const container = document.getElementById('modalLinkInputsContainer');
+  const newInput = document.createElement('div');
+  newInput.className = 'modal-link-input-group';
+  newInput.style.marginBottom = '1rem';
+  newInput.innerHTML = `
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; font-size: 0.9rem;">
+      Link URL ${modalLinkCounter}
+      <span style="color: #ef4444;">*</span>
+    </label>
+    <div style="display: flex; gap: 8px;">
+      <input type="url" class="modal-link-url" placeholder="example.com or https://example.com/document" 
+             style="flex: 1; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; font-family: 'Montserrat', sans-serif;"
+             autocomplete="off">
+      <button type="button" onclick="this.closest('.modal-link-input-group').remove()" 
+              style="padding: 0.75rem 1rem; background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; color: #ef4444; cursor: pointer;">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  `;
+  container.appendChild(newInput);
+}
+
+function submitModalLinks() {
+  const title = document.getElementById('linkTitle').value.trim();
+  const urlInputs = document.querySelectorAll('.modal-link-url');
+  
+  if (!title) {
+    alert('Please enter a title/name for the links.');
+    return;
+  }
+  
+  const urls = [];
+  const invalidUrls = [];
+  
+  urlInputs.forEach(input => {
+    let url = input.value.trim();
+    if (url) {
+      // Auto-fix: prepend https:// if no protocol
+      if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('ftp://')) {
+        url = 'https://' + url;
+      }
+      
+      // Auto-fix: add .com if no domain extension
+      const urlWithoutProtocol = url.replace(/^https?:\/\//, '').replace(/^ftp:\/\//, '');
+      if (!urlWithoutProtocol.includes('.') && !urlWithoutProtocol.includes(':')) {
+        url = url + '.com';
+      }
+      
+      // Basic validation: must have at least one dot or be localhost
+      const domain = url.replace(/^https?:\/\//, '').replace(/^ftp:\/\//, '').split('/')[0];
+      if (domain.includes('.') || domain.includes('localhost') || domain.includes('127.0.0.1')) {
+        urls.push(url);
+      } else {
+        invalidUrls.push(input.value.trim());
+      }
+    }
+  });
+  
+  if (invalidUrls.length > 0) {
+    alert(`The following URLs appear invalid:\n${invalidUrls.join('\n')}\n\nPlease enter valid domains (e.g., google.com, example.com/page)`);
+    return;
+  }
+  
+  if (urls.length === 0) {
+    alert('Please enter at least one link URL.');
+    return;
+  }
+  
+  // Check if we're editing an existing link or adding a new one
+  if (typeof window.editingLinkIndex !== 'undefined' && window.editingLinkIndex !== null) {
+    // Update existing link
+    attachedLinks[window.editingLinkIndex] = { title, urls };
+    window.editingLinkIndex = null;
+  } else {
+    // Add new link
+    attachedLinks.push({ title, urls });
+  }
+  
+  // Display in link list
+  displayLinks();
+  
+  // Add hidden inputs to form
+  updateLinkInputs();
+  
+  // Close modal
+  closeLinkModal();
+}
+
+function displayLinks() {
+  const linkListEl = document.getElementById('linkList');
+  linkListEl.innerHTML = '';
+  
+  attachedLinks.forEach((linkGroup, index) => {
+    const linkItem = document.createElement('div');
+    linkItem.className = 'dt-file-item';
+    linkItem.style.cursor = 'pointer';
+    linkItem.innerHTML = `
+      <i class="fas fa-link"></i>
+      <span class="dt-file-name" onclick="viewLink(${index})" style="flex: 1; cursor: pointer;">${linkGroup.title}</span>
+      <span class="dt-file-size" onclick="viewLink(${index})" style="cursor: pointer;">${linkGroup.urls.length} link${linkGroup.urls.length > 1 ? 's' : ''}</span>
+      <button type="button" class="dt-file-remove" onclick="event.stopPropagation(); removeLink(${index})">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+    linkListEl.appendChild(linkItem);
+  });
+}
+
+function removeLink(index) {
+  attachedLinks.splice(index, 1);
+  displayLinks();
+  updateLinkInputs();
+}
+
+function viewLink(index) {
+  // Get the link group data
+  const linkGroup = attachedLinks[index];
+  
+  // Open modal
+  document.getElementById('linkModal').style.display = 'flex';
+  
+  // Set title
+  document.getElementById('linkTitle').value = linkGroup.title;
+  
+  // Clear and populate URL inputs
+  const container = document.getElementById('modalLinkInputsContainer');
+  container.innerHTML = '';
+  
+  linkGroup.urls.forEach((url, urlIndex) => {
+    const inputGroup = document.createElement('div');
+    inputGroup.className = 'modal-link-input-group';
+    inputGroup.style.marginBottom = '1rem';
+    
+    if (urlIndex === 0) {
+      // First URL (no delete button)
+      inputGroup.innerHTML = `
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; font-size: 0.9rem;">
+          Link URL ${urlIndex + 1}
+          <span style="color: #ef4444;">*</span>
+        </label>
+        <input type="url" class="modal-link-url" value="${url}" placeholder="example.com or https://example.com/document" 
+               style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; font-family: 'Montserrat', sans-serif;"
+               autocomplete="off">
+        <small style="display: block; margin-top: 0.5rem; color: #64748b; font-size: 0.75rem;">
+          <i class="fas fa-info-circle"></i>
+          Enter a domain (e.g., google.com) or full URL. Protocol (https://) will be added automatically.
+        </small>
+      `;
+    } else {
+      // Additional URLs (with delete button)
+      inputGroup.innerHTML = `
+        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #1e293b; font-size: 0.9rem;">
+          Link URL ${urlIndex + 1}
+          <span style="color: #ef4444;">*</span>
+        </label>
+        <div style="display: flex; gap: 8px;">
+          <input type="url" class="modal-link-url" value="${url}" placeholder="example.com or https://example.com/document" 
+                 style="flex: 1; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; font-family: 'Montserrat', sans-serif;"
+                 autocomplete="off">
+          <button type="button" onclick="this.closest('.modal-link-input-group').remove()" 
+                  style="padding: 0.75rem 1rem; background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; color: #ef4444; cursor: pointer;">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      `;
+    }
+    
+    container.appendChild(inputGroup);
+  });
+  
+  modalLinkCounter = linkGroup.urls.length;
+  
+  // Store the index being edited
+  window.editingLinkIndex = index;
+}
+
+function updateLinkInputs() {
+  const container = document.getElementById('linkInputsContainer');
+  container.innerHTML = '';
+  
+  attachedLinks.forEach((linkGroup, groupIndex) => {
+    // Add title
+    const titleInput = document.createElement('input');
+    titleInput.type = 'hidden';
+    titleInput.name = `link_group_${groupIndex}_title`;
+    titleInput.value = linkGroup.title;
+    container.appendChild(titleInput);
+    
+    // Add URLs
+    linkGroup.urls.forEach((url, urlIndex) => {
+      const urlInput = document.createElement('input');
+      urlInput.type = 'hidden';
+      urlInput.name = `link_group_${groupIndex}_url_${urlIndex}`;
+      urlInput.value = url;
+      container.appendChild(urlInput);
+    });
+  });
+}
+
+// Close modal on outside click
+document.getElementById('linkModal')?.addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeLinkModal();
+  }
+});
+
+// Form validation
+document.getElementById('submitForm').addEventListener('submit', function(e) {
+  const hasFiles = fileInput.files.length > 0;
+  const hasLinks = attachedLinks.length > 0;
+  
+  console.log('Form submission:', { hasFiles, hasLinks, attachedLinks });
+  
+  if (!hasFiles && !hasLinks) {
+    e.preventDefault();
+    alert('Please upload at least one file or attach at least one link.');
+    return false;
+  }
+  
+  // Log form data for debugging
+  const formData = new FormData(this);
+  console.log('Form data entries:');
+  for (let pair of formData.entries()) {
+    console.log(pair[0] + ': ' + pair[1]);
+  }
+});
+</script>
+{% endblock %}

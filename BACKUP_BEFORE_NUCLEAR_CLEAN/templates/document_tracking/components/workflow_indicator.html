@@ -1,0 +1,343 @@
+<!-- Workflow Status Indicator -->
+<div class="card mb-4">
+  <div class="card-header bg-gradient-primary text-white">
+    <h5 class="mb-0">
+      <i class="fas fa-route"></i> Workflow Progress
+    </h5>
+  </div>
+  <div class="card-body">
+    <!-- Progress Bar -->
+    <div class="mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small">Progress</span>
+        <span class="badge bg-primary">{{ progress_percentage }}%</span>
+      </div>
+      <div class="progress" style="height: 8px;">
+        <div class="progress-bar 
+          {% if submission.status == 'approved' %}bg-success
+          {% elif submission.status == 'rejected' %}bg-danger
+          {% elif submission.status == 'for_compliance' or submission.status == 'returned_to_sender' %}bg-warning
+          {% else %}bg-info{% endif %}" 
+          role="progressbar" 
+          style="width: {{ progress_percentage }}%;" 
+          aria-valuenow="{{ progress_percentage }}" 
+          aria-valuemin="0" 
+          aria-valuemax="100">
+        </div>
+      </div>
+    </div>
+
+    <!-- Current Status Info -->
+    <div class="alert alert-{{ current_status_info.color|default:'secondary' }} border-start border-4 mb-4">
+      <div class="d-flex align-items-center">
+        <div class="flex-grow-1">
+          <h6 class="mb-1">
+            <i class="fas fa-circle-dot"></i> Current Status: {{ current_status_info.label }}
+          </h6>
+          <p class="mb-0 small">Level {{ current_status_info.level }} of 5</p>
+        </div>
+        {% if is_terminal %}
+          <span class="badge bg-dark">Terminal State</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Workflow Tree Structure -->
+    <div class="workflow-tree mb-4">
+      <h6 class="text-muted mb-3">Workflow Path</h6>
+      <div class="tree-structure">
+        <!-- Level 1: Received/Submitted -->
+        <div class="tree-node {% if submission.status == 'pending_tracking' %}active{% elif 'pending_tracking' in workflow_path %}completed{% endif %}">
+          <div class="node-content">
+            <span class="node-icon">
+              {% if 'pending_tracking' in workflow_path %}
+                <i class="fas fa-check-circle text-success"></i>
+              {% else %}
+                <i class="fas fa-circle text-muted"></i>
+              {% endif %}
+            </span>
+            <span class="node-label">1. Received / Submitted</span>
+          </div>
+        </div>
+
+        <!-- Decision Point: Complete? -->
+        <div class="tree-branch ms-4">
+          <!-- Branch A: Incomplete -->
+          {% if 'returned_to_sender' in workflow_path or submission.status == 'returned_to_sender' %}
+            <div class="tree-node {% if submission.status == 'returned_to_sender' %}active{% elif 'returned_to_sender' in workflow_path %}completed{% endif %} branch-correction">
+              <div class="node-content">
+                <span class="node-icon">
+                  {% if 'returned_to_sender' in workflow_path %}
+                    <i class="fas fa-check-circle text-warning"></i>
+                  {% else %}
+                    <i class="fas fa-circle text-muted"></i>
+                  {% endif %}
+                </span>
+                <span class="node-label text-warning">2A. Incomplete (Corrections Requested)</span>
+              </div>
+            </div>
+          {% endif %}
+
+          <!-- Branch B: For Routing -->
+          {% if 'received' in workflow_path or submission.status == 'received' %}
+            <div class="tree-node {% if submission.status == 'received' %}active{% elif 'received' in workflow_path %}completed{% endif %} branch-main">
+              <div class="node-content">
+                <span class="node-icon">
+                  {% if 'received' in workflow_path %}
+                    <i class="fas fa-check-circle text-info"></i>
+                  {% else %}
+                    <i class="fas fa-circle text-muted"></i>
+                  {% endif %}
+                </span>
+                <span class="node-label text-info">2B. For Routing (Ready to Assign)</span>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Level 3: Under Review -->
+        {% if 'under_review' in workflow_path or submission.status == 'under_review' %}
+          <div class="tree-node {% if submission.status == 'under_review' %}active{% elif 'under_review' in workflow_path %}completed{% endif %}">
+            <div class="node-content">
+              <span class="node-icon">
+                {% if 'under_review' in workflow_path %}
+                  <i class="fas fa-check-circle text-primary"></i>
+                {% else %}
+                  <i class="fas fa-circle text-muted"></i>
+                {% endif %}
+              </span>
+              <span class="node-label">3. Under Review (Section Evaluation)</span>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Level 4: Decision Branches -->
+        <div class="tree-branch ms-4">
+          <!-- Branch: For Compliance -->
+          {% if 'for_compliance' in workflow_path or submission.status == 'for_compliance' %}
+            <div class="tree-node {% if submission.status == 'for_compliance' %}active{% elif 'for_compliance' in workflow_path %}completed{% endif %} branch-revision">
+              <div class="node-content">
+                <span class="node-icon">
+                  {% if 'for_compliance' in workflow_path %}
+                    <i class="fas fa-check-circle text-warning"></i>
+                  {% else %}
+                    <i class="fas fa-circle text-muted"></i>
+                  {% endif %}
+                </span>
+                <span class="node-label text-warning">4A. For Compliance (Needs Revisions)</span>
+              </div>
+            </div>
+          {% endif %}
+
+          <!-- Branch: Approved -->
+          {% if 'approved' in workflow_path or submission.status == 'approved' %}
+            <div class="tree-node {% if submission.status == 'approved' %}active{% elif 'approved' in workflow_path %}completed{% endif %} branch-approved">
+              <div class="node-content">
+                <span class="node-icon">
+                  {% if 'approved' in workflow_path %}
+                    <i class="fas fa-check-circle text-success"></i>
+                  {% else %}
+                    <i class="fas fa-circle text-muted"></i>
+                  {% endif %}
+                </span>
+                <span class="node-label text-success">4B. Approved (Final Approval)</span>
+              </div>
+            </div>
+          {% endif %}
+
+          <!-- Branch: Rejected -->
+          {% if 'rejected' in workflow_path or submission.status == 'rejected' %}
+            <div class="tree-node {% if submission.status == 'rejected' %}active{% elif 'rejected' in workflow_path %}completed{% endif %} branch-rejected">
+              <div class="node-content">
+                <span class="node-icon">
+                  {% if 'rejected' in workflow_path %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                  {% else %}
+                    <i class="fas fa-circle text-muted"></i>
+                  {% endif %}
+                </span>
+                <span class="node-label text-danger">4C. Rejected (Final Decision)</span>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Level 5: Completed/Archived -->
+        {% if 'archived' in workflow_path or submission.status == 'archived' %}
+          <div class="tree-node {% if submission.status == 'archived' %}active{% elif 'archived' in workflow_path %}completed{% endif %}">
+            <div class="node-content">
+              <span class="node-icon">
+                {% if 'archived' in workflow_path %}
+                  <i class="fas fa-check-circle text-dark"></i>
+                {% else %}
+                  <i class="fas fa-circle text-muted"></i>
+                {% endif %}
+              </span>
+              <span class="node-label">5. Completed / Archived</span>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Status Actions -->
+    {% if status_actions and not is_terminal %}
+      <div class="status-actions">
+        <h6 class="text-muted mb-3">Available Actions</h6>
+        <div class="d-flex flex-wrap gap-2">
+          {% for action in status_actions %}
+            <button type="button" 
+                    class="btn btn-outline-{{ action.color }} status-action-btn" 
+                    data-status="{{ action.code }}"
+                    data-label="{{ action.label }}"
+                    title="{{ action.description }}">
+              <i class="fas fa-arrow-right"></i> {{ action.label }}
+            </button>
+          {% endfor %}
+        </div>
+      </div>
+    {% elif is_terminal %}
+      <div class="alert alert-secondary mb-3">
+        <i class="fas fa-info-circle"></i> This submission has reached a terminal state. No further status changes are allowed.
+      </div>
+    {% endif %}
+    
+    <!-- Admin Control Actions -->
+    {% if submission.status != 'pending_tracking' %}
+      <div class="admin-control-actions mt-4">
+        <h6 class="text-muted mb-3">
+          <i class="fas fa-tools"></i> Admin Controls
+        </h6>
+        
+        <div class="d-grid gap-2">
+          <!-- Undo Last Action Button -->
+          {% if previous_status %}
+            <a href="{% url 'document_tracking:undo_last_action' submission.id %}" 
+               class="btn btn-outline-secondary"
+               title="Undo the last status change and revert to previous state">
+              <i class="fas fa-undo"></i> Undo Last Action
+              <small class="d-block text-muted mt-1" style="font-size: 0.75rem;">
+                Revert to: {{ previous_status_display }}
+              </small>
+            </a>
+          {% endif %}
+          
+          <!-- Reset to Start Button -->
+          {% if can_reset %}
+            <a href="{% url 'document_tracking:reset_to_start' submission.id %}" 
+               class="btn btn-outline-warning"
+               title="Reset this submission back to the initial state (Step 1)">
+              <i class="fas fa-fast-backward"></i> Reset to Start
+              <small class="d-block text-muted mt-1" style="font-size: 0.75rem;">
+                Go back to Step 1 (Pending Tracking)
+              </small>
+            </a>
+          {% endif %}
+        </div>
+        
+        <small class="text-muted d-block mt-2">
+          <i class="fas fa-info-circle"></i> These actions will unlock the submission and send email notifications.
+        </small>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.workflow-tree {
+  font-size: 0.9rem;
+}
+
+.tree-structure {
+  position: relative;
+}
+
+.tree-node {
+  padding: 8px 0;
+  position: relative;
+}
+
+.tree-node.active .node-content {
+  background-color: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  padding-left: 12px;
+  font-weight: 600;
+}
+
+.tree-node.completed .node-label {
+  color: #6c757d;
+}
+
+.tree-branch {
+  border-left: 2px dashed #dee2e6;
+  padding-left: 20px;
+  margin-left: 10px;
+}
+
+.node-content {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.node-icon {
+  margin-right: 8px;
+  width: 20px;
+}
+
+.node-label {
+  flex-grow: 1;
+}
+
+.status-action-btn {
+  transition: all 0.2s;
+}
+
+.status-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Handle status action button clicks
+  const statusButtons = document.querySelectorAll('.status-action-btn');
+  
+  statusButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const statusCode = this.dataset.status;
+      const statusLabel = this.dataset.label;
+      
+      // Set the hidden input value in the status change form
+      const statusInput = document.querySelector('input[name="new_status"]');
+      if (statusInput) {
+        statusInput.value = statusCode;
+      }
+      
+      // Scroll to the status change form
+      const statusForm = document.getElementById('status-change-form');
+      if (statusForm) {
+        statusForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Highlight the form briefly
+        statusForm.classList.add('border-primary', 'border-3');
+        setTimeout(() => {
+          statusForm.classList.remove('border-primary', 'border-3');
+        }, 2000);
+      }
+      
+      // Update form title to show selected action
+      const formTitle = document.querySelector('#status-change-form .card-header h5');
+      if (formTitle) {
+        formTitle.innerHTML = `<i class="fas fa-exchange-alt"></i> Change Status to: ${statusLabel}`;
+      }
+    });
+  });
+});
+</script>

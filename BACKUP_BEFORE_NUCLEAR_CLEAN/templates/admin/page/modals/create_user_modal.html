@@ -1,0 +1,925 @@
+<!-- TOAST NOTIFICATION CONTAINER -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+  <div id="createUserToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="toast-icon me-2"></i>
+        <span id="createUserToastMessage"></span>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE USER MODAL - COMPACT VERSION -->
+<div class="modal fade"
+     id="createUserModal"
+     tabindex="-1"
+     aria-hidden="true">
+
+  <div class="modal-dialog modal-dialog-centered modal-dialog-compact">
+    <div class="modal-content compact-modal">
+
+      <!-- HEADER -->
+      <div class="compact-header">
+        <div class="header-content">
+          <div class="header-icon">
+            <i class="fas fa-user-plus"></i>
+          </div>
+          <div>
+            <h5 class="header-title">Register User</h5>
+            <p class="header-subtitle">Create a new account</p>
+          </div>
+        </div>
+        <button type="button"
+                class="btn-close-custom"
+                data-bs-dismiss="modal"
+                aria-label="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- FORM -->
+      <form id="createUserForm"
+            method="post"
+            action="{% url 'admin_app:user-create' %}"
+            novalidate>
+        {% csrf_token %}
+        
+        <div class="compact-body">
+          
+          <!-- NAME ROW -->
+          <div class="form-row">
+            <div class="form-field half">
+              <label class="compact-label">
+                <i class="fas fa-user label-icon"></i>
+                <span>First Name</span>
+                <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     name="first_name" 
+                     id="id_first_name"
+                     class="form-control" 
+                     placeholder="Enter first name"
+                     required>
+              <div class="field-error" id="error_first_name"></div>
+            </div>
+            <div class="form-field half">
+              <label class="compact-label">
+                <i class="fas fa-user label-icon"></i>
+                <span>Last Name</span>
+                <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     name="last_name" 
+                     id="id_last_name"
+                     class="form-control" 
+                     placeholder="Enter last name"
+                     required>
+              <div class="field-error" id="error_last_name"></div>
+            </div>
+          </div>
+
+          <!-- USERNAME & EMAIL ROW -->
+          <div class="form-row">
+            <div class="form-field half">
+              <label class="compact-label">
+                <i class="fas fa-at label-icon"></i>
+                <span>Username</span>
+                <span class="required">*</span>
+              </label>
+              <input type="text" 
+                     name="username" 
+                     id="id_username"
+                     class="form-control" 
+                     placeholder="Choose a username"
+                     required>
+              <div class="field-error" id="error_username"></div>
+            </div>
+            <div class="form-field half">
+              <label class="compact-label">
+                <i class="fas fa-envelope label-icon"></i>
+                <span>Email</span>
+                <span class="required">*</span>
+              </label>
+              <input type="email" 
+                     name="email" 
+                     id="id_email"
+                     class="form-control" 
+                     placeholder="Enter email address"
+                     required>
+              <div class="field-error" id="error_email"></div>
+            </div>
+          </div>
+
+          <!-- PASSWORD ROW -->
+          <div class="form-row">
+            <div class="form-field half">
+              <label class="compact-label">
+                <i class="fas fa-lock label-icon"></i>
+                <span>Password</span>
+                <span class="required">*</span>
+              </label>
+              <div class="password-input-wrapper">
+                <input type="password" 
+                       name="password" 
+                       id="id_password"
+                       class="form-control" 
+                       placeholder="Min. 8 characters"
+                       required>
+                <button type="button" class="password-toggle-btn" onclick="togglePassword('id_password', this)">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+              <div class="field-error" id="error_password"></div>
+            </div>
+            <div class="form-field half">
+              <label class="compact-label">
+                <i class="fas fa-lock label-icon"></i>
+                <span>Confirm</span>
+                <span class="required">*</span>
+              </label>
+              <div class="password-input-wrapper">
+                <input type="password" 
+                       name="confirm_password" 
+                       id="id_confirm_password"
+                       class="form-control" 
+                       placeholder="Re-enter password"
+                       required>
+                <button type="button" class="password-toggle-btn" onclick="togglePassword('id_confirm_password', this)">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+              <div class="field-error" id="error_confirm_password"></div>
+            </div>
+          </div>
+
+          <!-- POSITION & ROLE ROW -->
+          <div class="form-row">
+            <div class="form-field half">
+              <label class="compact-label">
+                <i class="fas fa-briefcase label-icon"></i>
+                <span>Position</span>
+              </label>
+              <input type="text" 
+                     name="position_title" 
+                     id="id_position_title"
+                     class="form-control" 
+                     placeholder="Enter position title">
+              <div class="field-error" id="error_position_title"></div>
+            </div>
+            <div class="form-field half">
+              <label class="compact-label">
+                <i class="fas fa-star label-icon"></i>
+                <span>Role</span>
+                <span class="required">*</span>
+              </label>
+              <select name="login_role" id="id_login_role" class="form-control" required>
+                <option value="">Select a role</option>
+                <option value="admin">Administrator</option>
+                <option value="user">User</option>
+              </select>
+              <div class="field-error" id="error_login_role"></div>
+            </div>
+          </div>
+
+          <!-- DEPARTMENT ROW -->
+          <div class="form-row">
+            <div class="form-field">
+              <label class="compact-label">
+                <i class="fas fa-building label-icon"></i>
+                <span>Department</span>
+              </label>
+              <select name="department" id="id_department" class="form-control">
+                <option value="">No Department (Assign Later)</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                {% endfor %}
+              </select>
+              <div class="field-error" id="error_department"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="compact-footer">
+          <button type="button"
+                  class="btn-cancel"
+                  data-bs-dismiss="modal">
+            <i class="fas fa-times"></i>
+            Cancel
+          </button>
+          <button type="submit"
+                  class="btn-submit"
+                  id="createUserSubmitBtn">
+            <i class="fas fa-check"></i>
+            Continue 
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<style>
+/* ===========================
+   COMPACT MODAL
+=========================== */
+.modal-dialog-compact {
+  max-width: 580px;
+}
+
+.compact-modal {
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+/* ===========================
+   HEADER
+=========================== */
+.compact-header {
+  background: linear-gradient(135deg, #6b54fa 0%, #4b36c7 100%);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.compact-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #a89fff, #7b69ff, #a89fff);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.header-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.header-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.btn-close-custom {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.btn-close-custom:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg);
+}
+
+/* ===========================
+   BODY
+=========================== */
+.compact-body {
+  padding: 1.25rem;
+  background: #fafbfc;
+}
+
+.compact-body .form-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.compact-body .form-row:last-child {
+  margin-bottom: 0;
+}
+
+.form-field {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.form-field.half {
+  flex: 1;
+}
+
+.compact-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.375rem;
+  transition: color 0.2s ease;
+}
+
+.label-icon {
+  font-size: 0.875rem;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.form-field:focus-within .label-icon {
+  opacity: 1;
+  transform: scale(1.1);
+  color: #6b54fa;
+}
+
+.form-field:focus-within .compact-label {
+  color: #6b54fa;
+}
+
+.required {
+  color: #ef4444;
+  font-weight: 700;
+  margin-left: 0.125rem;
+}
+
+/* ===========================
+   FORM CONTROLS
+=========================== */
+.compact-body input[type="text"],
+.compact-body input[type="email"],
+.compact-body input[type="password"],
+.compact-body select {
+  width: 100%;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #fff;
+  color: #1f2937;
+}
+
+.compact-body input::placeholder {
+  color: #9ca3af;
+  transition: all 0.2s ease;
+}
+
+.compact-body input:focus::placeholder {
+  opacity: 0.6;
+  transform: translateX(5px);
+}
+
+.compact-body input:focus,
+.compact-body select:focus {
+  outline: none;
+  border-color: #6b54fa;
+  box-shadow: 0 0 0 3px rgba(107, 84, 250, 0.1);
+  transform: translateY(-1px);
+}
+
+.compact-body input:hover:not(:focus),
+.compact-body select:hover:not(:focus) {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.compact-body select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.25rem;
+}
+
+/* ===========================
+   FOOTER
+=========================== */
+.compact-footer {
+  padding: 0.875rem 1.25rem;
+  background: #fff;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.btn-cancel,
+.btn-submit {
+  border: none;
+  border-radius: 8px;
+  padding: 0.625rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-cancel {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
+  color: #374151;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-submit {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.btn-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-arrow {
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 0.3s ease;
+}
+
+.btn-submit:hover:not(:disabled) .btn-arrow {
+  transform: translateX(4px);
+}
+
+/* ===========================
+   FIELD ERROR STATES
+=========================== */
+.compact-body input.is-invalid,
+.compact-body select.is-invalid {
+  border-color: #ef4444 !important;
+  background: #fef2f2 !important;
+  animation: shakeError 0.4s ease;
+}
+
+.compact-body input.is-invalid:focus,
+.compact-body select.is-invalid:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+@keyframes shakeError {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.field-error {
+  font-size: 0.75rem;
+  color: #ef4444;
+  margin-top: 0.25rem;
+  min-height: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: all 0.2s ease;
+}
+
+.field-error.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.field-error::before {
+  content: '\f071';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 0.7rem;
+}
+
+/* ===========================
+   TOAST NOTIFICATIONS
+=========================== */
+.toast-container {
+  z-index: 99999 !important;
+}
+
+#createUserToast {
+  min-width: 320px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+#createUserToast .toast-body {
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+#createUserToast .toast-icon {
+  font-size: 1.1rem;
+}
+
+#createUserToast.toast-error {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: #fff;
+}
+
+#createUserToast.toast-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #fff;
+}
+
+#createUserToast.toast-warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  color: #fff;
+}
+
+/* ===========================
+   RESPONSIVE
+=========================== */
+@media (max-width: 576px) {
+  .modal-dialog-compact {
+    margin: 0.5rem;
+  }
+  
+  .compact-body .form-row {
+    flex-direction: column;
+    gap: 0.875rem;
+  }
+  
+  .compact-header {
+    padding: 1rem 1.25rem;
+  }
+  
+  .compact-body {
+    padding: 1.25rem;
+  }
+  
+  .compact-footer {
+    flex-direction: column-reverse;
+  }
+  
+  .btn-cancel,
+  .btn-submit {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ===========================
+   PASSWORD TOGGLE
+=========================== */
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 5px 10px;
+  transition: color 0.2s;
+}
+
+.password-toggle-btn:hover {
+  color: #4b36c7;
+}
+
+.password-toggle-btn:focus {
+  outline: none;
+}
+
+.password-input-wrapper input {
+  padding-right: 45px;
+}
+</style>
+
+
+<script>
+// Password toggle function
+function togglePassword(inputId, button) {
+  const input = document.getElementById(inputId);
+  const icon = button.querySelector('i');
+  
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+(function() {
+  // Toast helper
+  function showToast(message, type = 'error') {
+    const toast = document.getElementById('createUserToast');
+    const toastMessage = document.getElementById('createUserToastMessage');
+    const toastIcon = toast.querySelector('.toast-icon');
+    
+    // Remove previous classes
+    toast.classList.remove('toast-error', 'toast-success', 'toast-warning');
+    
+    // Set type
+    toast.classList.add(`toast-${type}`);
+    
+    // Set icon
+    const icons = {
+      error: 'fas fa-exclamation-circle',
+      success: 'fas fa-check-circle',
+      warning: 'fas fa-exclamation-triangle'
+    };
+    toastIcon.className = `toast-icon me-2 ${icons[type] || icons.error}`;
+    
+    // Set message
+    toastMessage.textContent = message;
+    
+    // Show toast
+    const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
+    bsToast.show();
+  }
+  
+  // Clear all field errors
+  function clearAllErrors() {
+    document.querySelectorAll('#createUserForm .is-invalid').forEach(el => {
+      el.classList.remove('is-invalid');
+    });
+    document.querySelectorAll('#createUserForm .field-error').forEach(el => {
+      el.textContent = '';
+      el.classList.remove('show');
+    });
+  }
+  
+  // Show field error
+  function showFieldError(fieldName, message) {
+    const input = document.getElementById(`id_${fieldName}`);
+    const errorDiv = document.getElementById(`error_${fieldName}`);
+    
+    if (input) {
+      input.classList.add('is-invalid');
+    }
+    if (errorDiv) {
+      errorDiv.textContent = message;
+      errorDiv.classList.add('show');
+    }
+  }
+  
+  // Client-side validation
+  function validateForm(form) {
+    clearAllErrors();
+    let isValid = true;
+    let firstError = null;
+    
+    // First name
+    const firstName = form.querySelector('[name="first_name"]');
+    if (!firstName.value.trim()) {
+      showFieldError('first_name', 'First name is required.');
+      isValid = false;
+      firstError = firstError || firstName;
+    }
+    
+    // Last name
+    const lastName = form.querySelector('[name="last_name"]');
+    if (!lastName.value.trim()) {
+      showFieldError('last_name', 'Last name is required.');
+      isValid = false;
+      firstError = firstError || lastName;
+    }
+    
+    // Username
+    const username = form.querySelector('[name="username"]');
+    if (!username.value.trim()) {
+      showFieldError('username', 'Username is required.');
+      isValid = false;
+      firstError = firstError || username;
+    } else if (username.value.trim().length < 3) {
+      showFieldError('username', 'Username must be at least 3 characters.');
+      isValid = false;
+      firstError = firstError || username;
+    }
+    
+    // Email
+    const email = form.querySelector('[name="email"]');
+    if (!email.value.trim()) {
+      showFieldError('email', 'Email is required.');
+      isValid = false;
+      firstError = firstError || email;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) {
+      showFieldError('email', 'Please enter a valid email address.');
+      isValid = false;
+      firstError = firstError || email;
+    }
+    
+    // Password
+    const password = form.querySelector('[name="password"]');
+    if (!password.value) {
+      showFieldError('password', 'Password is required.');
+      isValid = false;
+      firstError = firstError || password;
+    } else if (password.value.length < 8) {
+      showFieldError('password', 'Password must be at least 8 characters.');
+      isValid = false;
+      firstError = firstError || password;
+    }
+    
+    // Confirm password
+    const confirmPassword = form.querySelector('[name="confirm_password"]');
+    if (!confirmPassword.value) {
+      showFieldError('confirm_password', 'Please confirm your password.');
+      isValid = false;
+      firstError = firstError || confirmPassword;
+    } else if (password.value && confirmPassword.value !== password.value) {
+      showFieldError('confirm_password', 'Passwords do not match.');
+      isValid = false;
+      firstError = firstError || confirmPassword;
+    }
+    
+    // Role
+    const role = form.querySelector('[name="login_role"]');
+    if (!role.value) {
+      showFieldError('login_role', 'Please select a role.');
+      isValid = false;
+      firstError = firstError || role;
+    }
+    
+    // Focus first error field
+    if (firstError) {
+      firstError.focus();
+    }
+    
+    return isValid;
+  }
+  
+  // Clear errors on input
+  document.querySelectorAll('#createUserForm input, #createUserForm select').forEach(input => {
+    input.addEventListener('input', function() {
+      this.classList.remove('is-invalid');
+      const fieldName = this.name;
+      const errorDiv = document.getElementById(`error_${fieldName}`);
+      if (errorDiv) {
+        errorDiv.textContent = '';
+        errorDiv.classList.remove('show');
+      }
+    });
+  });
+  
+  // Reset form when modal is closed
+  document.getElementById('createUserModal')?.addEventListener('hidden.bs.modal', function() {
+    const form = document.getElementById('createUserForm');
+    if (form) {
+      form.reset();
+      clearAllErrors();
+    }
+  });
+  
+  // Handle form submission
+  document.getElementById('createUserForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    
+    // Client-side validation first
+    if (!validateForm(form)) {
+      showToast('Please fix the errors in the form.', 'error');
+      return;
+    }
+    
+    const submitBtn = document.getElementById('createUserSubmitBtn');
+    const originalHTML = submitBtn.innerHTML;
+    
+    // Disable submit button
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating...';
+    
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Close create user modal
+        const createModal = bootstrap.Modal.getInstance(document.getElementById('createUserModal'));
+        if (createModal) {
+          createModal.hide();
+        }
+        
+        // Reset form
+        form.reset();
+        clearAllErrors();
+        
+        // Small delay to ensure modal is closed
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Open onboarding modal with first step
+        if (data.onboard_url && typeof loadOnboarding === 'function') {
+          loadOnboarding(data.onboard_url);
+        } else {
+          // Fallback: reload page
+          window.location.reload();
+        }
+      } else {
+        // Show field-level errors
+        clearAllErrors();
+        
+        if (data.errors) {
+          let errorMessages = [];
+          
+          for (const [field, errors] of Object.entries(data.errors)) {
+            const errorMsg = Array.isArray(errors) ? errors[0] : errors;
+            
+            if (field === '__all__') {
+              errorMessages.push(errorMsg);
+            } else {
+              showFieldError(field, errorMsg);
+              errorMessages.push(errorMsg);
+            }
+          }
+          
+          // Show toast with first error
+          if (errorMessages.length > 0) {
+            showToast(errorMessages[0], 'error');
+          }
+        } else if (data.error) {
+          showToast(data.error, 'error');
+        } else {
+          showToast('Failed to create user. Please try again.', 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showToast('An unexpected error occurred. Please try again.', 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalHTML;
+    }
+  });
+})();
+</script>

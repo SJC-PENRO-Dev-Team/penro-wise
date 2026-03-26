@@ -1,0 +1,40 @@
+{% load static %}
+<!-- ============================================
+     UNIFIED MESSAGE MODAL - Floating Chat Panel
+     CSS loaded in base template head for faster rendering
+============================================ -->
+
+<!-- Modal HTML (hidden by default via CSS) -->
+<div class="msg-modal-overlay" id="msgDiscussionModal" data-msg-state="closed">
+  <div class="msg-modal-container">
+    
+    <div class="msg-modal-header">
+      <div class="msg-modal-header-left">
+        <div class="msg-modal-icon">
+          <i class="fas fa-comments"></i>
+        </div>
+        <div class="msg-modal-title-group">
+          <h3 class="msg-modal-title" id="msgModalTitle">Discussion</h3>
+          <span class="msg-modal-subtitle" id="msgModalSubtitle"></span>
+        </div>
+      </div>
+      <button type="button" class="msg-modal-close" data-msg-dismiss>
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="msg-modal-body">
+      <div class="msg-modal-loader" id="msgModalLoader">
+        <div class="msg-modal-spinner">
+          <i class="fas fa-circle-notch fa-spin"></i>
+        </div>
+        <span>Loading messages...</span>
+      </div>
+      <iframe id="msgModalFrame" class="msg-modal-iframe" title="Discussion Thread" src="about:blank" style="display: none;"></iframe>
+    </div>
+
+  </div>
+</div>
+
+<!-- Load JS after HTML -->
+<script src="{% static 'js/message_modal.js' %}"></script>

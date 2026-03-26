@@ -1,0 +1,219 @@
+<!-- =====================================================
+     BLOCKING LOADING MODAL
+     Reusable across admin and user roles
+====================================================== -->
+<div id="loadingModal" class="loading-modal" aria-hidden="true" role="dialog" aria-labelledby="loadingModalTitle" aria-describedby="loadingModalDesc">
+  <div class="loading-modal-backdrop"></div>
+  <div class="loading-modal-content">
+    <div class="loading-spinner">
+      <div class="spinner-ring"></div>
+      <div class="spinner-ring"></div>
+      <div class="spinner-ring"></div>
+    </div>
+    <h4 id="loadingModalTitle" class="loading-title">Processing...</h4>
+    <p id="loadingModalDesc" class="loading-message">Please wait while we complete your request.</p>
+  </div>
+</div>
+
+<style>
+/* =====================================================
+   LOADING MODAL STYLES
+====================================================== */
+.loading-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.loading-modal.active {
+  display: flex;
+  opacity: 1;
+}
+
+.loading-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+}
+
+.loading-modal-content {
+  position: relative;
+  z-index: 1;
+  background: white;
+  border-radius: 16px;
+  padding: 40px 50px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 400px;
+  width: 90%;
+  animation: loadingModalIn 0.3s ease forwards;
+}
+
+@keyframes loadingModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Spinner */
+.loading-spinner {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 24px;
+}
+
+.spinner-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  animation: spinnerRotate 1.5s linear infinite;
+}
+
+.spinner-ring:nth-child(1) {
+  border-top-color: #1e3a5f;
+  animation-delay: 0s;
+}
+
+.spinner-ring:nth-child(2) {
+  inset: 8px;
+  border-right-color: #4a90d9;
+  animation-delay: 0.15s;
+  animation-direction: reverse;
+}
+
+.spinner-ring:nth-child(3) {
+  inset: 16px;
+  border-bottom-color: #10b981;
+  animation-delay: 0.3s;
+}
+
+@keyframes spinnerRotate {
+  to { transform: rotate(360deg); }
+}
+
+/* Text */
+.loading-title {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.loading-message {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* Prevent body scroll when modal is active */
+body.loading-active {
+  overflow: hidden;
+}
+</style>
+
+<script>
+/**
+ * LoadingModal - Global blocking loader for long-running operations
+ * 
+ * Usage:
+ *   LoadingModal.show("Creating work cycle...", "This may take a moment.");
+ *   LoadingModal.hide();
+ * 
+ * Auto-integration:
+ *   Add data-loading-text="Processing..." to any form to auto-show on submit
+ *   Add data-loading-message="Please wait..." for custom message
+ */
+(function() {
+  const modal = document.getElementById("loadingModal");
+  const titleEl = document.getElementById("loadingModalTitle");
+  const messageEl = document.getElementById("loadingModalDesc");
+
+  window.LoadingModal = {
+    show: function(title, message) {
+      if (!modal) return;
+      
+      titleEl.textContent = title || "Processing...";
+      messageEl.textContent = message || "Please wait while we complete your request.";
+      
+      modal.classList.add("active");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("loading-active");
+    },
+
+    hide: function() {
+      if (!modal) return;
+      
+      modal.classList.remove("active");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("loading-active");
+    },
+
+    // Update message while loading (for multi-step processes)
+    update: function(title, message) {
+      if (title) titleEl.textContent = title;
+      if (message) messageEl.textContent = message;
+    }
+  };
+
+  // Auto-wire forms with data-loading-text attribute
+  document.addEventListener("DOMContentLoaded", function() {
+    
+    // Handle forms with data-loading-text
+    document.addEventListener("submit", function(e) {
+      const form = e.target;
+      if (!form.matches("form[data-loading-text]")) return;
+      
+      const title = form.dataset.loadingText;
+      const message = form.dataset.loadingMessage || "Please wait while we complete your request.";
+      
+      LoadingModal.show(title, message);
+    });
+
+    // Handle buttons with data-loading-text (for AJAX operations)
+    document.addEventListener("click", function(e) {
+      const btn = e.target.closest("button[data-loading-text], a[data-loading-text]");
+      if (!btn) return;
+      
+      // Skip if it's a form submit button (handled by form submit event)
+      if (btn.type === "submit" && btn.closest("form[data-loading-text]")) return;
+      
+      const title = btn.dataset.loadingText;
+      const message = btn.dataset.loadingMessage || "Please wait while we complete your request.";
+      
+      LoadingModal.show(title, message);
+    });
+  });
+
+  // Hide loader on page unload errors (browser back, etc.)
+  window.addEventListener("pageshow", function(e) {
+    if (e.persisted) {
+      LoadingModal.hide();
+    }
+  });
+
+  // Hide loader if page is loaded from cache
+  window.addEventListener("load", function() {
+    // Small delay to allow for redirect detection
+    setTimeout(function() {
+      if (modal && modal.classList.contains("active")) {
+        // Page loaded but loader still showing - likely a redirect completed
+        // Keep it visible as the new page will handle it
+      }
+    }, 100);
+  });
+})();
+</script>

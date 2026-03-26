@@ -1,0 +1,195 @@
+{% extends "user/layout/base.html" %}
+{% load static %}
+{% block title %}Hidden Discussions{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/discussions.css' %}">
+
+<div class="disc-container">
+
+  <!-- HEADER -->
+  <div class="disc-header">
+    <div class="disc-header-left">
+      <div class="disc-header-icon" style="background: linear-gradient(135deg, #64748b, #475569);">
+        <i class="fas fa-eye-slash"></i>
+      </div>
+      <div>
+        <h4 class="disc-title">Hidden Discussions</h4>
+        <p class="disc-subtitle">Conversations you've hidden from your main discussions list</p>
+      </div>
+    </div>
+    
+    <div class="disc-header-right">
+      <div class="disc-stats">
+        <div class="disc-stat">
+          <span class="disc-stat-value">{{ total_hidden|default:"0" }}</span>
+          <span class="disc-stat-label">Hidden</span>
+        </div>
+      </div>
+      
+      <a href="{% url 'user_app:discussions-list' %}" class="disc-btn disc-btn-outline">
+        <i class="fas fa-arrow-left"></i>
+        Back to Discussions
+      </a>
+    </div>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="disc-filter-bar">
+    <div class="disc-search">
+      <i class="fas fa-search"></i>
+      <input type="text" id="discSearchInput" placeholder="Search hidden conversations...">
+    </div>
+  </div>
+
+  <!-- HIDDEN LIST -->
+  <div class="disc-list" id="discList">
+    {% if hidden_items %}
+      {% for item in hidden_items %}
+      {% with wi=item.work_item %}
+      <div class="disc-item" data-item-id="{{ wi.id }}" data-search="{{ wi.workcycle.title|lower }}">
+        
+        <div class="disc-avatar" style="background: linear-gradient(135deg, #94a3b8, #64748b);">
+          {% if wi.workcycle.created_by.profile_image %}
+            <img src="{{ wi.workcycle.created_by.profile_image.url }}" alt="{{ wi.workcycle.created_by.get_full_name }}" style="filter: grayscale(30%);">
+          {% else %}
+            <span class="disc-avatar-initials">
+              {{ wi.workcycle.created_by.first_name|default:wi.workcycle.created_by.username|slice:":1"|upper }}{{ wi.workcycle.created_by.last_name|slice:":1"|upper }}
+            </span>
+          {% endif %}
+        </div>
+        
+        <div class="disc-item-content" style="padding: 14px 0;">
+          <div class="disc-item-header">
+            <span class="disc-item-name" style="color: #64748b;">{{ wi.workcycle.title }}</span>
+            <span class="disc-item-time">Hidden {{ item.hidden_at|timesince }} ago</span>
+          </div>
+          
+          <div class="disc-item-preview">
+            {% if item.last_message %}
+              {{ item.last_message|truncatechars:60 }}
+            {% else %}
+              <span class="disc-item-empty">No messages</span>
+            {% endif %}
+          </div>
+          
+          <div class="disc-item-meta">
+            <span><i class="fas fa-user-tie"></i> {{ wi.workcycle.created_by.get_full_name|default:wi.workcycle.created_by.username }}</span>
+            <span><i class="fas fa-comments"></i> {{ item.total_message_count }} message{{ item.total_message_count|pluralize }}</span>
+          </div>
+        </div>
+        
+        <button class="disc-btn disc-btn-outline" onclick="restoreDiscussion({{ wi.id }}, this)" style="margin: 14px 16px; border-color: var(--disc-success); color: var(--disc-success);">
+          <i class="fas fa-undo"></i>
+          Restore
+        </button>
+      </div>
+      {% endwith %}
+      {% endfor %}
+    {% else %}
+      <div class="disc-empty">
+        <div class="disc-empty-icon" style="background: #f1f5f9; color: #64748b;">
+          <i class="fas fa-inbox"></i>
+        </div>
+        <h5>No hidden discussions</h5>
+        <p>Discussions you hide will appear here. You can restore them anytime.</p>
+        <a href="{% url 'user_app:discussions-list' %}" class="disc-btn disc-btn-primary" style="margin-top: 16px;">
+          <i class="fas fa-arrow-left"></i>
+          Go to Discussions
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Modal flash prevention
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.classList.remove('show');
+  modal.style.display = 'none';
+  modal.setAttribute('aria-hidden', 'true');
+});
+document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+document.body.classList.remove('modal-open');
+
+function restoreDiscussion(itemId, btn) {
+  const csrfToken = '{{ csrf_token }}';
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  
+  fetch(`/user/discussions/${itemId}/unhide/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      showToast('Discussion restored', 'success');
+      const item = btn.closest('.disc-item');
+      item.style.transition = 'all 0.3s ease';
+      item.style.opacity = '0';
+      item.style.transform = 'translateX(20px)';
+      setTimeout(() => {
+        item.remove();
+        if (document.querySelectorAll('.disc-item').length === 0) location.reload();
+      }, 300);
+    } else {
+      showToast(data.message || 'Failed to restore', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-undo"></i> Restore';
+    }
+  })
+  .catch(() => {
+    showToast('An error occurred', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-undo"></i> Restore';
+  });
+}
+
+function showToast(message, type = 'info') {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'primary'} border-0`;
+  toast.setAttribute('role', 'alert');
+  toast.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+  container.appendChild(toast);
+  const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+  bsToast.show();
+  toast.addEventListener('hidden.bs.toast', () => toast.remove());
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('discSearchInput')?.addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    document.querySelectorAll('.disc-item').forEach(item => {
+      const searchText = item.dataset.search || '';
+      item.style.display = searchText.includes(query) || query === '' ? '' : 'none';
+    });
+  });
+});
+</script>
+
+<style>
+.disc-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--disc-border);
+  margin-bottom: 12px;
+}
+
+.disc-item:hover {
+  border-color: var(--disc-success);
+}
+</style>
+
+{% endblock %}

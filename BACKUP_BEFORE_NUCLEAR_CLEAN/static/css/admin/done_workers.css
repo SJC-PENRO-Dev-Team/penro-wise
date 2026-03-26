@@ -1,0 +1,393 @@
+/* ===============================
+   DONE WORKERS BY WORKCYCLE STYLES
+================================ */
+
+:root {
+  --primary-dark: #1e3a5f;
+  --primary: #2d4a7c;
+  --primary-light: #e8f0fe;
+  --primary-accent: #4a90d9;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --gray-100: #f8fafc;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --red-violet: #a21caf;
+  --red-violet-light: #fae8ff;
+}
+
+/* HEADER (USING YOUR PALETTE) */
+.wc-header {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  border-radius: 16px;
+  padding: 24px;
+  color: white;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.wc-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.wc-title h3 {
+  margin: 0;
+  font-weight: 800;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wc-title h3 i {
+  color: var(--primary-accent);
+}
+
+/* ===============================
+   SUBMISSION TIMING (SIMPLE LOGIC)
+================================ */
+
+.submission-icon {
+  font-size: 0.9rem;
+}
+
+/* ON TIME */
+.submission-icon.on-time {
+  color: var(--success); /* #10b981 */
+}
+
+.submission-text.on-time {
+  color: var(--success);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* LATE */
+.submission-icon.late {
+  color: var(--danger); /* #ef4444 */
+}
+
+.submission-text.late {
+  color: var(--danger);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* Not submitted badge */
+.wc-badge.not-submitted {
+  background: var(--gray-200);
+  color: var(--gray-700);
+  font-weight: 600;
+}
+
+.wc-meta {
+  margin-top: 10px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.wc-meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.wc-desc {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.wc-back-btn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.wc-back-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+  color: white;
+  text-decoration: none;
+}
+
+/* COLUMN CONTEXT LABELS (MONDAY STYLE) */
+.monday-label-row{
+  display:grid;
+  grid-template-columns:6px 1.6fr 1fr 1.2fr 1fr 1fr;
+  padding:12px 0;
+  font-size:.75rem;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.monday-label-row .label{
+  padding:0 16px;
+}
+
+.monday-label-row .label.text-end{
+  text-align:right;
+}
+
+/* Stats Cards */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
+}
+
+/* GROUP TITLE */
+.group-count{
+  margin-left: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+/* BOARD */
+.monday-board{
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* GROUP TITLE (Now an accordion button) */
+.accordion-button.monday-group-title {
+  padding: 14px 20px;
+  font-weight: 600;
+  font-size: .9rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+}
+
+.accordion-button.monday-group-title::after {
+  display: none; /* Hide Bootstrap's default icon */
+}
+
+/* ROW */
+.monday-row{
+  display: grid;
+  grid-template-columns: 6px 1.6fr 1fr 1.2fr 1fr 1fr;
+  align-items: center;
+  min-height: 60px;
+  padding: 4px 0;
+  transition: all 0.2s ease;
+}
+
+.monday-row:hover{ 
+  background: var(--primary-light);
+  transform: translateY(-1px);
+}
+
+/* STATUS BAR */
+.status-bar{ 
+  height: 100%; 
+  border-radius: 0 4px 4px 0;
+}
+
+/* CELLS */
+.cell{ 
+  padding: 12px 16px; 
+  font-size: .9rem; 
+}
+
+.cell.worker{ font-weight: 600; }
+.cell.action{ text-align: right; }
+.cell.muted{ color: var(--gray-400); }
+
+/* PILLS */
+.status-pill{
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* DOT */
+.dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* MISC */
+.late{
+  margin-left: 6px;
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.empty-state{
+  padding: 40px 20px;
+  text-align: center;
+  font-size: .9rem;
+  color: var(--gray-600);
+}
+
+.empty-state.success{ 
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* Profile image styling */
+.user-avatar-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  object-fit: cover;
+}
+
+/* Hover Effects */
+.monday-row:hover .status-bar {
+  opacity: 0.9;
+}
+
+/* Animations */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.fa-spinner.fa-spin {
+  animation: pulse 1.5s infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .wc-header {
+    padding: 20px;
+  }
+  
+  .wc-back-btn {
+    position: relative;
+    top: 0;
+    right: 0;
+    margin-top: 12px;
+  }
+  
+  .monday-label-row,
+  .monday-row {
+    grid-template-columns: 6px 1fr;
+    gap: 8px;
+  }
+  
+  .monday-label-row .label:nth-child(3),
+  .monday-label-row .label:nth-child(4),
+  .monday-label-row .label:nth-child(5),
+  .monday-label-row .label:nth-child(6),
+  .monday-row .cell:nth-child(3),
+  .monday-row .cell:nth-child(4),
+  .monday-row .cell:nth-child(5),
+  .monday-row .cell:nth-child(6) {
+    display: none;
+  }
+  
+  /* Make action buttons visible and full-width on mobile */
+  .monday-row .cell.action {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important;
+    padding: 10px !important;
+  }
+  
+  .monday-row .cell.action .btn {
+    width: 100% !important;
+    min-height: 44px !important;
+    font-size: 0.9rem !important;
+    padding: 10px 16px !important;
+  }
+  
+  /* Adjust row layout for mobile */
+  .monday-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 15px 10px !important;
+  }
+  
+  .monday-row .cell {
+    width: 100% !important;
+    text-align: center !important;
+  }
+  
+  .monday-row .cell.worker {
+    justify-content: center !important;
+  }
+  
+  /* Hide status bar on mobile */
+  .monday-row .status-bar {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .wc-header {
+    padding: 15px !important;
+  }
+  
+  .wc-title h3 {
+    font-size: 1.1rem !important;
+  }
+  
+  .wc-meta {
+    flex-direction: column !important;
+    gap: 5px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .accordion-button {
+    font-size: 0.85rem !important;
+    padding: 12px !important;
+  }
+  
+  .group-count {
+    font-size: 0.7rem !important;
+  }
+}

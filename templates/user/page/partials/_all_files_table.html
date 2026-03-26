@@ -1,0 +1,65 @@
+{% if files %}
+<table class="files-table">
+  <thead>
+    <tr>
+      <th>File Name</th>
+      <th>Type</th>
+      <th>Work Cycle</th>
+      <th>Division</th>
+      <th>Uploaded By</th>
+      <th>Date</th>
+      <th>Size</th>
+      <th style="width: 60px;"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for file in files %}
+    <tr data-file-id="{{ file.id }}">
+      <td>
+        <div class="file-name">
+          {% if file.type_code == 'matrix_a' %}
+            <i class="fas fa-file-excel file-icon" style="color: #10b981;"></i>
+          {% elif file.type_code == 'matrix_b' %}
+            <i class="fas fa-file-excel file-icon" style="color: #2563eb;"></i>
+          {% elif file.type_code == 'mov' %}
+            <i class="fas fa-file-pdf file-icon" style="color: #ef4444;"></i>
+          {% else %}
+            <i class="fas fa-file file-icon" style="color: #6b7280;"></i>
+          {% endif %}
+          <span title="{{ file.name }}">{{ file.name|truncatechars:35 }}</span>
+        </div>
+      </td>
+      <td>
+        <span class="file-type-badge {{ file.type_code }}">{{ file.type }}</span>
+      </td>
+      <td>{{ file.workcycle }}</td>
+      <td>{{ file.division }}</td>
+      <td>
+        {% if file.uploaded_by %}
+          {{ file.uploaded_by.get_full_name|default:file.uploaded_by.username }}
+        {% else %}
+          <span class="file-meta">System</span>
+        {% endif %}
+      </td>
+      <td>
+        <span class="file-meta">{{ file.uploaded_at|date:"M d, Y" }}</span>
+      </td>
+      <td>
+        <span class="file-meta">{{ file.file_size }}</span>
+      </td>
+      <td>
+        <a href="{% url 'user_app:download-file' file.id %}" class="file-download-btn" title="Download">
+          <i class="fas fa-download"></i>
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="files-empty">
+  <i class="fas fa-folder-open"></i>
+  <h5>No files found</h5>
+  <p>Try adjusting your filters or search terms</p>
+</div>
+{% endif %}

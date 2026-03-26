@@ -1,0 +1,1099 @@
+{% extends "user/layout/base.html" %}
+
+{% block title %}
+{{ work_item.workcycle.title }} - Details
+{% endblock %}
+
+{% block content %}
+{% include "admin/page/modals/message_ui_modal.html" %}
+
+<style>
+/* =====================================================
+   UPDATED COLOR PALETTE
+===================================================== */
+:root {
+  /* Softer Neutrals with subtle warmth */
+  --soft-white: #fefefe;
+  --soft-bg: #f9fafb;
+  --soft-bg-alt: #f3f4f6;
+  --soft-border: #e5e7eb;
+  --soft-border-light: #f0f2f5;
+  
+  /* Soft Text Colors */
+  --soft-text-primary: #1f2937;
+  --soft-text-secondary: #4b5563;
+  --soft-text-tertiary: #6b7280;
+  --soft-text-muted: #9ca3af;
+  
+  /* UPDATED: Review Colors */
+  --review-pending: #8b6fd6;       /* Muted violet */
+  --review-approved: #3fa38c;      /* Muted teal green */
+  --review-revision: #c0545e;      /* Muted crimson */
+  
+  /* UPDATED: Work Status Colors */
+  --status-not-started: #7b8794;   /* Muted slate */
+  --status-working: #b7791f;       /* Muted amber/brown */
+  --status-done: #6fb34d;          /* Muted green */
+  
+  /* Light versions for backgrounds */
+  --review-pending-light: #f5f3ff;
+  --review-approved-light: #f0fdfa;
+  --review-revision-light: #fef2f2;
+  --status-not-started-light: #f8fafc;
+  --status-working-light: #fef3c7;
+  --status-done-light: #f0fdf4;
+  
+  /* Soft Shadows */
+  --soft-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --soft-shadow-md: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --soft-shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.05);
+  
+  /* Subtle gradients */
+  --gradient-subtle: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  --gradient-card: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
+}
+
+/* =====================================================
+   COMPACT PAGE LAYOUT
+===================================================== */
+.work-item-page {
+  background: var(--soft-bg);
+  min-height: 100vh;
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* =====================================================
+   COMPACT HEADER WITH SUBTLE BACKGROUND
+===================================================== */
+.header-compact {
+  background: var(--gradient-card);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--soft-shadow-md);
+  border: 1px solid var(--soft-border);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle background pattern */
+.header-compact::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(139, 111, 214, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 90% 80%, rgba(111, 179, 77, 0.02) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.header-compact > * {
+  position: relative;
+  z-index: 1;
+}
+
+.header-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid black;
+}
+
+.header-title-section {
+  flex: 1;
+  padding-right: 1rem;
+}
+
+.header-title {
+  color: var(--soft-text-primary);
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  line-height: 1.3;
+}
+
+.header-title i {
+  color: var(--review-pending);
+  font-size: 1.125rem;
+}
+
+.header-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--soft-text-secondary);
+  font-size: 0.8125rem;
+}
+
+.header-meta-row i {
+  color: var(--status-working);
+  font-size: 0.875rem;
+}
+
+/* Right-side action buttons */
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  border: 1px solid;
+  background: var(--gradient-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.action-btn:hover::before {
+  opacity: 1;
+}
+
+.action-btn-primary {
+  border-color: rgba(139, 111, 214, 0.3);
+  color: var(--review-pending);
+  background: linear-gradient(135deg, rgba(139, 111, 214, 0.1), rgba(139, 111, 214, 0.05));
+  box-shadow: 0 1px 2px rgba(139, 111, 214, 0.1);
+}
+
+.action-btn-primary:hover {
+  border-color: var(--review-pending);
+  background: var(--review-pending);
+  color: var(--soft-white);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(139, 111, 214, 0.2);
+}
+
+.action-btn-secondary {
+  border-color: rgba(229, 231, 235, 0.5);
+  color: var(--soft-text-secondary);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(248, 250, 252, 0.8));
+}
+
+.action-btn-secondary:hover {
+  border-color: var(--soft-text-muted);
+  background: var(--soft-bg-alt);
+  color: var(--soft-text-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.action-btn i {
+  font-size: 0.75rem;
+}
+
+/* Header bottom section */
+.header-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--soft-border-light);
+}
+
+.header-description {
+  color: var(--soft-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  flex: 1;
+  margin: 0;
+  padding: 0.5rem;
+  background: rgba(249, 250, 251, 0.5);
+  border-radius: 6px;
+  border-left: 3px solid var(--soft-border);
+}
+
+.header-due {
+  font-size: 0.8125rem;
+  color: var(--soft-text-tertiary);
+  background: var(--soft-bg-alt);
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--soft-border);
+  white-space: nowrap;
+  margin-left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.header-due i {
+  color: var(--status-working);
+  font-size: 0.75rem;
+}
+
+/* =====================================================
+   COMPACT MAIN GRID
+===================================================== */
+.main-grid-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .main-grid-compact {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =====================================================
+   COMPACT PANEL CARDS WITH SOFTER BACKGROUNDS
+===================================================== */
+.panel-compact {
+  background: var(--gradient-card);
+  border: 1px solid var(--soft-border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--soft-shadow-sm);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.panel-compact::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--soft-border-light), transparent);
+}
+
+.panel-header-compact {
+  padding: 0.875rem 1rem;
+  background: linear-gradient(135deg, var(--soft-bg), var(--soft-bg-alt));
+  border-bottom: 1px solid var(--soft-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--soft-text-primary);
+  font-size: 0.875rem;
+}
+
+.panel-header-compact i {
+  font-size: 0.875rem;
+}
+
+.panel-body-compact {
+  padding: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(249, 250, 251, 0.8));
+}
+
+/* =====================================================
+   COMPACT STATUS SECTION
+===================================================== */
+.status-section-compact {
+  margin-bottom: 1.25rem;
+}
+
+.section-label-compact {
+  color: var(--soft-text-secondary);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.625rem;
+  font-weight: 600;
+  padding-left: 0.25rem;
+  border-left: 2px solid var(--review-pending);
+}
+
+/* Status indicator */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  background: linear-gradient(135deg, var(--soft-bg), var(--soft-bg-alt));
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  margin-bottom: 0.875rem;
+  font-size: 0.8125rem;
+  border-left: 3px solid var(--status-working);
+}
+
+.status-indicator i {
+  color: var(--status-working);
+  font-size: 0.75rem;
+}
+
+.status-indicator span {
+  color: var(--soft-text-secondary);
+}
+
+/* Status buttons */
+.status-toggle-compact {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.status-btn-compact {
+  flex: 1;
+  padding: 0.75rem 0.5rem;
+  border: 1px solid var(--soft-border);
+  background: var(--gradient-card);
+  color: var(--soft-text-secondary);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.status-btn-compact::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.status-btn-compact:hover::before {
+  opacity: 1;
+}
+
+.status-btn-compact:hover {
+  border-color: var(--review-pending);
+  color: var(--review-pending);
+  background: linear-gradient(135deg, var(--review-pending-light), rgba(245, 243, 255, 0.5));
+  transform: translateY(-1px);
+  box-shadow: var(--soft-shadow-sm);
+}
+
+.status-btn-compact.active-not-started {
+  background: linear-gradient(135deg, var(--status-not-started-light), rgba(248, 250, 252, 0.7));
+  border-color: var(--status-not-started);
+  color: var(--soft-text-primary);
+}
+
+.status-btn-compact.active-progress {
+  background: linear-gradient(135deg, var(--status-working-light), rgba(254, 243, 199, 0.7));
+  border-color: var(--status-working);
+  color: var(--soft-text-primary);
+}
+
+.status-btn-compact i {
+  font-size: 0.875rem;
+}
+
+.status-btn-compact i.spin {
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Completed alert */
+.completed-alert-compact {
+  background: linear-gradient(135deg, var(--status-done-light), rgba(240, 253, 244, 0.7));
+  color: var(--soft-text-primary);
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--status-done);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.completed-alert-compact i {
+  color: var(--status-done);
+  font-size: 0.875rem;
+}
+
+.btn-undo-compact {
+  background: linear-gradient(135deg, var(--review-revision), #b1454f);
+  color: var(--soft-white);
+  border: none;
+  border-radius: 6px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  box-shadow: 0 1px 2px rgba(192, 84, 94, 0.2);
+}
+
+.btn-undo-compact:hover {
+  background: linear-gradient(135deg, #b1454f, #a03a44);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(192, 84, 94, 0.3);
+}
+
+.btn-undo-compact i {
+  font-size: 0.75rem;
+}
+
+/* =====================================================
+   COMPACT META SECTION
+===================================================== */
+.meta-section-compact {
+  background: linear-gradient(135deg, var(--soft-bg), var(--soft-bg-alt));
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--soft-border);
+}
+
+.meta-row-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--soft-border-light);
+  font-size: 0.8125rem;
+}
+
+.meta-row-compact:last-child {
+  border-bottom: none;
+}
+
+.meta-label-compact {
+  color: var(--soft-text-tertiary);
+}
+
+.meta-value-compact {
+  font-weight: 500;
+  color: var(--soft-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* UPDATED Badges with new colors */
+.badge-status-compact {
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--gradient-card);
+  border: 1px solid;
+}
+
+.badge-approved {
+  background: linear-gradient(135deg, var(--review-approved-light), rgba(240, 253, 250, 0.7));
+  color: var(--review-approved);
+  border-color: var(--review-approved);
+}
+
+.badge-revision {
+  background: linear-gradient(135deg, var(--review-revision-light), rgba(254, 242, 242, 0.7));
+  color: var(--review-revision);
+  border-color: var(--review-revision);
+}
+
+.badge-pending {
+  background: linear-gradient(135deg, var(--review-pending-light), rgba(245, 243, 255, 0.7));
+  color: var(--review-pending);
+  border-color: var(--review-pending);
+}
+
+/* =====================================================
+   COMPACT SUBMIT SECTION
+===================================================== */
+.submit-section-compact {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--soft-border);
+}
+
+.btn-submit-compact {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, var(--status-done), #5da041);
+  border: none;
+  border-radius: 8px;
+  color: var(--soft-white);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 1px 2px rgba(111, 179, 77, 0.2);
+}
+
+.btn-submit-compact:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5da041, #4d8a34);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(111, 179, 77, 0.3);
+}
+
+.btn-submit-compact:disabled {
+  background: var(--soft-border);
+  color: var(--soft-text-muted);
+  cursor: not-allowed;
+}
+
+.submit-hint-compact {
+  color: var(--soft-text-tertiary);
+  font-size: 0.75rem;
+  text-align: center;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: var(--soft-bg-alt);
+  border-radius: 4px;
+  border-left: 2px solid var(--soft-border);
+}
+
+/* =====================================================
+   COMPACT NOTES FORM
+===================================================== */
+.form-group-compact {
+  margin-bottom: 1rem;
+}
+
+.form-label-compact {
+  color: var(--soft-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.375rem;
+  display: block;
+  padding-left: 0.25rem;
+  border-left: 2px solid var(--status-working);
+}
+
+.form-input-compact {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  background: var(--gradient-card);
+  border: 1px solid var(--soft-border);
+  border-radius: 6px;
+  color: var(--soft-text-primary);
+  font-size: 0.8125rem;
+  transition: all 0.15s ease;
+}
+
+.form-input-compact:focus {
+  outline: none;
+  border-color: var(--review-pending);
+  background: var(--soft-white);
+  box-shadow: 0 0 0 3px rgba(139, 111, 214, 0.1);
+}
+
+.form-input-compact::placeholder {
+  color: var(--soft-text-muted);
+}
+
+textarea.form-input-compact {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Status chips */
+.chips-container-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+
+.status-chip-compact {
+  padding: 0.375rem 0.625rem;
+  background: var(--gradient-card);
+  border: 1px solid var(--soft-border);
+  border-radius: 16px;
+  color: var(--soft-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.status-chip-compact:hover {
+  background: linear-gradient(135deg, var(--review-pending-light), rgba(245, 243, 255, 0.5));
+  border-color: var(--review-pending);
+  color: var(--review-pending);
+  transform: translateY(-1px);
+}
+
+.btn-save-compact {
+  padding: 0.625rem 1rem;
+  background: linear-gradient(135deg, var(--review-pending), #7a5bd6);
+  border: none;
+  border-radius: 6px;
+  color: var(--soft-white);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  box-shadow: 0 1px 2px rgba(139, 111, 214, 0.2);
+}
+
+.btn-save-compact:hover {
+  background: linear-gradient(135deg, #7a5bd6, #6b4bc7);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(139, 111, 214, 0.3);
+}
+
+/* =====================================================
+   COMPACT ATTACHMENTS
+===================================================== */
+.attachments-section-compact {
+  margin-top: 1.5rem;
+  background: var(--gradient-card);
+  border-radius: 10px;
+  padding: 1.25rem;
+  border: 1px solid var(--soft-border);
+}
+
+.section-title-compact {
+  color: var(--soft-text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--soft-border-light);
+}
+
+.section-title-compact i {
+  color: var(--review-pending);
+  font-size: 0.875rem;
+}
+
+.attachments-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .attachments-grid-compact {
+    grid-template-columns: 1fr;
+  }
+}
+
+.attachment-card-compact {
+  background: linear-gradient(135deg, var(--soft-white), var(--soft-bg));
+  border: 1px solid var(--soft-border);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  display: block;
+  position: relative;
+  overflow: hidden;
+}
+
+.attachment-card-compact::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.attachment-card-compact:hover::before {
+  opacity: 1;
+}
+
+.attachment-card-compact:hover {
+  border-color: var(--review-pending);
+  background: linear-gradient(135deg, var(--review-pending-light), var(--soft-white));
+  transform: translateY(-2px);
+  box-shadow: var(--soft-shadow-md);
+}
+
+.attachment-icon-compact {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.attachment-icon-compact.uploaded {
+  color: var(--status-done);
+}
+
+.attachment-icon-compact.pending {
+  color: var(--soft-text-muted);
+}
+
+.attachment-title-compact {
+  color: var(--soft-text-primary);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.badge-compact {
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+}
+
+.badge-uploaded-compact {
+  background: linear-gradient(135deg, var(--status-done-light), rgba(240, 253, 244, 0.7));
+  color: var(--status-done);
+  border: 1px solid rgba(111, 179, 77, 0.2);
+}
+
+.badge-not-uploaded-compact {
+  background: linear-gradient(135deg, var(--soft-bg-alt), var(--soft-bg));
+  color: var(--soft-text-tertiary);
+  border: 1px solid var(--soft-border);
+}
+
+/* =====================================================
+   MODAL HIDDEN STATE
+===================================================== */
+.qxdlg-modal-overlay[data-qxdlg-state="closed"] {
+  display: none;
+}
+.submission-indicator {
+  margin-left: 6px;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.submission-indicator.on-time {
+  color: var(--status-done);
+}
+
+.submission-indicator.late {
+  color: var(--lifecycle-lapsed);
+}
+
+</style>
+
+<div class="work-item-page">
+  <!-- Compact Header -->
+  <div class="header-compact">
+    <!-- Top Row: Title + Actions (right corner) -->
+    <div class="header-top-row">
+      <div class="header-title-section">
+        <h1 class="header-title">
+          <i class="fas fa-layer-group"></i>
+          {{ work_item.workcycle.title }}
+        </h1>
+        <div class="header-meta-row">
+          <i class="far fa-user-circle"></i>
+          <span>Assigned to {{ request.user.get_full_name|default:request.user.username }}</span><br>
+          <div class="wi-countdown">
+  <i class="fas fa-hourglass-half"></i>
+  {{ work_item.time_remaining }}
+</div>
+
+        </div>
+      </div>
+      
+      <!-- Right-side action buttons -->
+      <div class="header-actions">
+        <a href="#"
+           class="action-btn action-btn-primary"
+           data-qxdlg-trigger
+           data-qxdlg-url="{% url 'user_app:work-item-discussion' work_item.id %}"
+           data-qxdlg-title="{{ work_item.workcycle.title }}"
+           data-qxdlg-subtitle="Discussion">
+          <i class="fas fa-comment-dots"></i>
+          <span>Discussion</span>
+        </a>
+        
+        <!-- Changed from Home to Return -->
+        <a href="{% url 'user_app:work-items' %}"
+           class="action-btn action-btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          <span>Return</span>
+        </a>
+      </div>
+    </div>
+    
+    <!-- Bottom Row: Description + Due Date -->
+    <div class="header-bottom-row">
+      {% if work_item.workcycle.description %}
+      <p class="header-description">{{ work_item.workcycle.description }}</p>
+      {% else %}
+      <p class="header-description" style="color: var(--soft-text-muted); font-style: italic;">No description provided</p>
+      {% endif %}
+      <div class="header-due">
+        <i class="far fa-calendar-alt"></i>
+        <span>Due {{ work_item.workcycle.due_at|date:"M d, Y · g:i A" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compact Attachments Section -->
+  <div class="attachments-section-compact">
+    <h5 class="section-title-compact">
+      <i class="fas fa-paperclip"></i>
+      Attachments
+    </h5>
+    <div class="attachments-grid-compact">
+      {% for key, label in attachment_types %}
+      <a href="{% url 'user_app:work-item-attachments' work_item.id %}?type={{ key }}" class="attachment-card-compact">
+        <i class="fas fa-folder-open attachment-icon-compact {% if key in uploaded_types %}uploaded{% else %}pending{% endif %}"></i>
+        <div class="attachment-title-compact">{{ label }}</div>
+        {% if key in uploaded_types %}
+        <span class="badge-compact badge-uploaded-compact">Uploaded</span>
+        {% else %}
+        <span class="badge-compact badge-not-uploaded-compact">Not Uploaded</span>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Compact Main Grid -->
+  <div class="main-grid-compact">
+    <!-- Details Panel -->
+    <div class="panel-compact">
+      <div class="panel-header-compact">
+        <i class="fas fa-info-circle" style="color: var(--review-pending);"></i>
+        Status & Details
+      </div>
+      <div class="panel-body-compact">
+        <!-- Status Section -->
+        <div class="status-section-compact">
+          <div class="section-label-compact">Current Status</div>
+          
+          {% if work_item.status != "done" %}
+          <!-- Status Indicator -->
+          <div class="status-indicator">
+            <i class="fas fa-hand-pointer"></i>
+            <span>Click to update your work status</span>
+          </div>
+          
+          <!-- Status Buttons -->
+          <div class="status-toggle-compact">
+            <form method="post" style="flex: 1;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="update_status">
+              <input type="hidden" name="status" value="not_started">
+              <button type="submit" class="status-btn-compact {% if work_item.status == 'not_started' %}active-not-started{% endif %}">
+                <i class="fas fa-circle"></i>
+                <span>Not Started</span>
+              </button>
+            </form>
+            <form method="post" style="flex: 1;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="update_status">
+              <input type="hidden" name="status" value="working_on_it">
+              <button type="submit" class="status-btn-compact {% if work_item.status == 'working_on_it' %}active-progress{% endif %}">
+                <i class="fas fa-spinner {% if work_item.status == 'working_on_it' %}spin{% endif %}"></i>
+                <span>Working On It</span> <!-- CHANGED: In Progress → Working On It -->
+              </button>
+            </form>
+          </div>
+          {% else %}
+          <!-- Completed State -->
+          <div class="completed-alert-compact">
+            <div>
+              <i class="fas fa-check-circle"></i>
+              <span>Completed</span>
+            </div>
+            
+            {% if work_item.review_decision == "pending" %}
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="undo_submit">
+              <button type="submit" class="btn-undo-compact">
+                <i class="fas fa-undo"></i>
+                Undo
+              </button>
+            </form>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Meta Info -->
+        <div class="meta-section-compact">
+          <div class="meta-row-compact">
+            <span class="meta-label-compact">Review Status</span>
+            <span class="badge-status-compact {% if work_item.review_decision == 'approved' %}badge-approved{% elif work_item.review_decision == 'revision' %}badge-revision{% else %}badge-pending{% endif %}">
+              {{ work_item.get_review_decision_display }}
+            </span>
+          </div>
+            <div class="meta-row-compact">
+              <span class="meta-label-compact">Submitted</span>
+
+              <span class="meta-value-compact">
+                {% if work_item.submitted_at %}
+
+                  <!-- icon -->
+                  {% if submission_status == "on_time" %}
+                    <i class="fas fa-check-circle" style="color: var(--status-done);"></i>
+                  {% else %}
+                    <i class="fas fa-exclamation-circle" style="color: var(--lifecycle-lapsed);"></i>
+                  {% endif %}
+
+                  <!-- full date -->
+                  {{ work_item.submitted_at|date:"l, F d, Y · h:i A" }}
+
+                  <!-- indicator -->
+                  <span class="submission-indicator
+                        {% if submission_status == 'on_time' %}on-time{% else %}late{% endif %}">
+                    {% if submission_status == "on_time" %}
+                      — On time
+                    {% else %}
+                      — Late by {{ submission_delta }}
+                    {% endif %}
+                  </span>
+
+                {% else %}
+                  <i class="fas fa-clock" style="color: var(--soft-text-muted);"></i>
+                  Not yet submitted
+                {% endif %}
+              </span>
+            </div>
+
+        </div>
+
+        <!-- Submit Button -->
+        {% if work_item.status != "done" %}
+        <div class="submit-section-compact">
+          <form method="post"
+                data-loading-text="Submitting Work Item..."
+                data-loading-message="Finalizing your submission and notifying reviewers.">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="submit">
+            <button type="submit" class="btn-submit-compact" {% if not attachments %}disabled{% endif %}>
+              <i class="fas fa-check-circle"></i>
+              Mark as Done & Submit
+            </button>
+          </form>
+          {% if not attachments %}
+          <div class="submit-hint-compact">Upload at least one attachment before submitting.</div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Notes Panel -->
+    <form method="post" class="panel-compact">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_context">
+      <div class="panel-header-compact">
+        <i class="fas fa-sticky-note" style="color: var(--status-working);"></i>
+        Notes
+      </div>
+      <div class="panel-body-compact">
+        <div class="form-group-compact">
+          <label class="form-label-compact">Status Label</label>
+          <input type="text" id="statusLabelInput" name="status_label" class="form-input-compact" 
+                 placeholder="e.g. Waiting for documents" value="{{ work_item.status_label }}">
+          <div class="chips-container-compact">
+            <button type="button" class="status-chip-compact" data-value="Waiting for approval">Waiting for approval</button>
+            <button type="button" class="status-chip-compact" data-value="In review">In review</button>
+            <button type="button" class="status-chip-compact" data-value="Needs revision">Needs revision</button>
+            <button type="button" class="status-chip-compact" data-value="On hold">On hold</button>
+            <button type="button" class="status-chip-compact" data-value="For validation">For validation</button>
+            <button type="button" class="status-chip-compact" data-value="Pending documents">Pending documents</button>
+          </div>
+        </div>
+        <div class="form-group-compact">
+          <label class="form-label-compact">Message</label>
+          <textarea name="message" class="form-input-compact" rows="4" 
+                    placeholder="Add notes or remarks here...">{{ work_item.message }}</textarea>
+        </div>
+        <button type="submit" class="btn-save-compact">
+          <i class="fas fa-save"></i>
+          Save Notes
+        </button>
+      </div>
+    </form>
+  </div>
+
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("statusLabelInput");
+  document.querySelectorAll(".status-chip-compact").forEach(chip => {
+    chip.addEventListener("click", () => {
+      input.value = chip.dataset.value;
+      input.focus();
+    });
+  });
+  
+  // Add subtle hover effect to action buttons
+  document.querySelectorAll('.action-btn').forEach(btn => {
+    btn.addEventListener('mouseenter', function() {
+      this.style.transform = 'translateY(-1px)';
+    });
+    btn.addEventListener('mouseleave', function() {
+      this.style.transform = 'translateY(0)';
+    });
+  }); 
+});
+</script>
+
+{% endblock %}

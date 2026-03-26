@@ -1,0 +1,1439 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Header</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="{% static 'css/notification-panel.css' %}">
+
+<style>
+/* ================= SCOPED ADMIN HEADER STYLES ================= */
+/* All classes prefixed with 'ah-' to avoid conflicts */
+
+.ah-header {
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 1.25rem;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.97) 0%, rgba(30, 41, 59, 0.98) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+
+/* LEFT SECTION */
+.ah-left-section {
+  display: flex;
+  align-items: center;
+}
+
+/* LOGO */
+.ah-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  padding: 0.35rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.ah-logo:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.ah-logo:active {
+  transform: translateY(0);
+}
+
+.ah-logo-img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  border: 2px solid rgba(59, 130, 246, 0.15);
+}
+
+.ah-ico {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  border-radius: 10px;
+  font-size: 1rem;
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+  transition: all 0.3s ease;
+}
+
+.ah-ico::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  border-radius: 13px;
+  z-index: -1;
+  opacity: 0;
+  filter: blur(10px);
+  transition: opacity 0.3s ease;
+}
+
+.ah-logo:hover .ah-ico::after {
+  opacity: 0.6;
+}
+
+.ah-logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+  gap: 0.1rem;
+}
+
+.ah-logo-text b {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
+  filter: drop-shadow(0 0 8px rgba(96, 165, 250, 0.4));
+}
+
+.ah-logo-text small {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* RIGHT SECTION */
+.ah-right-section {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* NAVIGATION */
+.ah-nav {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.25rem;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ah-nav a {
+  position: relative;
+  width: 42px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.ah-nav a::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ah-nav a:hover {
+  color: #fff;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4), inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+}
+
+.ah-nav a:hover::before {
+  opacity: 0.2;
+}
+
+.ah-nav a.active {
+  color: #fff;
+  background: rgba(59, 130, 246, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.4);
+}
+
+.ah-nav a.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* DROPDOWN STYLES */
+.ah-dropdown {
+  position: relative;
+}
+
+.ah-dropdown-toggle {
+  position: relative;
+  width: auto !important;
+  padding: 0 10px !important;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ah-caret {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  transition: transform 0.2s ease;
+}
+
+.ah-dropdown.open .ah-caret {
+  transform: rotate(180deg);
+}
+
+.ah-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-5px);
+  min-width: 200px;
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 2000;
+  overflow: hidden;
+  padding: 0.4rem;
+}
+
+.ah-dropdown.open .ah-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.ah-dropdown-menu a {
+  display: flex !important;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100% !important;
+  height: auto !important;
+  padding: 0.6rem 0.8rem !important;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.ah-dropdown-menu a::before {
+  display: none !important;
+}
+
+.ah-dropdown-menu a i {
+  width: 18px;
+  text-align: center;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.ah-dropdown-menu a:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: #fff;
+  box-shadow: none !important;
+}
+
+.ah-dropdown-menu a:hover i {
+  opacity: 1;
+}
+
+.ah-dropdown-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0.3rem 0.5rem;
+}
+
+/* TOOLTIP */
+.ah-nav span.ah-tooltip {
+  position: absolute;
+  bottom: -32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(5px);
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
+.ah-nav span.ah-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 7px;
+  height: 7px;
+  background: rgba(15, 23, 42, 0.95);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ah-nav a:hover span.ah-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* BADGE (SOON) */
+.ah-nav em {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.5rem;
+  font-style: normal;
+  font-weight: 600;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* MESSAGE UNREAD BADGE */
+.ah-msg-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 700;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #ef4444;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+/* ACTIONS */
+.ah-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* DOCUMENTS PANEL */
+.ah-docs-container {
+  position: relative;
+}
+
+.ah-docs-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: grid;
+  place-items: center;
+}
+
+.ah-docs-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Documents backdrop (blurry overlay) */
+.ah-docs-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1040;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.ah-docs-backdrop.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ah-docs-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 160px;
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  z-index: 2000;
+}
+
+.ah-docs-panel.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.ah-docs-header {
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ah-docs-title {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ah-docs-title i {
+  font-size: 0.65rem;
+}
+
+.ah-docs-body {
+  padding: 0.25rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.ah-docs-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 0.7rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.ah-docs-item:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: #fff;
+}
+
+.ah-docs-item i {
+  font-size: 0.7rem;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ah-docs-item span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ah-docs-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0.25rem 0;
+}
+
+/* MOBILE MENU BUTTON - REMOVED */
+
+/* USER DROPDOWN */
+.ah-user {
+  position: relative;
+}
+
+/* User profile backdrop (blurry overlay) */
+.ah-user-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1040;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.ah-user-backdrop.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ah-ubox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.7rem 0.4rem 0.5rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ah-ubox:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.ah-ubox i:first-child {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.ah-ubox i:last-child {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  transition: transform 0.2s ease;
+}
+
+.ah-user.open .ah-ubox i:last-child {
+  transform: rotate(180deg);
+}
+
+/* USER DROPDOWN MENU */
+.ah-udrop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 240px;
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(20px);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px) scale(0.95);
+  transform-origin: top right;
+  transition: all 0.2s ease;
+  z-index: 2000;
+  overflow: hidden;
+}
+
+.ah-user.open .ah-udrop {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+/* Profile Header in Dropdown */
+.ah-udrop-header {
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ah-udrop-avatar {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  flex-shrink: 0;
+  overflow: hidden;
+  object-fit: cover;
+}
+
+.ah-udrop-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ah-udrop-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ah-udrop-email {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ah-udrop-links {
+  padding: 0.5rem;
+}
+
+.ah-udrop a {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.ah-udrop a i {
+  width: 18px;
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.ah-udrop a:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: #fff;
+}
+
+.ah-udrop a:hover i {
+  opacity: 1;
+}
+
+.ah-udrop-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0.25rem 0.5rem;
+}
+
+.ah-udrop a.ah-out {
+  color: #f87171;
+}
+
+.ah-udrop a.ah-out:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+/* Email Unread Badge */
+.email-unread-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #ef4444;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* ================= MOBILE STYLES ================= */
+@media (max-width: 768px) {
+  /* Mobile menu backdrop */
+  .ah-nav-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1040;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .ah-nav-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .ah-nav {
+    position: fixed;
+    top: 70px;
+    right: 1rem;
+    width: 280px;
+    max-width: calc(100vw - 2rem);
+    background: rgba(15, 23, 42, 0.98);
+    backdrop-filter: blur(20px);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.5rem;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    z-index: 1050;
+    max-height: calc(100vh - 90px);
+    overflow-y: auto;
+  }
+
+  .ah-nav.show {
+    display: flex;
+    animation: ah-slideIn 0.3s ease-out;
+  }
+
+  @keyframes ah-slideIn {
+    from { 
+      opacity: 0; 
+      transform: translateY(-20px) scale(0.95); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0) scale(1); 
+    }
+  }
+
+  .ah-nav a {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.7rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 8px;
+  }
+
+  .ah-nav a::before {
+    display: none;
+  }
+
+  .ah-nav a:hover {
+    background: rgba(59, 130, 246, 0.2);
+    box-shadow: none;
+  }
+
+  .ah-nav span.ah-tooltip {
+    position: static;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.88rem;
+    box-shadow: none;
+  }
+
+  .ah-nav span.ah-tooltip::before {
+    display: none;
+  }
+
+  .ah-menu-btn {
+    display: grid;
+    place-items: center;
+  }
+  
+  /* Documents panel mobile adjustments */
+  .ah-docs-panel {
+    position: fixed;
+    top: 70px;
+    right: 1rem;
+    left: auto;
+    width: 160px;
+    max-width: 200px;
+  }
+  
+  .ah-docs-btn {
+    display: grid;
+  }
+  
+  .ah-nav a:hover span.ah-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(10%) translateY(0);
+  }
+
+  /* Mobile dropdown styles */
+  .ah-dropdown {
+    width: 100%;
+  }
+
+  .ah-dropdown-toggle {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    gap: 0.7rem !important;
+    padding: 0.7rem 0.85rem !important;
+  }
+
+  .ah-dropdown-menu {
+    position: static;
+    transform: none;
+    width: 100%;
+    margin-top: 0.3rem;
+    opacity: 0;
+    visibility: hidden;
+    max-height: 0;
+    overflow: hidden;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .ah-dropdown.open .ah-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    max-height: 300px;
+    padding: 0.3rem;
+  }
+
+  .ah-dropdown-menu a {
+    padding: 0.55rem 0.7rem 0.55rem 1.5rem !important;
+    font-size: 0.82rem;
+  }
+
+}
+
+@media (max-width: 600px) {
+  .ah-logo-text {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .ah-header {
+    padding: 0.55rem 0.9rem;
+  }
+
+  .ah-ubox span {
+    display: none;
+  }
+
+  .ah-ubox {
+    padding: 0.45rem;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header class="ah-header">
+
+  <!-- LEFT -->
+  <div class="ah-left-section">
+    <a href="{% url 'admin_app:main-dashboard' %}" class="ah-logo">
+      <img src="{% static 'img/denrpenrologo.png' %}" alt="DENR-PENRO" class="ah-logo-img">
+      <div class="ah-logo-text">
+        <small>Work Indicator<br>& Submission Engine</small>
+      </div>
+    </a>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="ah-right-section">
+    <!-- Mobile menu backdrop -->
+    <div class="ah-nav-backdrop" data-nav-backdrop></div>
+    
+    <!-- Documents backdrop -->
+    <div class="ah-docs-backdrop" data-docs-backdrop></div>
+
+    <!-- DOCUMENT TRACKING BUTTON -->
+    <div class="ah-docs-container" data-tracking-panel>
+      <button class="ah-docs-btn" 
+              data-tracking-toggle 
+              aria-label="Document Tracking"
+              aria-expanded="false"
+              aria-haspopup="true"
+              style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.3);">
+        <i class="fas fa-route"></i>
+      </button>
+      
+      <!-- Document Tracking Panel -->
+      <div class="ah-docs-panel" data-tracking-content>
+        <div class="ah-docs-header">
+          <h3 class="ah-docs-title">
+            <i class="fas fa-route"></i>
+            Document Tracking
+          </h3>
+        </div>
+        <div class="ah-docs-body">
+          <a href="{% url 'document_tracking:admin_overview' %}" class="ah-docs-item">
+            <i class="fas fa-tachometer-alt" style="color: #3b82f6;"></i>
+            <span>Overview</span>
+          </a>
+          <a href="{% url 'document_tracking:admin_submissions' %}" class="ah-docs-item">
+            <i class="fas fa-clipboard-list" style="color: #8b5cf6;"></i>
+            <span>All Submissions</span>
+          </a>
+          <div class="ah-docs-divider"></div>
+          <a href="{% url 'document_tracking:my_submissions' %}" class="ah-docs-item">
+            <i class="fas fa-user-check" style="color: #22c55e;"></i>
+            <span>My Submissions</span>
+          </a>
+          <a href="{% url 'document_tracking:submit_document' %}" class="ah-docs-item">
+            <i class="fas fa-plus-circle" style="color: #3b82f6;"></i>
+            <span>Submit Document</span>
+          </a>
+          <div class="ah-docs-divider"></div>
+          <a href="{% url 'document_tracking:settings' %}" class="ah-docs-item">
+            <i class="fas fa-cog" style="color: #64748b;"></i>
+            <span>Tracking Settings</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKSTATE BUTTON -->
+    <div class="ah-docs-container" data-workstate-panel>
+      <button class="ah-docs-btn" 
+              data-workstate-toggle 
+              aria-label="Workstate"
+              aria-expanded="false"
+              aria-haspopup="true"
+              style="background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3);">
+        <i class="fas fa-briefcase"></i>
+      </button>
+      
+      <!-- Workstate Panel -->
+      <div class="ah-docs-panel" data-workstate-content>
+        <div class="ah-docs-header">
+          <h3 class="ah-docs-title">
+            <i class="fas fa-briefcase"></i>
+            Workstate
+          </h3>
+        </div>
+        <div class="ah-docs-body">
+          <a href="{% url 'admin_app:workstate-overview' %}" class="ah-docs-item">
+            <i class="fas fa-tachometer-alt" style="color: #3b82f6;"></i>
+            <span>Overview</span>
+          </a>
+          <a href="{% url 'admin_app:workcycles' %}" class="ah-docs-item">
+            <i class="fas fa-calendar-alt" style="color: #8b5cf6;"></i>
+            <span>Work Cycles</span>
+          </a>
+          <a href="{% url 'admin_app:completed-work-summary' %}" class="ah-docs-item">
+            <i class="fas fa-clipboard-check" style="color: #22c55e;"></i>
+            <span>Review</span>
+          </a>
+          <a href="{% url 'admin_app:discussion-list' %}" class="ah-docs-item">
+            <i class="fas fa-comments" style="color: #ec4899;"></i>
+            <span>Messages</span>
+            {% if admin_has_unread_discussions %}
+            <span class="ah-msg-badge" data-unread-count="{{ admin_unread_discussions_count }}">
+              {% if admin_unread_discussions_count > 99 %}99+{% else %}{{ admin_unread_discussions_count }}{% endif %}
+            </span>
+            {% endif %}
+          </a>
+          <div class="ah-docs-divider"></div>
+          <a href="{% url 'admin_app:pending-reviews' %}" class="ah-docs-item">
+            <i class="fas fa-clock" style="color: #eab308;"></i>
+            <span>Pending Reviews</span>
+          </a>
+
+          <a href="{% url 'admin_app:rejected-files' %}" class="ah-docs-item">
+            <i class="fas fa-times-circle" style="color: #ef4444;"></i>
+            <span>Rejected Files</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKFORCES DIRECT LINK (Separated from Workstate) -->
+    <div class="ah-docs-container">
+      <a href="{% url 'admin_app:users' %}" 
+         class="ah-docs-btn" 
+         title="Workforces"
+         aria-label="Workforces">
+        <i class="fas fa-users"></i>
+      </a>
+    </div>
+
+    <div class="ah-actions">
+      <!-- NOTIFICATION PANEL -->
+      <!-- Notification backdrop -->
+      <div class="notif-backdrop" data-notif-backdrop></div>
+      
+      <div class="notif-container" data-notif-panel data-view-all-url="{% url 'admin_app:admin-notifications' %}">
+        <button class="notif-bell" 
+                data-notif-toggle 
+                aria-label="Notifications ({{ admin_unread_notifications_count }} unread)"
+                aria-expanded="false"
+                aria-haspopup="true">
+          <i class="fas fa-bell"></i>
+          <span class="notif-badge" 
+                data-notif-badge
+                data-unread-type="notifications"
+                data-unread-count="{{ admin_unread_notifications_count }}"
+                data-count="{{ admin_unread_notifications_count }}"
+                aria-live="polite"
+                {% if admin_unread_notifications_count == 0 %}style="display: none;"{% endif %}>
+            {% if admin_unread_notifications_count > 9 %}9+{% else %}{{ admin_unread_notifications_count }}{% endif %}
+          </span>
+        </button>
+
+        <div class="notif-panel" data-notif-dropdown role="menu">
+          <div class="notif-panel-header">
+            <h6>Notifications</h6>
+            <button class="notif-mark-all" data-mark-all-read>Mark all as read</button>
+          </div>
+          <div class="notif-panel-body" data-notif-list>
+            <div class="notif-loading">
+              <div class="notif-spinner"></div>
+            </div>
+          </div>
+          <div class="notif-panel-footer" data-notif-footer>
+            <a href="{% url 'admin_app:admin-notifications' %}">View all notifications</a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- DOCUMENTS BUTTON (File Manager) -->
+      <div class="ah-docs-container" data-docs-panel>
+        <button class="ah-docs-btn" 
+                data-docs-toggle 
+                aria-label="Documents"
+                aria-expanded="false"
+                aria-haspopup="true">
+          <i class="fas fa-folder-open"></i>
+        </button>
+        
+        <!-- Documents Panel -->
+        <div class="ah-docs-panel" data-docs-content>
+          <div class="ah-docs-header">
+            <h3 class="ah-docs-title">
+              <i class="fas fa-folder-open"></i>
+              Documents
+            </h3>
+          </div>
+          <div class="ah-docs-body">
+            <a href="{% url 'admin_app:documents' %}" class="ah-docs-item">
+              <i class="fas fa-home"></i>
+              <span>Docs Dashboard</span>
+            </a>
+            <a href="{% url 'admin_app:file-manager' %}" class="ah-docs-item">
+              <i class="fas fa-folder"></i>
+              <span>File Manager</span>
+            </a>
+            <a href="{% url 'admin_app:routed-documents' %}" class="ah-docs-item">
+              <i class="fas fa-route"></i>
+              <span>Routed Documents</span>
+            </a>
+            <a href="{% url 'admin_app:workstate-assets' %}" class="ah-docs-item">
+              <i class="fas fa-layer-group"></i>
+              <span>Workstate Assets</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- User profile backdrop -->
+      <div class="ah-user-backdrop" data-user-backdrop></div>
+
+      <div class="ah-user" data-user-menu>
+        <button class="ah-ubox">
+          <i class="fas fa-user-circle"></i>
+          <span>{{ request.user.username|truncatechars:12 }}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+
+        <div class="ah-udrop">
+          <div class="ah-udrop-header">
+            {% if request.user.profile_image %}
+              <img class="ah-udrop-avatar"
+                   src="{{ request.user.profile_image.url }}"
+                   alt="{{ request.user.get_full_name|default:request.user.username }}"
+                   style="background: linear-gradient(135deg, #3b82f6, #8b5cf6);">
+            {% else %}
+              <div class="ah-udrop-avatar" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: grid; place-items: center;">
+                <i class="fas fa-user"></i>
+              </div>
+            {% endif %}
+            <div class="ah-udrop-info">
+              <span class="ah-udrop-name">{{ request.user.first_name }} {{ request.user.last_name }}</span>
+              <span class="ah-udrop-email">{{ request.user.email|default:"No email set" }}</span>
+            </div>
+          </div>
+          <div class="ah-udrop-links">
+            <a href="{% url 'admin_app:user-profile' request.user.id %}"><i class="fas fa-id-card"></i>My Profile</a>
+            <a href="{% url 'admin_app:email-logs' %}" class="position-relative">
+              <i class="fas fa-envelope"></i>Email Logs
+              {% if admin_has_unread_emails %}
+              <span class="email-unread-badge">{{ admin_unread_emails_count }}</span>
+              {% endif %}
+            </a>
+            <div class="ah-udrop-divider"></div>
+            <a href="{% url 'logout' %}" class="ah-out">
+              <i class="fas fa-sign-out-alt"></i>Logout
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</header>
+
+<script>
+/* USER DROPDOWN */
+document.addEventListener("click", e => {
+  document.querySelectorAll("[data-user-menu]").forEach(w => {
+    const btn = w.querySelector(".ah-ubox");
+    const backdrop = document.querySelector("[data-user-backdrop]");
+    
+    if (btn.contains(e.target)) {
+      const isOpen = w.classList.contains("open");
+      
+      // Close other panels
+      const docsPanel = document.querySelector('[data-docs-content]');
+      const docsBackdrop = document.querySelector('[data-docs-backdrop]');
+      const notifPanel = document.querySelector('.notif-panel');
+      const notifBackdrop = document.querySelector('[data-notif-backdrop]');
+      const trackingPanel = document.querySelector('[data-tracking-content]');
+      const workstatePanel = document.querySelector('[data-workstate-content]');
+      
+      if (docsPanel) docsPanel.classList.remove('show');
+      if (docsBackdrop) docsBackdrop.classList.remove('show');
+      if (notifPanel) notifPanel.classList.remove('show');
+      if (notifBackdrop) notifBackdrop.classList.remove('show');
+      if (trackingPanel) trackingPanel.classList.remove('show');
+      if (workstatePanel) workstatePanel.classList.remove('show');
+      
+      // Toggle user menu
+      w.classList.toggle("open");
+      
+      // Toggle backdrop
+      if (!isOpen && backdrop) {
+        backdrop.classList.add("show");
+      } else if (backdrop) {
+        backdrop.classList.remove("show");
+      }
+    } else if (!w.contains(e.target)) {
+      w.classList.remove("open");
+      if (backdrop) {
+        backdrop.classList.remove("show");
+      }
+    }
+  });
+});
+
+/* CLOSE USER DROPDOWN ON BACKDROP CLICK */
+document.querySelector("[data-user-backdrop]")?.addEventListener("click", () => {
+  const userMenu = document.querySelector("[data-user-menu]");
+  const backdrop = document.querySelector("[data-user-backdrop]");
+  if (userMenu) {
+    userMenu.classList.remove("open");
+  }
+  if (backdrop) {
+    backdrop.classList.remove("show");
+  }
+});
+
+/* MOBILE NAV - REMOVED */
+
+/* DOCUMENTS PANEL TOGGLE */
+document.querySelector("[data-docs-toggle]")?.addEventListener("click", e => {
+  e.stopPropagation();
+  const panel = document.querySelector("[data-docs-content]");
+  const backdrop = document.querySelector("[data-docs-backdrop]");
+  const isOpen = panel.classList.contains("show");
+  
+  // Close notification panel if open
+  const notifPanel = document.querySelector(".notif-panel");
+  const notifBackdrop = document.querySelector("[data-notif-backdrop]");
+  if (notifPanel) {
+    notifPanel.classList.remove("show");
+  }
+  if (notifBackdrop) {
+    notifBackdrop.classList.remove("show");
+  }
+  
+  // Close user menu if open
+  const userMenu = document.querySelector("[data-user-menu]");
+  const userBackdrop = document.querySelector("[data-user-backdrop]");
+  if (userMenu) {
+    userMenu.classList.remove("open");
+  }
+  if (userBackdrop) {
+    userBackdrop.classList.remove("show");
+  }
+  
+  // Close tracking panel if open
+  const trackingPanel = document.querySelector("[data-tracking-content]");
+  if (trackingPanel) {
+    trackingPanel.classList.remove("show");
+  }
+  
+  // Close workstate panel if open
+  const workstatePanel = document.querySelector("[data-workstate-content]");
+  if (workstatePanel) {
+    workstatePanel.classList.remove("show");
+  }
+  
+  // Close all other panels
+  document.querySelectorAll(".ah-docs-panel").forEach(p => {
+    if (p !== panel) p.classList.remove("show");
+  });
+  
+  // Toggle this panel and backdrop
+  if (!isOpen) {
+    panel.classList.add("show");
+    backdrop.classList.add("show");
+  } else {
+    panel.classList.remove("show");
+    backdrop.classList.remove("show");
+  }
+});
+
+/* DOCUMENT TRACKING PANEL TOGGLE */
+document.querySelector("[data-tracking-toggle]")?.addEventListener("click", e => {
+  e.stopPropagation();
+  const panel = document.querySelector("[data-tracking-content]");
+  const backdrop = document.querySelector("[data-docs-backdrop]");
+  const isOpen = panel.classList.contains("show");
+  
+  // Close notification panel if open
+  const notifPanel = document.querySelector(".notif-panel");
+  const notifBackdrop = document.querySelector("[data-notif-backdrop]");
+  if (notifPanel) {
+    notifPanel.classList.remove("show");
+  }
+  if (notifBackdrop) {
+    notifBackdrop.classList.remove("show");
+  }
+  
+  // Close user menu if open
+  const userMenu = document.querySelector("[data-user-menu]");
+  const userBackdrop = document.querySelector("[data-user-backdrop]");
+  if (userMenu) {
+    userMenu.classList.remove("open");
+  }
+  if (userBackdrop) {
+    userBackdrop.classList.remove("show");
+  }
+  
+  // Close docs panel if open
+  const docsPanel = document.querySelector("[data-docs-content]");
+  if (docsPanel) {
+    docsPanel.classList.remove("show");
+  }
+  
+  // Close workstate panel if open
+  const workstatePanel = document.querySelector("[data-workstate-content]");
+  if (workstatePanel) {
+    workstatePanel.classList.remove("show");
+  }
+  
+  // Close all other panels
+  document.querySelectorAll(".ah-docs-panel").forEach(p => {
+    if (p !== panel) p.classList.remove("show");
+  });
+  
+  // Toggle this panel and backdrop
+  if (!isOpen) {
+    panel.classList.add("show");
+    backdrop.classList.add("show");
+  } else {
+    panel.classList.remove("show");
+    backdrop.classList.remove("show");
+  }
+});
+
+/* WORKSTATE PANEL TOGGLE */
+document.querySelector("[data-workstate-toggle]")?.addEventListener("click", e => {
+  e.stopPropagation();
+  const panel = document.querySelector("[data-workstate-content]");
+  const backdrop = document.querySelector("[data-docs-backdrop]");
+  const isOpen = panel.classList.contains("show");
+  
+  // Close notification panel if open
+  const notifPanel = document.querySelector(".notif-panel");
+  const notifBackdrop = document.querySelector("[data-notif-backdrop]");
+  if (notifPanel) {
+    notifPanel.classList.remove("show");
+  }
+  if (notifBackdrop) {
+    notifBackdrop.classList.remove("show");
+  }
+  
+  // Close user menu if open
+  const userMenu = document.querySelector("[data-user-menu]");
+  const userBackdrop = document.querySelector("[data-user-backdrop]");
+  if (userMenu) {
+    userMenu.classList.remove("open");
+  }
+  if (userBackdrop) {
+    userBackdrop.classList.remove("show");
+  }
+  
+  // Close docs panel if open
+  const docsPanel = document.querySelector("[data-docs-content]");
+  if (docsPanel) {
+    docsPanel.classList.remove("show");
+  }
+  
+  // Close tracking panel if open
+  const trackingPanel = document.querySelector("[data-tracking-content]");
+  if (trackingPanel) {
+    trackingPanel.classList.remove("show");
+  }
+  
+  // Close all other panels
+  document.querySelectorAll(".ah-docs-panel").forEach(p => {
+    if (p !== panel) p.classList.remove("show");
+  });
+  
+  // Toggle this panel and backdrop
+  if (!isOpen) {
+    panel.classList.add("show");
+    backdrop.classList.add("show");
+  } else {
+    panel.classList.remove("show");
+    backdrop.classList.remove("show");
+  }
+});
+
+/* CLOSE DOCUMENTS PANEL ON BACKDROP CLICK */
+document.querySelector("[data-docs-backdrop]")?.addEventListener("click", () => {
+  const panel = document.querySelector("[data-docs-content]");
+  const backdrop = document.querySelector("[data-docs-backdrop]");
+  panel.classList.remove("show");
+  backdrop.classList.remove("show");
+});
+
+/* CLOSE DOCUMENTS PANEL ON OUTSIDE CLICK */
+document.addEventListener("click", e => {
+  const docsContainer = document.querySelector("[data-docs-panel]");
+  const docsPanel = document.querySelector("[data-docs-content]");
+  const trackingContainer = document.querySelector("[data-tracking-panel]");
+  const trackingPanel = document.querySelector("[data-tracking-content]");
+  const workstateContainer = document.querySelector("[data-workstate-panel]");
+  const workstatePanel = document.querySelector("[data-workstate-content]");
+  const backdrop = document.querySelector("[data-docs-backdrop]");
+  
+  if (docsPanel && !docsContainer.contains(e.target) && !trackingContainer.contains(e.target) && !workstateContainer.contains(e.target)) {
+    docsPanel.classList.remove("show");
+    if (trackingPanel) trackingPanel.classList.remove("show");
+    if (workstatePanel) workstatePanel.classList.remove("show");
+    backdrop.classList.remove("show");
+  }
+});
+
+/* CLOSE PANELS ON LINK CLICK */
+document.querySelectorAll(".ah-docs-item").forEach(item => {
+  item.addEventListener("click", () => {
+    const docsPanel = document.querySelector("[data-docs-content]");
+    const trackingPanel = document.querySelector("[data-tracking-content]");
+    const workstatePanel = document.querySelector("[data-workstate-content]");
+    const backdrop = document.querySelector("[data-docs-backdrop]");
+    if (docsPanel) docsPanel.classList.remove("show");
+    if (trackingPanel) trackingPanel.classList.remove("show");
+    if (workstatePanel) workstatePanel.classList.remove("show");
+    backdrop.classList.remove("show");
+  });
+});
+
+/* ACTIVE LINK */
+const currentPath = location.pathname.replace(/\/$/, "");
+document.querySelectorAll("[data-nav-link]").forEach(link => {
+  if (new URL(link.href).pathname.replace(/\/$/, "") === currentPath) {
+    link.classList.add("active");
+  }
+});
+
+/* DROPDOWN TOGGLE */
+document.addEventListener("click", e => {
+  document.querySelectorAll("[data-dropdown]").forEach(dropdown => {
+    const toggle = dropdown.querySelector("[data-dropdown-toggle]");
+    if (toggle && toggle.contains(e.target)) {
+      e.preventDefault();
+      // Close other dropdowns
+      document.querySelectorAll("[data-dropdown]").forEach(d => {
+        if (d !== dropdown) d.classList.remove("open");
+      });
+      dropdown.classList.toggle("open");
+    } else if (!dropdown.contains(e.target)) {
+      dropdown.classList.remove("open");
+    }
+  });
+});
+
+/* Highlight active dropdown item */
+document.querySelectorAll("[data-dropdown-menu] a").forEach(link => {
+  if (new URL(link.href).pathname.replace(/\/$/, "") === currentPath) {
+    link.style.background = "rgba(59, 130, 246, 0.25)";
+    link.style.color = "#fff";
+    // Also highlight parent dropdown toggle
+    const dropdown = link.closest("[data-dropdown]");
+    if (dropdown) {
+      const toggle = dropdown.querySelector("[data-dropdown-toggle]");
+      if (toggle) toggle.classList.add("active");
+    }
+  }
+});
+</script>
+
+<script src="{% static 'js/notifications.js' %}?v=2"></script>
+
+</body>
+</html>

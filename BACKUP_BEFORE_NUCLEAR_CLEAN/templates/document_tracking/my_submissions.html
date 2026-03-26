@@ -1,0 +1,436 @@
+{% extends base_layout %}
+{% load static %}
+
+{% block title %}My Submissions - Document Tracking{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/document-tracking.css' %}">
+
+<div class="dt-page">
+  <!-- UNIFIED HEADER -->
+  <div class="dt-unified-header">
+    <div class="dt-header-top">
+      <div class="dt-title-section">
+        <h3 class="dt-main-title">
+          <i class="fas fa-file-alt"></i>
+          My Document Submissions
+        </h3>
+        <p class="dt-subtitle">Track and manage your submitted documents</p>
+      </div>
+      <div class="dt-action-buttons-top">
+        <a href="{% url 'document_tracking:submit_document' %}" class="dt-btn dt-btn-primary">
+          <i class="fas fa-plus"></i>
+          New Submission
+        </a>
+      </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="dt-header-bottom">
+      <div class="dt-filters-section">
+        <span class="dt-section-label">
+          <i class="fas fa-filter"></i>
+          Filter by Status
+        </span>
+        <div class="dt-filters">
+          <a href="{% url 'document_tracking:my_submissions' %}" 
+             class="dt-filter-btn {% if not current_status %}active{% endif %}">
+            <i class="fas fa-list"></i>
+            All
+            <span class="dt-filter-count">{{ total_count }}</span>
+          </a>
+          {% for value, label in status_choices %}
+            <a href="?status={{ value }}" 
+               class="dt-filter-btn {% if current_status == value %}active{% endif %}">
+              {{ label }}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUBMISSIONS GRID -->
+  {% if page_obj.object_list %}
+    <div class="dt-my-submissions-grid">
+      {% for submission in page_obj %}
+        <a href="{% url 'document_tracking:submission_detail' submission.id %}" class="dt-submission-card">
+          <!-- Card Header -->
+          <div class="dt-submission-card-header">
+            <div class="dt-submission-card-icon">
+              <i class="fas fa-file-alt"></i>
+            </div>
+            <span class="dt-status-badge dt-status-{{ submission.status }}">
+              {{ submission.get_status_display }}
+            </span>
+          </div>
+
+          <!-- Card Body -->
+          <div class="dt-submission-card-body">
+            <h4 class="dt-submission-card-title">{{ submission.title }}</h4>
+            
+            <div class="dt-submission-card-meta">
+              <div class="dt-meta-item">
+                <i class="fas fa-tag"></i>
+                <span>
+                  {% if submission.doc_type %}
+                    {{ submission.doc_type.name }}
+                  {% else %}
+                    {{ submission.get_document_type_display }}
+                  {% endif %}
+                </span>
+              </div>
+              
+              {% if submission.tracking_number %}
+                <div class="dt-meta-item">
+                  <i class="fas fa-barcode"></i>
+                  <span class="dt-tracking-badge">{{ submission.tracking_number }}</span>
+                </div>
+              {% else %}
+                <div class="dt-meta-item">
+                  <i class="fas fa-clock"></i>
+                  <span class="dt-pending-badge">Awaiting Tracking #</span>
+                </div>
+              {% endif %}
+            </div>
+
+            {% if submission.assigned_section %}
+              <div class="dt-submission-card-section">
+                <i class="fas fa-building"></i>
+                <span>{{ submission.assigned_section.get_name_display }}</span>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Card Footer -->
+          <div class="dt-submission-card-footer">
+            <div class="dt-submission-date">
+              <i class="far fa-calendar"></i>
+              {{ submission.submitted_at|date:"M d, Y" }}
+            </div>
+            <div class="dt-view-link">
+              View Details
+              <i class="fas fa-arrow-right"></i>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+
+    <!-- PAGINATION -->
+    {% if page_obj.has_other_pages %}
+      <div class="dt-pagination">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}" 
+             class="dt-pagination-btn">
+            <i class="fas fa-chevron-left"></i>
+            Previous
+          </a>
+        {% endif %}
+        
+        <span class="dt-pagination-info">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+        
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}" 
+             class="dt-pagination-btn">
+            Next
+            <i class="fas fa-chevron-right"></i>
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% else %}
+    <!-- EMPTY STATE -->
+    <div class="dt-empty-state">
+      <div class="dt-empty-icon">
+        <i class="fas fa-inbox"></i>
+      </div>
+      <h3 class="dt-empty-title">No submissions yet</h3>
+      <p class="dt-empty-text">
+        {% if current_status %}
+          No documents found with this status. Try a different filter.
+        {% else %}
+          You haven't submitted any documents yet. Get started by submitting your first document.
+        {% endif %}
+      </p>
+      <a href="{% url 'document_tracking:submit_document' %}" class="dt-btn dt-btn-primary">
+        <i class="fas fa-plus"></i>
+        Submit Your First Document
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+<style>
+/* My Submissions Grid */
+.dt-my-submissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+/* Submission Card */
+.dt-submission-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05);
+}
+
+.dt-submission-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  border-color: #8b5cf6;
+  text-decoration: none;
+}
+
+/* Card Header */
+.dt-submission-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dt-submission-card-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.3rem;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* Card Body */
+.dt-submission-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dt-submission-card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dt-submission-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dt-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.dt-meta-item i {
+  color: #8b5cf6;
+  font-size: 0.8rem;
+  width: 16px;
+}
+
+.dt-tracking-badge {
+  background: #8b5cf6;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.dt-pending-badge {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.dt-submission-card-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.dt-submission-card-section i {
+  color: #8b5cf6;
+}
+
+/* Card Footer */
+.dt-submission-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.dt-submission-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.dt-submission-date i {
+  color: #94a3b8;
+}
+
+.dt-view-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #8b5cf6;
+  font-weight: 600;
+  transition: gap 0.2s ease;
+}
+
+.dt-submission-card:hover .dt-view-link {
+  gap: 10px;
+}
+
+/* Pagination */
+.dt-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 32px;
+  padding: 20px;
+}
+
+.dt-pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.dt-pagination-btn:hover {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.dt-pagination-info {
+  padding: 10px 20px;
+  background: #f8fafc;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* Empty State */
+.dt-empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  margin-top: 24px;
+}
+
+.dt-empty-icon {
+  font-size: 5rem;
+  color: #cbd5e1;
+  margin-bottom: 24px;
+  animation: floatIcon 3s ease-in-out infinite;
+}
+
+.dt-empty-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+.dt-empty-text {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin-bottom: 24px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dt-my-submissions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dt-pagination {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .dt-pagination-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .dt-submission-card {
+    padding: 16px;
+  }
+  
+  .dt-submission-card-title {
+    font-size: 1rem;
+  }
+  
+  .dt-empty-state {
+    padding: 60px 20px;
+  }
+  
+  .dt-empty-icon {
+    font-size: 4rem;
+  }
+}
+</style>
+{% endblock %}

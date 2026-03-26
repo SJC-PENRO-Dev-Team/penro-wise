@@ -1,0 +1,624 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}Documents{% endblock %}
+{% block page_title %}Documents{% endblock %}
+
+{% block content %}
+
+<!-- =========================
+     PAGE HEADER
+========================= -->
+<div class="docs-header">
+  <div class="docs-header-content">
+    <div class="docs-header-left">
+      <div class="docs-icon-wrap">
+        <i class="fas fa-folder-open"></i>
+      </div>
+      <div>
+        <h4 class="docs-title">Documents Center</h4>
+        <p class="docs-subtitle">Centralized access to files, uploads, and document insights</p>
+      </div>
+    </div>
+    <div class="docs-header-right">
+      <span class="docs-date">{{ now|date:"l, F j, Y" }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- =========================
+     QUICK STATS
+========================= -->
+<div class="docs-stats-grid">
+  <div class="docs-stat-card">
+    <div class="docs-stat-icon total"><i class="fas fa-database"></i></div>
+    <div class="docs-stat-content">
+      <span class="docs-stat-value">{{ total_files }}</span>
+      <span class="docs-stat-label">Total Files</span>
+    </div>
+  </div>
+
+  <div class="docs-stat-card">
+    <div class="docs-stat-icon year"><i class="fas fa-calendar-alt"></i></div>
+    <div class="docs-stat-content">
+      <span class="docs-stat-value">{{ files_this_year }}</span>
+      <span class="docs-stat-label">This Year</span>
+    </div>
+  </div>
+  
+  <div class="docs-stat-card">
+    <div class="docs-stat-icon month"><i class="fas fa-calendar-week"></i></div>
+    <div class="docs-stat-content">
+      <span class="docs-stat-value">{{ files_this_month }}</span>
+      <span class="docs-stat-label">This Month</span>
+    </div>
+  </div>
+  
+  <div class="docs-stat-card">
+    <div class="docs-stat-icon today"><i class="fas fa-calendar-day"></i></div>
+    <div class="docs-stat-content">
+      <span class="docs-stat-value">{{ files_today }}</span>
+      <span class="docs-stat-label">Today</span>
+    </div>
+  </div>
+</div>
+
+<!-- =========================
+     MAIN NAVIGATION CARDS
+========================= -->
+<div class="docs-nav-grid">
+  <!-- File Manager -->
+  <a href="{% url 'admin_app:file-manager' %}" class="docs-nav-card primary">
+    <div class="docs-nav-icon"><i class="fas fa-folder-tree"></i></div>
+    <div class="docs-nav-content">
+      <h6>File Manager</h6>
+      <p>Browse folders, manage uploads, and organize documents</p>
+    </div>
+    <div class="docs-nav-arrow"><i class="fas fa-arrow-right"></i></div>
+  </a>
+  
+  <!-- Routed Documents -->
+  <a href="{% url 'admin_app:routed-documents' %}" class="docs-nav-card secondary">
+    <div class="docs-nav-icon"><i class="fas fa-route"></i></div>
+    <div class="docs-nav-content">
+      <h6>Routed Documents</h6>
+      <p>Document tracking files with tracking numbers</p>
+    </div>
+    <div class="docs-nav-arrow"><i class="fas fa-arrow-right"></i></div>
+  </a>
+  
+  <!-- Workstate Assets -->
+  <a href="{% url 'admin_app:workstate-assets' %}" class="docs-nav-card secondary">
+    <div class="docs-nav-icon"><i class="fas fa-layer-group"></i></div>
+    <div class="docs-nav-content">
+      <h6>Workstate Assets</h6>
+      <p>Work cycle assets and attachments</p>
+    </div>
+    <div class="docs-nav-arrow"><i class="fas fa-arrow-right"></i></div>
+  </a>
+</div>
+
+<!-- =========================
+     ANALYTICS SECTION
+========================= -->
+<div class="docs-analytics-header">
+  <h5><i class="fas fa-chart-line me-2"></i>Document Analytics</h5>
+</div>
+
+<div class="docs-analytics-grid">
+  <!-- File Status Breakdown -->
+  <div class="docs-analytics-card">
+    <div class="docs-card-header">
+      <h6><i class="fas fa-tasks me-2"></i>Review Status</h6>
+    </div>
+    <div class="docs-card-body">
+      <div class="status-bars">
+        <div class="status-bar-item">
+          <div class="status-bar-label">
+            <span class="status-dot pending"></span>
+            <span>Pending Review</span>
+          </div>
+          <div class="status-bar-value">{{ status_breakdown.pending }}</div>
+        </div>
+        <div class="status-bar-item">
+          <div class="status-bar-label">
+            <span class="status-dot accepted"></span>
+            <span>Accepted</span>
+          </div>
+          <div class="status-bar-value">{{ status_breakdown.accepted }}</div>
+        </div>
+        <div class="status-bar-item">
+          <div class="status-bar-label">
+            <span class="status-dot rejected"></span>
+            <span>Rejected</span>
+          </div>
+          <div class="status-bar-value">{{ status_breakdown.rejected }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Files by Type -->
+  <div class="docs-analytics-card">
+    <div class="docs-card-header">
+      <h6><i class="fas fa-file-archive me-2"></i>Files by Type</h6>
+    </div>
+    <div class="docs-card-body">
+      <div class="type-list">
+        {% for item in files_by_type %}
+        <div class="type-item">
+          <div class="type-info">
+            {% if item.attachment_type == 'matrix_a' %}
+              <i class="fas fa-file-excel text-success"></i>
+            {% elif item.attachment_type == 'matrix_b' %}
+              <i class="fas fa-file-excel text-primary"></i>
+            {% elif item.attachment_type == 'mov' %}
+              <i class="fas fa-file-pdf text-danger"></i>
+            {% else %}
+              <i class="fas fa-file text-secondary"></i>
+            {% endif %}
+            <span>{{ item.display_name }}</span>
+          </div>
+          <span class="type-count">{{ item.count }}</span>
+        </div>
+        {% empty %}
+        <p class="text-muted small">No files uploaded yet</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- Top Uploaders -->
+  <div class="docs-analytics-card">
+    <div class="docs-card-header">
+      <h6><i class="fas fa-users me-2"></i>Top Uploaders (30 days)</h6>
+    </div>
+    <div class="docs-card-body">
+      <div class="uploader-list">
+        {% for u in top_uploaders %}
+        <div class="uploader-item">
+          <div class="uploader-avatar">
+            {{ u.uploaded_by__first_name|slice:":1"|upper }}{{ u.uploaded_by__last_name|slice:":1"|upper }}
+          </div>
+          <div class="uploader-info">
+            <span class="uploader-name">
+              {% if u.uploaded_by__first_name %}
+                {{ u.uploaded_by__first_name }} {{ u.uploaded_by__last_name }}
+              {% else %}
+                {{ u.uploaded_by__username }}
+              {% endif %}
+            </span>
+          </div>
+          <span class="uploader-count">{{ u.count }} files</span>
+        </div>
+        {% empty %}
+        <p class="text-muted small">No uploads in the last 30 days</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- Files by Workcycle -->
+  <div class="docs-analytics-card">
+    <div class="docs-card-header">
+      <h6><i class="fas fa-layer-group me-2"></i>Top Work Cycles</h6>
+    </div>
+    <div class="docs-card-body">
+      <div class="workcycle-list">
+        {% for wc in files_by_workcycle %}
+        <div class="workcycle-item">
+          <span class="workcycle-title" title="{{ wc.work_item__workcycle__title }}">
+            {{ wc.work_item__workcycle__title|truncatechars:30 }}
+          </span>
+          <span class="workcycle-count">{{ wc.count }}</span>
+        </div>
+        {% empty %}
+        <p class="text-muted small">No active work cycles</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================
+     RECENT ACTIVITY
+========================= -->
+<div class="docs-recent-section">
+  <div class="docs-card-header">
+    <h6><i class="fas fa-clock me-2"></i>Recent Uploads</h6>
+    <a href="{% url 'admin_app:pending-reviews' %}" class="docs-view-all">View All <i class="fas fa-arrow-right ms-1"></i></a>
+  </div>
+  <div class="docs-recent-list">
+    {% for file in recent_uploads %}
+    <div class="docs-recent-item">
+      <div class="docs-recent-icon">
+        {% if file.attachment_type == 'matrix_a' %}
+          <i class="fas fa-file-excel text-success"></i>
+        {% elif file.attachment_type == 'matrix_b' %}
+          <i class="fas fa-file-excel text-primary"></i>
+        {% elif file.attachment_type == 'mov' %}
+          <i class="fas fa-file-pdf text-danger"></i>
+        {% else %}
+          <i class="fas fa-file text-secondary"></i>
+        {% endif %}
+      </div>
+      <div class="docs-recent-info">
+        <span class="docs-recent-name" title="{{ file.file.name }}">
+          {{ file.file.name|cut:"work_items/"|truncatechars:35 }}
+        </span>
+        <span class="docs-recent-meta">
+          {% if file.uploaded_by %}
+            {{ file.uploaded_by.get_full_name|default:file.uploaded_by.username }}
+          {% else %}
+            System
+          {% endif %}
+          · {{ file.uploaded_at|timesince }} ago
+        </span>
+      </div>
+      <div class="docs-recent-status status-{{ file.acceptance_status }}">
+        {% if file.acceptance_status == 'accepted' %}
+          <i class="fas fa-check-circle"></i>
+        {% elif file.acceptance_status == 'rejected' %}
+          <i class="fas fa-times-circle"></i>
+        {% else %}
+          <i class="fas fa-clock"></i>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <p class="text-muted small text-center py-4">No recent uploads</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- =========================
+     ALERTS
+========================= -->
+{% if pending_review_count > 0 or expiring_soon > 0 %}
+<div class="docs-alerts">
+  {% if pending_review_count > 0 %}
+  <div class="docs-alert warning">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span><strong>{{ pending_review_count }}</strong> files pending review</span>
+    <a href="{% url 'admin_app:pending-reviews' %}">Review Now</a>
+  </div>
+  {% endif %}
+  
+  {% if expiring_soon > 0 %}
+  <div class="docs-alert danger">
+    <i class="fas fa-trash-alt"></i>
+    <span><strong>{{ expiring_soon }}</strong> rejected files expiring within 24 hours</span>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- =========================
+     STYLES
+========================= -->
+<style>
+:root {
+  --blueviolet-50: #f8f7ff;
+  --blueviolet-100: #f0eeff;
+  --blueviolet-200: #e2deff;
+  --blueviolet-600: #7b69ff;
+  --blueviolet-700: #6b54fa;
+  --blueviolet-800: #5a43e8;
+  --muted-50: #f9fafb;
+  --muted-100: #f3f4f6;
+  --muted-200: #e5e7eb;
+  --muted-400: #9ca3af;
+  --muted-500: #6b7280;
+  --muted-600: #4b5563;
+  --muted-700: #374151;
+  --muted-800: #1f2937;
+}
+
+/* Header */
+.docs-header {
+  background: #fff;
+  border: 1px solid var(--muted-200);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.docs-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.docs-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.docs-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--blueviolet-600), var(--blueviolet-800));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.docs-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--muted-800);
+  margin: 0 0 4px 0;
+}
+
+.docs-subtitle {
+  font-size: 0.85rem;
+  color: var(--muted-500);
+  margin: 0;
+}
+
+.docs-date {
+  font-size: 0.8rem;
+  color: var(--muted-400);
+}
+
+/* Stats Grid */
+.docs-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.docs-stat-card {
+  background: #fff;
+  border: 1px solid var(--muted-200);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: all 0.2s;
+}
+
+.docs-stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  transform: translateY(-2px);
+}
+
+.docs-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.docs-stat-icon.total { background: #ede9fe; color: #7c3aed; }
+.docs-stat-icon.year { background: #dbeafe; color: #2563eb; }
+.docs-stat-icon.month { background: #d1fae5; color: #059669; }
+.docs-stat-icon.today { background: #fef3c7; color: #d97706; }
+
+.docs-stat-content { display: flex; flex-direction: column; }
+.docs-stat-value { font-size: 1.5rem; font-weight: 700; color: var(--muted-800); line-height: 1; }
+.docs-stat-label { font-size: 0.75rem; color: var(--muted-500); margin-top: 4px; }
+
+/* Navigation Cards */
+.docs-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.docs-nav-card {
+  background: #fff;
+  border: 1px solid var(--muted-200);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.docs-nav-card:hover {
+  box-shadow: 0 8px 24px rgba(123, 105, 255, 0.12);
+  transform: translateY(-3px);
+  border-color: var(--blueviolet-200);
+}
+
+.docs-nav-card.primary { border-left: 4px solid var(--blueviolet-600); }
+.docs-nav-card.secondary { border-left: 4px solid #10b981; }
+
+.docs-nav-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: var(--blueviolet-50);
+  color: var(--blueviolet-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.docs-nav-card.secondary .docs-nav-icon {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.docs-nav-content { flex: 1; }
+.docs-nav-content h6 { font-weight: 700; color: var(--muted-800); margin: 0 0 4px 0; font-size: 0.95rem; }
+.docs-nav-content p { font-size: 0.8rem; color: var(--muted-500); margin: 0; }
+
+.docs-nav-arrow {
+  color: var(--muted-400);
+  transition: transform 0.2s;
+}
+
+.docs-nav-card:hover .docs-nav-arrow {
+  transform: translateX(4px);
+  color: var(--blueviolet-600);
+}
+
+/* Analytics Header */
+.docs-analytics-header {
+  margin-bottom: 16px;
+}
+
+.docs-analytics-header h5 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--muted-700);
+  margin: 0;
+}
+
+/* Analytics Grid */
+.docs-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.docs-analytics-card {
+  background: #fff;
+  border: 1px solid var(--muted-200);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.docs-card-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--muted-100);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.docs-card-header h6 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted-700);
+  margin: 0;
+}
+
+.docs-view-all {
+  font-size: 0.75rem;
+  color: var(--blueviolet-600);
+  text-decoration: none;
+}
+
+.docs-view-all:hover { text-decoration: underline; }
+
+.docs-card-body { padding: 16px; }
+
+/* Status Bars */
+.status-bars { display: flex; flex-direction: column; gap: 12px; }
+.status-bar-item { display: flex; justify-content: space-between; align-items: center; }
+.status-bar-label { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--muted-600); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; }
+.status-dot.pending { background: #f59e0b; }
+.status-dot.accepted { background: #10b981; }
+.status-dot.rejected { background: #ef4444; }
+.status-bar-value { font-weight: 700; font-size: 0.9rem; color: var(--muted-800); }
+
+/* Type List */
+.type-list { display: flex; flex-direction: column; gap: 10px; }
+.type-item { display: flex; justify-content: space-between; align-items: center; }
+.type-info { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: var(--muted-600); }
+.type-count { font-weight: 700; font-size: 0.85rem; color: var(--muted-800); }
+
+/* Uploader List */
+.uploader-list { display: flex; flex-direction: column; gap: 12px; }
+.uploader-item { display: flex; align-items: center; gap: 10px; }
+.uploader-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blueviolet-600), var(--blueviolet-800));
+  color: #fff; font-size: 0.7rem; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+}
+.uploader-info { flex: 1; }
+.uploader-name { font-size: 0.8rem; font-weight: 600; color: var(--muted-700); }
+.uploader-count { font-size: 0.75rem; color: var(--muted-500); }
+
+/* Workcycle List */
+.workcycle-list { display: flex; flex-direction: column; gap: 10px; }
+.workcycle-item { display: flex; justify-content: space-between; align-items: center; }
+.workcycle-title { font-size: 0.8rem; color: var(--muted-600); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workcycle-count { font-weight: 700; font-size: 0.85rem; color: var(--muted-800); }
+
+/* Recent Section */
+.docs-recent-section {
+  background: #fff;
+  border: 1px solid var(--muted-200);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.docs-recent-list { max-height: 400px; overflow-y: auto; }
+
+.docs-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--muted-100);
+  transition: background 0.15s;
+}
+
+.docs-recent-item:hover { background: var(--muted-50); }
+.docs-recent-item:last-child { border-bottom: none; }
+
+.docs-recent-icon { font-size: 1.25rem; width: 32px; text-align: center; }
+.docs-recent-info { flex: 1; min-width: 0; }
+.docs-recent-name { display: block; font-size: 0.85rem; font-weight: 600; color: var(--muted-700); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.docs-recent-meta { font-size: 0.75rem; color: var(--muted-400); }
+
+.docs-recent-status { font-size: 1rem; }
+.docs-recent-status.status-pending { color: #f59e0b; }
+.docs-recent-status.status-accepted { color: #10b981; }
+.docs-recent-status.status-rejected { color: #ef4444; }
+
+/* Alerts */
+.docs-alerts { display: flex; flex-direction: column; gap: 12px; }
+.docs-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+.docs-alert.warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.docs-alert.danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.docs-alert span { flex: 1; }
+.docs-alert a { font-weight: 600; text-decoration: none; }
+.docs-alert.warning a { color: #d97706; }
+.docs-alert.warning a:hover { text-decoration: underline; }
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .docs-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .docs-analytics-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .docs-header-content { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .docs-stats-grid { grid-template-columns: 1fr; }
+  .docs-nav-grid { grid-template-columns: 1fr; }
+  .docs-analytics-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+{% endblock %}

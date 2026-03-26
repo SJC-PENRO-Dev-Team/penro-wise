@@ -1,0 +1,177 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}All Submissions - Document Tracking{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/document-tracking.css' %}">
+
+<div class="dt-page">
+  <!-- UNIFIED HEADER -->
+  <div class="dt-unified-header">
+    <!-- TOP ROW -->
+    <div class="dt-header-top">
+      <div class="dt-title-section">
+        <h3 class="dt-main-title">
+          <i class="fas fa-file-alt"></i>
+          All Document Submissions
+        </h3>
+        <p class="dt-subtitle">Browse and manage all document submissions with advanced filtering</p>
+      </div>
+      <div class="dt-action-buttons-top">
+        <a href="{% url 'document_tracking:admin_overview' %}" class="dt-btn dt-btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Overview
+        </a>
+        <a href="{% url 'document_tracking:submit_document' %}" class="dt-btn dt-btn-primary">
+          <i class="fas fa-plus"></i>
+          Submit Document
+        </a>
+      </div>
+    </div>
+
+    <!-- BOTTOM ROW -->
+    <div class="dt-header-bottom">
+      <!-- FILTERS -->
+      <div class="dt-filters-section">
+        <span class="dt-section-label">
+          <i class="fas fa-filter"></i>
+          Filter by Status
+        </span>
+        <div class="dt-filters">
+          <a href="{% url 'document_tracking:admin_submissions' %}" 
+             class="dt-filter-btn {% if not current_status %}active{% endif %}">
+            <span>All</span>
+            <span class="dt-filter-count">{{ total_count }}</span>
+          </a>
+          
+          {% for status in status_choices_with_counts %}
+            <a href="?status={{ status.value }}{% if search_query %}&q={{ search_query }}{% endif %}" 
+               class="dt-filter-btn {% if current_status == status.value %}active{% endif %}">
+              <span>{{ status.label }}</span>
+              {% if status.count > 0 %}
+                <span class="dt-filter-count">{{ status.count }}</span>
+              {% endif %}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- SEARCH -->
+      <div class="dt-search-sort-section">
+        <form method="get" class="dt-search-form">
+          {% if current_status %}
+            <input type="hidden" name="status" value="{{ current_status }}">
+          {% endif %}
+          {% if current_section %}
+            <input type="hidden" name="section" value="{{ current_section }}">
+          {% endif %}
+          
+          <i class="fas fa-search dt-search-icon"></i>
+          <input type="search"
+                 name="q"
+                 value="{{ search_query|default:'' }}"
+                 class="dt-search-input"
+                 placeholder="Search by title, tracking number, or submitter...">
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUBMISSIONS LIST -->
+  {% if page_obj.object_list %}
+    <div class="dt-submissions-list">
+      {% for submission in page_obj %}
+        <a href="{% url 'document_tracking:admin_submission_detail' submission.id %}" class="dt-submission-item">
+          <div class="dt-submission-id">
+            {% if submission.tracking_number %}
+              {{ submission.tracking_number }}
+            {% else %}
+              #{{ submission.id }}
+            {% endif %}
+          </div>
+          
+          <div class="dt-submission-content">
+            <div class="dt-submission-title">{{ submission.title }}</div>
+            <div class="dt-submission-meta">
+              <span>
+                <i class="fas fa-user"></i>
+                {{ submission.submitted_by.get_full_name }}
+              </span>
+              <span>
+                <i class="fas fa-file"></i>
+                {% if submission.doc_type %}
+                  {{ submission.doc_type.name }}
+                {% else %}
+                  {{ submission.get_document_type_display }}
+                {% endif %}
+              </span>
+              {% if submission.assigned_section %}
+                <span>
+                  <i class="fas fa-building"></i>
+                  {{ submission.assigned_section.get_name_display }}
+                </span>
+              {% endif %}
+              <span>
+                <i class="fas fa-calendar"></i>
+                {{ submission.created_at|date:"M d, Y" }}
+              </span>
+            </div>
+          </div>
+          
+          <span class="dt-status-badge dt-status-{{ submission.status }}">
+            {{ submission.get_status_display }}
+          </span>
+          
+          <div class="dt-submission-actions">
+            <span class="dt-btn dt-btn-secondary" style="font-size: 0.7rem; padding: 4px 10px; height: 28px;">
+              <i class="fas fa-eye"></i>
+              View
+            </span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+
+    <!-- PAGINATION -->
+    {% if page_obj.has_other_pages %}
+      <nav style="margin-top: 20px;">
+        <ul class="pagination justify-content-center" style="gap: 6px;">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_section %}&section={{ current_section }}{% endif %}" style="border-radius: 8px;">
+                <i class="fas fa-chevron-left"></i> Previous
+              </a>
+            </li>
+          {% endif %}
+          
+          <li class="page-item active">
+            <span class="page-link" style="border-radius: 8px; background: #8b5cf6; border-color: #8b5cf6;">
+              Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+          </li>
+          
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_section %}&section={{ current_section }}{% endif %}" style="border-radius: 8px;">
+                Next <i class="fas fa-chevron-right"></i>
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  {% else %}
+    <div style="text-align: center; padding: 60px 20px; background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;">
+      <i class="fas fa-inbox" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 16px;"></i>
+      <p style="color: #64748b; font-size: 1rem; margin: 0;">No submissions found</p>
+      {% if search_query or current_status %}
+        <a href="{% url 'document_tracking:admin_submissions' %}" class="dt-btn dt-btn-secondary" style="margin-top: 12px;">
+          <i class="fas fa-times"></i>
+          Clear Filters
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

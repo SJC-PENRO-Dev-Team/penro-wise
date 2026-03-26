@@ -1,0 +1,93 @@
+{% extends base_layout %}
+{% load static %}
+
+{% block title %}Access Denied{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/document-tracking.css' %}">
+
+<div class="dt-page" style="display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 100px); padding: 1rem;">
+  <div style="max-width: 550px; width: 100%; text-align: center;">
+    
+    <!-- Error Icon -->
+    <div style="margin-bottom: 1.25rem;">
+      <div style="display: inline-flex; align-items: center; justify-content: center; width: 80px; height: 80px; background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); border-radius: 50%; box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2); animation: pulse 2s ease-in-out infinite;">
+        <i class="fas fa-lock" style="font-size: 2.25rem; color: #dc2626;"></i>
+      </div>
+    </div>
+    
+    <!-- Error Message -->
+    <div style="background: #fff; border: 2px solid #fecaca; border-radius: 14px; padding: 1.75rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+      <h1 style="font-size: 1.5rem; font-weight: 700; color: #dc2626; margin-bottom: 0.75rem;">
+        Access Denied
+      </h1>
+      
+      <p style="font-size: 0.95rem; color: #1e293b; margin-bottom: 1.25rem; line-height: 1.5;">
+        {{ error_message|default:"You do not have permission to assign tracking numbers." }}
+      </p>
+      
+      <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 4px solid #f59e0b; padding: 0.875rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; text-align: left;">
+        <div style="display: flex; align-items: start; gap: 0.625rem;">
+          <i class="fas fa-info-circle" style="color: #d97706; font-size: 1.1rem; margin-top: 2px; flex-shrink: 0;"></i>
+          <div>
+            <div style="font-weight: 600; color: #92400e; margin-bottom: 0.25rem; font-size: 0.875rem;">
+              Admin Access Required
+            </div>
+            <div style="color: #92400e; font-size: 0.8125rem; line-height: 1.4;">
+              Only administrators can assign tracking numbers. Contact your system administrator if you need access.
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+        {% if return_url %}
+          <a href="{{ return_url }}" class="dt-btn dt-btn-primary" style="min-width: 160px; justify-content: center; padding: 0.625rem 1.25rem; font-size: 0.875rem;">
+            <i class="fas fa-arrow-left"></i>
+            Return to Submission
+          </a>
+        {% else %}
+          <a href="{% url 'document_tracking:my_submissions' %}" class="dt-btn dt-btn-primary" style="min-width: 160px; justify-content: center; padding: 0.625rem 1.25rem; font-size: 0.875rem;">
+            <i class="fas fa-arrow-left"></i>
+            My Submissions
+          </a>
+        {% endif %}
+        
+        <a href="{% url 'user_app:main-dashboard' %}" class="dt-btn dt-btn-secondary" style="min-width: 160px; justify-content: center; padding: 0.625rem 1.25rem; font-size: 0.875rem;">
+          <i class="fas fa-home"></i>
+          Dashboard
+        </a>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+<style>
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 15px 40px rgba(239, 68, 68, 0.3);
+  }
+}
+
+.dt-btn {
+  transition: all 0.2s ease;
+}
+
+.dt-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.dt-btn:active {
+  transform: translateY(0);
+}
+</style>
+
+{% endblock %}

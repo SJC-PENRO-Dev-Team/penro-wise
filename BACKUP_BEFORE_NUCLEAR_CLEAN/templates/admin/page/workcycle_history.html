@@ -1,0 +1,832 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}Work Cycle History - {{ workcycle.title }}{% endblock %}
+
+{% block content %}
+<div class="wch-container">
+
+  <!-- =========================
+       PAGE HEADER
+  ========================= -->
+  <div class="wch-header">
+    <div class="wch-header-left">
+      <a href="{% url 'admin_app:inactive-workcycles' %}" class="wch-back-link">
+        <i class="fas fa-arrow-left"></i>
+      </a>
+      <div class="wch-header-icon">
+        <i class="fas fa-history"></i>
+      </div>
+      <div>
+        <h4 class="wch-page-title">{{ workcycle.title }}</h4>
+        <p class="wch-page-subtitle">
+          <span class="wch-archived-badge">
+            <i class="fas fa-archive"></i> Archived
+          </span>
+          Work Cycle History &amp; Audit Record
+        </p>
+      </div>
+    </div>
+    
+    <div class="wch-header-meta">
+      <div class="wch-meta-item">
+        <i class="fas fa-calendar"></i>
+        <span>Due: {{ workcycle.due_at|date:"M d, Y" }}</span>
+      </div>
+      <div class="wch-meta-item">
+        <i class="fas fa-user"></i>
+        <span>By: {{ workcycle.created_by.get_full_name|default:workcycle.created_by.username }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       SUMMARY STATS
+  ========================= -->
+  <div class="wch-stats-grid">
+    <div class="wch-stat-card">
+      <div class="wch-stat-icon users"><i class="fas fa-users"></i></div>
+      <div class="wch-stat-content">
+        <span class="wch-stat-value">{{ summary.total_users }}</span>
+        <span class="wch-stat-label">Total Assigned</span>
+      </div>
+    </div>
+    
+    <div class="wch-stat-card">
+      <div class="wch-stat-icon submitted"><i class="fas fa-paper-plane"></i></div>
+      <div class="wch-stat-content">
+        <span class="wch-stat-value">{{ summary.total_submitted }}</span>
+        <span class="wch-stat-label">Submitted</span>
+        <span class="wch-stat-rate">{{ summary.completion_rate }}%</span>
+      </div>
+    </div>
+    
+    <div class="wch-stat-card">
+      <div class="wch-stat-icon approved"><i class="fas fa-check-circle"></i></div>
+      <div class="wch-stat-content">
+        <span class="wch-stat-value">{{ summary.total_approved }}</span>
+        <span class="wch-stat-label">Approved</span>
+        <span class="wch-stat-rate">{{ summary.approval_rate }}%</span>
+      </div>
+    </div>
+    
+    <div class="wch-stat-card">
+      <div class="wch-stat-icon revision"><i class="fas fa-redo"></i></div>
+      <div class="wch-stat-content">
+        <span class="wch-stat-value">{{ summary.total_revision }}</span>
+        <span class="wch-stat-label">Needs Revision</span>
+      </div>
+    </div>
+    
+    <div class="wch-stat-card">
+      <div class="wch-stat-icon files"><i class="fas fa-file-alt"></i></div>
+      <div class="wch-stat-content">
+        <span class="wch-stat-value">{{ summary.total_files }}</span>
+        <span class="wch-stat-label">Total Files</span>
+      </div>
+    </div>
+    
+    <div class="wch-stat-card">
+      <div class="wch-stat-icon accepted"><i class="fas fa-file-check"></i></div>
+      <div class="wch-stat-content">
+        <span class="wch-stat-value">{{ summary.total_accepted }}</span>
+        <span class="wch-stat-label">Files Accepted</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       USER HISTORY LIST
+  ========================= -->
+  <div class="wch-section">
+    <div class="wch-section-header">
+      <h5 class="wch-section-title">
+        <i class="fas fa-clipboard-list"></i>
+        Assignment History
+      </h5>
+      <span class="wch-section-count">{{ user_histories|length }} users</span>
+    </div>
+
+    {% if user_histories %}
+    <div class="wch-user-list">
+      {% for history in user_histories %}
+      <div class="wch-user-card {% if not history.is_active %}wch-inactive{% endif %}">
+        
+        <!-- User Header -->
+        <div class="wch-user-header">
+          <div class="wch-user-info">
+            {% if history.user.profile_image %}
+              <img src="{{ history.user.profile_image.url }}" alt="" class="wch-user-avatar">
+            {% else %}
+              <div class="wch-user-avatar wch-avatar-placeholder">
+                <i class="fas fa-user"></i>
+              </div>
+            {% endif %}
+            <div>
+              <h6 class="wch-user-name">{{ history.user.get_full_name|default:history.user.username }}</h6>
+              <span class="wch-user-email">{{ history.user.email }}</span>
+            </div>
+          </div>
+          
+          <div class="wch-user-badges">
+            <!-- Status Badge -->
+            <span class="wch-badge wch-badge-{{ history.status }}">
+              {% if history.status == "done" %}
+                <i class="fas fa-check"></i> Submitted
+              {% elif history.status == "working_on_it" %}
+                <i class="fas fa-spinner"></i> Working
+              {% else %}
+                <i class="fas fa-minus"></i> Not Started
+              {% endif %}
+            </span>
+            
+            <!-- Review Badge -->
+            <span class="wch-badge wch-badge-review-{{ history.review_decision }}">
+              {% if history.review_decision == "approved" %}
+                <i class="fas fa-check-circle"></i> Approved
+              {% elif history.review_decision == "revision" %}
+                <i class="fas fa-redo"></i> Revision
+              {% else %}
+                <i class="fas fa-clock"></i> Pending
+              {% endif %}
+            </span>
+            
+            {% if not history.is_active %}
+            <span class="wch-badge wch-badge-inactive">
+              <i class="fas fa-archive"></i> {{ history.inactive_reason|default:"Inactive" }}
+            </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- User Details Grid -->
+        <div class="wch-user-details">
+          <div class="wch-detail-item">
+            <span class="wch-detail-label">Submitted</span>
+            <span class="wch-detail-value">
+              {% if history.submitted_at %}
+                {{ history.submitted_at|date:"M d, Y h:i A" }}
+                {% if history.submission_status == "on_time" %}
+                  <span class="wch-timing on-time"><i class="fas fa-check"></i> On Time</span>
+                {% elif history.submission_status == "late" %}
+                  <span class="wch-timing late"><i class="fas fa-clock"></i> Late by {{ history.submission_delta }}</span>
+                {% endif %}
+              {% else %}
+                <span class="wch-na">Not submitted</span>
+              {% endif %}
+            </span>
+          </div>
+          
+          <div class="wch-detail-item">
+            <span class="wch-detail-label">Reviewed</span>
+            <span class="wch-detail-value">
+              {% if history.reviewed_at %}
+                {{ history.reviewed_at|date:"M d, Y h:i A" }}
+              {% else %}
+                <span class="wch-na">Not reviewed</span>
+              {% endif %}
+            </span>
+          </div>
+          
+          <div class="wch-detail-item">
+            <span class="wch-detail-label">Messages</span>
+            <span class="wch-detail-value">
+              <i class="fas fa-comments"></i> {{ history.messages_count }} message{{ history.messages_count|pluralize }}
+            </span>
+          </div>
+          
+          {% if history.inactive_note %}
+          <div class="wch-detail-item wch-detail-full">
+            <span class="wch-detail-label">Inactive Note</span>
+            <span class="wch-detail-value wch-note">{{ history.inactive_note }}</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Files Section -->
+        {% if history.attachments %}
+        <div class="wch-files-section">
+          <div class="wch-files-header">
+            <span class="wch-files-title">
+              <i class="fas fa-paperclip"></i> Files ({{ history.files_total }})
+            </span>
+            <div class="wch-files-summary">
+              <span class="wch-file-count accepted">
+                <i class="fas fa-check"></i> {{ history.files_accepted }} accepted
+              </span>
+              <span class="wch-file-count rejected">
+                <i class="fas fa-times"></i> {{ history.files_rejected }} rejected
+              </span>
+              {% if history.files_pending > 0 %}
+              <span class="wch-file-count pending">
+                <i class="fas fa-clock"></i> {{ history.files_pending }} pending
+              </span>
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="wch-files-list">
+            {% for file in history.attachments %}
+            <div class="wch-file-item wch-file-{{ file.acceptance_status }}">
+              <div class="wch-file-icon">
+                {% if file.attachment_type == "matrix_a" %}
+                  <i class="fas fa-table"></i>
+                {% elif file.attachment_type == "matrix_b" %}
+                  <i class="fas fa-th"></i>
+                {% else %}
+                  <i class="fas fa-file"></i>
+                {% endif %}
+              </div>
+              <div class="wch-file-info">
+                <span class="wch-file-name">{{ file.file.name|slice:"-30:" }}</span>
+                <span class="wch-file-meta">
+                  {{ file.get_attachment_type_display }} · 
+                  Uploaded {{ file.uploaded_at|date:"M d, Y" }}
+                </span>
+              </div>
+              <div class="wch-file-status">
+                {% if file.acceptance_status == "accepted" %}
+                  <span class="wch-file-badge accepted">
+                    <i class="fas fa-check-circle"></i> Accepted
+                  </span>
+                  {% if file.reviewed_by %}
+                  <span class="wch-file-reviewer">by {{ file.reviewed_by.get_full_name|default:file.reviewed_by.username }}</span>
+                  {% endif %}
+                {% elif file.acceptance_status == "rejected" %}
+                  <span class="wch-file-badge rejected">
+                    <i class="fas fa-times-circle"></i> Rejected
+                  </span>
+                  {% if file.rejection_reason %}
+                  <span class="wch-file-reason">{{ file.rejection_reason }}</span>
+                  {% endif %}
+                {% else %}
+                  <span class="wch-file-badge pending">
+                    <i class="fas fa-clock"></i> Pending
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="wch-empty">
+      <i class="fas fa-inbox"></i>
+      <p>No assignment history found for this work cycle.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+
+<!-- =========================
+     STYLES
+========================= -->
+<style>
+:root {
+  --wch-primary: #1e3a5f;
+  --wch-primary-light: #e8f4fd;
+  --wch-success: #10b981;
+  --wch-warning: #f59e0b;
+  --wch-danger: #ef4444;
+  --wch-info: #3b82f6;
+  --wch-muted: #64748b;
+  --wch-border: #e2e8f0;
+  --wch-bg: #f8fafc;
+}
+
+.wch-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Header */
+.wch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, var(--wch-primary), #2d5a87);
+  border-radius: 16px;
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(30, 58, 95, 0.2);
+}
+
+.wch-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.wch-back-link {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.15);
+  border-radius: 10px;
+  color: #fff;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.wch-back-link:hover {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+}
+
+.wch-header-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.wch-page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.wch-page-subtitle {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  margin: 4px 0 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wch-archived-badge {
+  background: rgba(239, 68, 68, 0.2);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.wch-header-meta {
+  display: flex;
+  gap: 20px;
+}
+
+.wch-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+</style>
+
+<style>
+/* Stats Grid */
+.wch-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.wch-stat-card {
+  background: #fff;
+  border: 1px solid var(--wch-border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wch-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.wch-stat-icon.users { background: #e0e7ff; color: #6366f1; }
+.wch-stat-icon.submitted { background: #dbeafe; color: #3b82f6; }
+.wch-stat-icon.approved { background: #d1fae5; color: var(--wch-success); }
+.wch-stat-icon.revision { background: #fef3c7; color: var(--wch-warning); }
+.wch-stat-icon.files { background: #f3e8ff; color: #9333ea; }
+.wch-stat-icon.accepted { background: #d1fae5; color: var(--wch-success); }
+
+.wch-stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.wch-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.wch-stat-label {
+  font-size: 0.75rem;
+  color: var(--wch-muted);
+  margin-top: 2px;
+}
+
+.wch-stat-rate {
+  font-size: 0.7rem;
+  color: var(--wch-success);
+  font-weight: 600;
+}
+
+/* Section */
+.wch-section {
+  background: #fff;
+  border: 1px solid var(--wch-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.wch-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--wch-bg);
+  border-bottom: 1px solid var(--wch-border);
+}
+
+.wch-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wch-section-title i {
+  color: var(--wch-primary);
+}
+
+.wch-section-count {
+  font-size: 0.8rem;
+  color: var(--wch-muted);
+  background: #fff;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--wch-border);
+}
+</style>
+
+<style>
+/* User List */
+.wch-user-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wch-user-card {
+  border: 1px solid var(--wch-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.wch-user-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.wch-user-card.wch-inactive {
+  opacity: 0.7;
+  background: #fafafa;
+}
+
+.wch-user-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: var(--wch-bg);
+  border-bottom: 1px solid var(--wch-border);
+}
+
+.wch-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wch-user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.wch-avatar-placeholder {
+  background: linear-gradient(135deg, var(--wch-primary), #2d5a87);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wch-user-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.wch-user-email {
+  font-size: 0.8rem;
+  color: var(--wch-muted);
+}
+
+.wch-user-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.wch-badge-done { background: #d1fae5; color: #065f46; }
+.wch-badge-working_on_it { background: #dbeafe; color: #1e40af; }
+.wch-badge-not_started { background: #f1f5f9; color: #475569; }
+
+.wch-badge-review-approved { background: #d1fae5; color: #065f46; }
+.wch-badge-review-revision { background: #fef3c7; color: #92400e; }
+.wch-badge-review-pending { background: #f1f5f9; color: #475569; }
+
+.wch-badge-inactive { background: #fee2e2; color: #991b1b; }
+</style>
+
+<style>
+/* User Details */
+.wch-user-details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--wch-border);
+}
+
+.wch-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wch-detail-item.wch-detail-full {
+  grid-column: 1 / -1;
+}
+
+.wch-detail-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--wch-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.wch-detail-value {
+  font-size: 0.85rem;
+  color: #1e293b;
+}
+
+.wch-na {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.wch-timing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+.wch-timing.on-time { background: #d1fae5; color: #065f46; }
+.wch-timing.late { background: #fee2e2; color: #991b1b; }
+
+.wch-note {
+  background: #fef3c7;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #92400e;
+}
+
+/* Files Section */
+.wch-files-section {
+  padding: 16px;
+  background: #fafafa;
+}
+
+.wch-files-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.wch-files-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wch-files-summary {
+  display: flex;
+  gap: 12px;
+}
+
+.wch-file-count {
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wch-file-count.accepted { color: var(--wch-success); }
+.wch-file-count.rejected { color: var(--wch-danger); }
+.wch-file-count.pending { color: var(--wch-muted); }
+</style>
+
+<style>
+/* Files List */
+.wch-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wch-file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--wch-border);
+  border-radius: 8px;
+  border-left: 3px solid #cbd5e1;
+}
+
+.wch-file-item.wch-file-accepted { border-left-color: var(--wch-success); }
+.wch-file-item.wch-file-rejected { border-left-color: var(--wch-danger); }
+.wch-file-item.wch-file-pending { border-left-color: var(--wch-warning); }
+
+.wch-file-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wch-muted);
+  font-size: 0.9rem;
+}
+
+.wch-file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.wch-file-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #1e293b;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wch-file-meta {
+  font-size: 0.7rem;
+  color: var(--wch-muted);
+}
+
+.wch-file-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.wch-file-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.wch-file-badge.accepted { background: #d1fae5; color: #065f46; }
+.wch-file-badge.rejected { background: #fee2e2; color: #991b1b; }
+.wch-file-badge.pending { background: #fef3c7; color: #92400e; }
+
+.wch-file-reviewer, .wch-file-reason {
+  font-size: 0.65rem;
+  color: var(--wch-muted);
+}
+
+.wch-file-reason {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Empty State */
+.wch-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--wch-muted);
+}
+
+.wch-empty i {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .wch-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .wch-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .wch-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .wch-user-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .wch-user-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .wch-files-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .wch-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+{% endblock %}

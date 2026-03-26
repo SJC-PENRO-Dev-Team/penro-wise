@@ -1,0 +1,576 @@
+{% extends "user/layout/base.html" %}
+{% load static %}
+
+{% block title %}Documents{% endblock %}
+{% block page_title %}Documents{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="docs-header">
+  <div class="docs-header-content">
+    <div class="docs-header-left">
+      <div class="docs-icon-wrap">
+        <i class="fas fa-folder-open"></i>
+      </div>
+      <div>
+        <h4 class="docs-title">Documents Center</h4>
+        <p class="docs-subtitle">Browse and download accepted documents</p>
+      </div>
+    </div>
+    <div class="docs-header-right">
+      <span class="docs-badge view-only">
+        <i class="fas fa-eye me-1"></i>View Only
+      </span>
+      <span class="docs-date">{{ now|date:"l, F j, Y" }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="docs-stats-grid">
+  <div class="docs-stat-card">
+    <div class="docs-stat-icon total"><i class="fas fa-check-circle"></i></div>
+    <div class="docs-stat-content">
+      <span class="docs-stat-value">{{ total_files }}</span>
+      <span class="docs-stat-label">Accepted Files</span>
+    </div>
+  </div>
+
+  <div class="docs-stat-card">
+    <div class="docs-stat-icon year"><i class="fas fa-calendar-alt"></i></div>
+    <div class="docs-stat-content">
+      <span class="docs-stat-value">{{ files_this_year }}</span>
+      <span class="docs-stat-label">This Year</span>
+    </div>
+  </div>
+  
+  <div class="docs-stat-card">
+    <div class="docs-stat-icon month"><i class="fas fa-calendar-week"></i></div>
+    <div class="docs-stat-content">
+      <span class="docs-stat-value">{{ files_this_month }}</span>
+      <span class="docs-stat-label">This Month</span>
+    </div>
+  </div>
+  
+  <div class="docs-stat-card">
+    <div class="docs-stat-icon user"><i class="fas fa-user"></i></div>
+    <div class="docs-stat-content">
+      <span class="docs-stat-value">{{ user_total_uploads }}</span>
+      <span class="docs-stat-label">My Uploads</span>
+    </div>
+  </div>
+</div>
+
+<!-- Navigation Card -->
+<div class="docs-nav-grid">
+  <a href="{% url 'user_app:file-manager' %}" class="docs-nav-card primary">
+    <div class="docs-nav-icon"><i class="fas fa-folder-tree"></i></div>
+    <div class="docs-nav-content">
+      <h6>Browse Files</h6>
+      <p>Browse folders and download accepted documents</p>
+    </div>
+    <div class="docs-nav-arrow"><i class="fas fa-arrow-right"></i></div>
+  </a>
+  
+  <a href="{% url 'user_app:accepted-files' %}" class="docs-nav-card secondary">
+    <div class="docs-nav-icon"><i class="fas fa-check-circle"></i></div>
+    <div class="docs-nav-content">
+      <h6>My Accepted Files</h6>
+      <p>View your files that have been accepted</p>
+    </div>
+    <div class="docs-nav-arrow"><i class="fas fa-arrow-right"></i></div>
+  </a>
+</div>
+
+<!-- My Upload Status -->
+<div class="docs-my-status">
+  <div class="docs-card-header">
+    <h6><i class="fas fa-chart-pie me-2"></i>My Upload Status</h6>
+  </div>
+  <div class="docs-status-grid">
+    <div class="status-item accepted">
+      <div class="status-icon"><i class="fas fa-check-circle"></i></div>
+      <div class="status-info">
+        <span class="status-value">{{ user_accepted }}</span>
+        <span class="status-label">Accepted</span>
+      </div>
+    </div>
+    <div class="status-item pending">
+      <div class="status-icon"><i class="fas fa-clock"></i></div>
+      <div class="status-info">
+        <span class="status-value">{{ user_pending }}</span>
+        <span class="status-label">Pending</span>
+      </div>
+    </div>
+    <div class="status-item rejected">
+      <div class="status-icon"><i class="fas fa-times-circle"></i></div>
+      <div class="status-info">
+        <span class="status-value">{{ user_rejected }}</span>
+        <span class="status-label">Rejected</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Analytics Section -->
+<div class="docs-analytics-header">
+  <h5><i class="fas fa-chart-line me-2"></i>Document Overview</h5>
+</div>
+
+<div class="docs-analytics-grid">
+  <!-- Files by Type -->
+  <div class="docs-analytics-card">
+    <div class="docs-card-header">
+      <h6><i class="fas fa-file-archive me-2"></i>Files by Type</h6>
+    </div>
+    <div class="docs-card-body">
+      <div class="type-list">
+        {% for item in files_by_type %}
+        <div class="type-item">
+          <div class="type-info">
+            {% if item.attachment_type == 'matrix_a' %}
+              <i class="fas fa-file-excel text-success"></i>
+            {% elif item.attachment_type == 'matrix_b' %}
+              <i class="fas fa-file-excel text-primary"></i>
+            {% elif item.attachment_type == 'mov' %}
+              <i class="fas fa-file-pdf text-danger"></i>
+            {% else %}
+              <i class="fas fa-file text-secondary"></i>
+            {% endif %}
+            <span>{{ item.display_name }}</span>
+          </div>
+          <span class="type-count">{{ item.count }}</span>
+        </div>
+        {% empty %}
+        <p class="text-muted small">No files yet</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- Files by Workcycle -->
+  <div class="docs-analytics-card">
+    <div class="docs-card-header">
+      <h6><i class="fas fa-layer-group me-2"></i>Top Work Cycles</h6>
+    </div>
+    <div class="docs-card-body">
+      <div class="workcycle-list">
+        {% for wc in files_by_workcycle %}
+        <div class="workcycle-item">
+          <span class="workcycle-title" title="{{ wc.work_item__workcycle__title }}">
+            {{ wc.work_item__workcycle__title|truncatechars:35 }}
+          </span>
+          <span class="workcycle-count">{{ wc.count }}</span>
+        </div>
+        {% empty %}
+        <p class="text-muted small">No active work cycles</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Files -->
+<div class="docs-recent-section">
+  <div class="docs-card-header">
+    <h6><i class="fas fa-clock me-2"></i>Recently Accepted Files</h6>
+    <a href="{% url 'user_app:file-manager' %}" class="docs-view-all">Browse All <i class="fas fa-arrow-right ms-1"></i></a>
+  </div>
+  <div class="docs-recent-list">
+    {% for file in recent_files %}
+    <div class="docs-recent-item">
+      <div class="docs-recent-icon">
+        {% if file.attachment_type == 'matrix_a' %}
+          <i class="fas fa-file-excel text-success"></i>
+        {% elif file.attachment_type == 'matrix_b' %}
+          <i class="fas fa-file-excel text-primary"></i>
+        {% elif file.attachment_type == 'mov' %}
+          <i class="fas fa-file-pdf text-danger"></i>
+        {% else %}
+          <i class="fas fa-file text-secondary"></i>
+        {% endif %}
+      </div>
+      <div class="docs-recent-info">
+        <span class="docs-recent-name" title="{{ file.file.name }}">
+          {{ file.file.name|cut:"work_items/"|truncatechars:40 }}
+        </span>
+        <span class="docs-recent-meta">
+          {% if file.uploaded_by %}
+            {{ file.uploaded_by.get_full_name|default:file.uploaded_by.username }}
+          {% else %}
+            System
+          {% endif %}
+          · {{ file.uploaded_at|timesince }} ago
+        </span>
+      </div>
+      <a href="{% url 'user_app:download-file' file.id %}" class="docs-download-btn" title="Download">
+        <i class="fas fa-download"></i>
+      </a>
+    </div>
+    {% empty %}
+    <p class="text-muted small text-center py-4">No recent files</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Styles -->
+<style>
+:root {
+  --cyan-50: #ecfeff;
+  --cyan-100: #cffafe;
+  --cyan-400: #22d3ee;
+  --cyan-500: #06b6d4;
+  --cyan-600: #0891b2;
+  --cyan-700: #0e7490;
+  --muted-50: #f9fafb;
+  --muted-100: #f3f4f6;
+  --muted-200: #e5e7eb;
+  --muted-400: #9ca3af;
+  --muted-500: #6b7280;
+  --muted-600: #4b5563;
+  --muted-700: #374151;
+  --muted-800: #1f2937;
+}
+
+.docs-header {
+  background: #fff;
+  border: 1px solid var(--muted-200);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.docs-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.docs-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.docs-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.docs-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--cyan-500), var(--cyan-700));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.docs-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--muted-800);
+  margin: 0 0 4px 0;
+}
+
+.docs-subtitle {
+  font-size: 0.85rem;
+  color: var(--muted-500);
+  margin: 0;
+}
+
+.docs-badge.view-only {
+  background: var(--cyan-100);
+  color: var(--cyan-700);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.docs-date {
+  font-size: 0.8rem;
+  color: var(--muted-400);
+}
+
+/* Stats Grid */
+.docs-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.docs-stat-card {
+  background: #fff;
+  border: 1px solid var(--muted-200);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: all 0.2s;
+}
+
+.docs-stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  transform: translateY(-2px);
+}
+
+.docs-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.docs-stat-icon.total { background: #d1fae5; color: #059669; }
+.docs-stat-icon.year { background: #dbeafe; color: #2563eb; }
+.docs-stat-icon.month { background: #fef3c7; color: #d97706; }
+.docs-stat-icon.user { background: var(--cyan-100); color: var(--cyan-600); }
+
+.docs-stat-content { display: flex; flex-direction: column; }
+.docs-stat-value { font-size: 1.5rem; font-weight: 700; color: var(--muted-800); line-height: 1; }
+.docs-stat-label { font-size: 0.75rem; color: var(--muted-500); margin-top: 4px; }
+
+/* Navigation Cards */
+.docs-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.docs-nav-card {
+  background: #fff;
+  border: 1px solid var(--muted-200);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.docs-nav-card:hover {
+  box-shadow: 0 8px 24px rgba(6, 182, 212, 0.12);
+  transform: translateY(-3px);
+  border-color: var(--cyan-200);
+}
+
+.docs-nav-card.primary { border-left: 4px solid var(--cyan-500); }
+.docs-nav-card.secondary { border-left: 4px solid #10b981; }
+
+.docs-nav-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: var(--cyan-50);
+  color: var(--cyan-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.docs-nav-card.secondary .docs-nav-icon {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.docs-nav-content { flex: 1; }
+.docs-nav-content h6 { font-weight: 700; color: var(--muted-800); margin: 0 0 4px 0; font-size: 0.95rem; }
+.docs-nav-content p { font-size: 0.8rem; color: var(--muted-500); margin: 0; }
+
+.docs-nav-arrow {
+  color: var(--muted-400);
+  transition: transform 0.2s;
+}
+
+.docs-nav-card:hover .docs-nav-arrow {
+  transform: translateX(4px);
+  color: var(--cyan-600);
+}
+
+/* My Status Section */
+.docs-my-status {
+  background: #fff;
+  border: 1px solid var(--muted-200);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.docs-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 20px;
+  gap: 16px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--muted-50);
+}
+
+.status-item.accepted { background: #d1fae5; }
+.status-item.pending { background: #fef3c7; }
+.status-item.rejected { background: #fee2e2; }
+
+.status-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.status-item.accepted .status-icon { background: #10b981; color: #fff; }
+.status-item.pending .status-icon { background: #f59e0b; color: #fff; }
+.status-item.rejected .status-icon { background: #ef4444; color: #fff; }
+
+.status-info { display: flex; flex-direction: column; }
+.status-value { font-size: 1.5rem; font-weight: 700; color: var(--muted-800); }
+.status-label { font-size: 0.75rem; color: var(--muted-600); }
+
+/* Analytics */
+.docs-analytics-header {
+  margin-bottom: 16px;
+}
+
+.docs-analytics-header h5 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--muted-700);
+  margin: 0;
+}
+
+.docs-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.docs-analytics-card {
+  background: #fff;
+  border: 1px solid var(--muted-200);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.docs-card-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--muted-100);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.docs-card-header h6 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted-700);
+  margin: 0;
+}
+
+.docs-view-all {
+  font-size: 0.75rem;
+  color: var(--cyan-600);
+  text-decoration: none;
+}
+
+.docs-view-all:hover { text-decoration: underline; }
+
+.docs-card-body { padding: 16px; }
+
+/* Type List */
+.type-list { display: flex; flex-direction: column; gap: 10px; }
+.type-item { display: flex; justify-content: space-between; align-items: center; }
+.type-info { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: var(--muted-600); }
+.type-count { font-weight: 700; font-size: 0.85rem; color: var(--muted-800); }
+
+/* Workcycle List */
+.workcycle-list { display: flex; flex-direction: column; gap: 10px; }
+.workcycle-item { display: flex; justify-content: space-between; align-items: center; }
+.workcycle-title { font-size: 0.8rem; color: var(--muted-600); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workcycle-count { font-weight: 700; font-size: 0.85rem; color: var(--muted-800); }
+
+/* Recent Section */
+.docs-recent-section {
+  background: #fff;
+  border: 1px solid var(--muted-200);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.docs-recent-list { max-height: 400px; overflow-y: auto; }
+
+.docs-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--muted-100);
+  transition: background 0.15s;
+}
+
+.docs-recent-item:hover { background: var(--muted-50); }
+.docs-recent-item:last-child { border-bottom: none; }
+
+.docs-recent-icon { font-size: 1.25rem; width: 32px; text-align: center; }
+.docs-recent-info { flex: 1; min-width: 0; }
+.docs-recent-name { display: block; font-size: 0.85rem; font-weight: 600; color: var(--muted-700); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.docs-recent-meta { font-size: 0.75rem; color: var(--muted-400); }
+
+.docs-download-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--cyan-50);
+  color: var(--cyan-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.docs-download-btn:hover {
+  background: var(--cyan-500);
+  color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .docs-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .docs-header-content { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .docs-header-right { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .docs-stats-grid { grid-template-columns: 1fr; }
+  .docs-nav-grid { grid-template-columns: 1fr; }
+  .docs-analytics-grid { grid-template-columns: 1fr; }
+  .docs-status-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+{% endblock %}

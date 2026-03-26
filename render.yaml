@@ -1,0 +1,219 @@
+services:
+  # Main Web Service
+  - type: web
+    name: penro-wsti
+    runtime: python
+    plan: free  # Explicitly set free tier
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate"
+    startCommand: "gunicorn penro_project.wsgi:application --workers 1 --threads 2 --timeout 120 --max-requests 1000 --max-requests-jitter 50 --access-logfile - --error-logfile - --log-level info"
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "false"
+      - key: SITE_URL
+        value: "https://penrowise.onrender.com"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: CSRF_TRUSTED_ORIGINS
+        value: "https://*.onrender.com"
+      - key: EMAIL_HOST
+        value: "smtp-relay.brevo.com"
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: PYTHON_VERSION
+        value: "3.10.0"
+
+  # Cron Job: Send Deadline Reminders (runs daily at 8 AM Manila time = 12 AM UTC)
+  - type: cron
+    name: send-deadline-reminders
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    schedule: "0 0 * * *"
+    startCommand: "python manage.py send_deadline_reminders"
+    envVars:
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: DATABASE_URL
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: SECRET_KEY
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: EMAIL_HOST_PASSWORD
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_CLOUD_NAME
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_API_KEY
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_API_SECRET
+
+  # Cron Job: Send Message Digests (runs every 6 hours)
+  - type: cron
+    name: send-message-digests
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    schedule: "0 */6 * * *"
+    startCommand: "python manage.py send_message_digests"
+    envVars:
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: DATABASE_URL
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: SECRET_KEY
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: EMAIL_HOST_PASSWORD
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_CLOUD_NAME
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_API_KEY
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_API_SECRET
+
+  # Cron Job: Cleanup Rejected Files (runs daily at 2 AM Manila time = 6 PM UTC previous day)
+  - type: cron
+    name: cleanup-rejected-files
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    schedule: "0 18 * * *"
+    startCommand: "python manage.py cleanup_rejected_files"
+    envVars:
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: DATABASE_URL
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: SECRET_KEY
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_CLOUD_NAME
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_API_KEY
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_API_SECRET
+
+  # Cron Job: Clear Old Message Notifications (runs weekly on Sunday at 3 AM Manila = 7 PM UTC Saturday)
+  - type: cron
+    name: clear-message-notifications
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    schedule: "0 19 * * 6"
+    startCommand: "python manage.py clear_message_notifications"
+    envVars:
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: DATABASE_URL
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: SECRET_KEY
+
+  # Cron Job: Process WorkCycle Jobs (runs every 2 minutes for async processing)
+  - type: cron
+    name: process-workcycle-jobs
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    schedule: "*/2 * * * *"
+    startCommand: "python manage.py process_workcycle_jobs"
+    envVars:
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: DATABASE_URL
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: SECRET_KEY
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: EMAIL_HOST_PASSWORD
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_CLOUD_NAME
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_API_KEY
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_API_SECRET
+
+  # Cron Job: Process WorkItem Jobs (runs every 1 minute for async processing)
+  - type: cron
+    name: process-workitem-jobs
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    schedule: "*/1 * * * *"
+    startCommand: "python manage.py process_workitem_jobs"
+    envVars:
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: DATABASE_URL
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: SECRET_KEY
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: EMAIL_HOST_PASSWORD
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_CLOUD_NAME
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_API_KEY
+      - fromService:
+          type: web
+          name: penro-wsti
+          envVarKey: CLOUDINARY_API_SECRET

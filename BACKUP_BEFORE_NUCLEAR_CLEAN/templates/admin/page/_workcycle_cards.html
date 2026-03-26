@@ -1,0 +1,672 @@
+{% if workcycles %}
+
+<section class="wc-grid" aria-label="Work cycle list">
+
+  {% for wc in workcycles %}
+  <article class="wc-card" tabindex="0">
+
+    <!-- ================= CARD HEADER ================= -->
+    <header class="wc-card-header">
+
+      <!-- STATUS BADGES ROW -->
+      <div class="wc-status-row">
+        <!-- LIFECYCLE STATE -->
+        <span class="wc-lifecycle-badge lifecycle-{{ wc.lifecycle_state }}">
+          {% if wc.lifecycle_state == 'ongoing' %}
+            <i class="fas fa-sync-alt"></i>
+          {% elif wc.lifecycle_state == 'due_soon' %}
+            <i class="fas fa-hourglass-half"></i>
+          {% elif wc.lifecycle_state == 'lapsed' %}
+            <i class="fas fa-exclamation-triangle"></i>
+          {% endif %}
+          <span class="wc-badge-text">{{ wc.lifecycle_state|title }}</span>
+        </span>
+
+        <!-- ACTIVE/INACTIVE BADGE -->
+        <span class="wc-active-badge {% if wc.is_active %}wc-badge-active{% else %}wc-badge-inactive{% endif %}">
+          {% if wc.is_active %}
+            <i class="fas fa-check-circle"></i>
+            <span class="wc-badge-text">Active</span>
+          {% else %}
+            <i class="fas fa-times-circle"></i>
+            <span class="wc-badge-text">Inactive</span>
+          {% endif %}
+        </span>
+      </div>
+
+      <!-- TITLE AND ACTIONS -->
+      <div class="wc-title-row">
+        <h2 class="wc-card-title">
+          {{ wc.title }}
+        </h2>
+
+        <!-- ACTION MENU -->
+        <div class="wc-card-actions">
+          <button class="wc-action-menu-btn" data-bs-toggle="dropdown">
+            <i class="fas fa-ellipsis-v"></i>
+          </button>
+
+          <ul class="dropdown-menu wc-dropdown-menu">
+            <li>
+              <button type="button"
+                      class="wc-dropdown-item"
+                      data-bs-toggle="modal"
+                      data-bs-target="#editWorkcycleModal"
+                      data-id="{{ wc.id }}"
+                      data-title="{{ wc.title|escapejs }}"
+                      data-description="{{ wc.description|default:''|escapejs }}"
+                      data-due="{{ wc.due_at|date:'Y-m-d\\TH:i' }}">
+                <i class="fas fa-edit"></i> Edit Work Cycle
+              </button>
+            </li>
+
+            <li>
+              <button type="button"
+                      class="wc-dropdown-item"
+                      data-bs-toggle="modal"
+                      data-bs-target="#reassignWorkcycleModal"
+                      data-id="{{ wc.id }}"
+                      data-title="{{ wc.title|escapejs }}"
+                      data-users="{% for assignment in wc.assignments.all %}{% if assignment.assigned_user %}{{ assignment.assigned_user.get_full_name|default:assignment.assigned_user.username }}{% if not forloop.last %}|{% endif %}{% endif %}{% endfor %}"
+                      data-departments="{% for assignment in wc.assignments.all %}{% if assignment.assigned_department %}{{ assignment.assigned_department.name }}{% if not forloop.last %}|{% endif %}{% endif %}{% endfor %}">
+                <i class="fas fa-random"></i> Reassign All
+              </button>
+            </li>
+
+            <li><hr class="dropdown-divider"></li>
+
+            <li>
+              <form method="post"
+                    action="{% url 'admin_app:workcycle-archive' wc.id %}"
+                    class="wc-dropdown-form"
+                    data-loading-text="{% if wc.is_active %}Archiving...{% else %}Restoring...{% endif %}"
+                    data-loading-message="{% if wc.is_active %}Archiving work cycle and notifying users.{% else %}Restoring work cycle.{% endif %}">
+                {% csrf_token %}
+                <button type="submit" class="wc-dropdown-item">
+                  {% if wc.is_active %}
+                    <i class="fas fa-archive"></i> Archive Work Cycle
+                  {% else %}
+                    <i class="fas fa-box-open"></i> Unarchive Work Cycle
+                  {% endif %}
+                </button>
+              </form>
+            </li>
+
+            <li>
+              <button class="wc-dropdown-item wc-dropdown-item-danger"
+                      data-bs-toggle="modal"
+                      data-bs-target="#deleteWorkcycleModal"
+                      data-delete-url="{% url 'admin_app:workcycle-delete' wc.id %}"
+                      data-workcycle-title="{{ wc.title|escapejs }}">
+                <i class="fas fa-trash"></i> Delete Work Cycle
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+    </header>
+
+    <!-- ================= CARD BODY ================= -->
+    <section class="wc-card-body">
+
+      <!-- DEADLINE & TIME ROW -->
+      <div class="wc-timeline-row">
+        <div class="wc-deadline-card">
+          <div class="wc-deadline-header">
+            <i class="fas fa-clock"></i>
+            <span>Deadline</span>
+          </div>
+          <div class="wc-deadline-content">
+            <time class="wc-deadline-date">
+              {{ wc.due_at|date:"F d, Y" }}
+            </time>
+            <span class="wc-deadline-time">
+              {{ wc.due_at|date:"h:i A" }}
+            </span>
+          </div>
+        </div>
+
+        <div class="wc-timer-card">
+          <div class="wc-timer-header">
+            <i class="fas fa-hourglass-half"></i>
+            <span>Time Remaining</span>
+          </div>
+          <div class="wc-timer-content lifecycle-{{ wc.lifecycle_state }}">
+            {{ wc.time_remaining }}
+          </div>
+        </div>
+      </div>
+
+      <!-- META INFO GRID -->
+      <div class="wc-meta-grid">
+        <div class="wc-meta-item">
+          <div class="wc-meta-icon">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="wc-meta-content">
+            <span class="wc-meta-label">Created By</span>
+            <span class="wc-meta-value">{{ wc.created_by|default:"System" }}</span>
+          </div>
+        </div>
+
+        <div class="wc-meta-item">
+          <div class="wc-meta-icon">
+            <i class="fas fa-calendar"></i>
+          </div>
+          <div class="wc-meta-content">
+            <span class="wc-meta-label">Created On</span>
+            <time class="wc-meta-value">{{ wc.created_at|date:"M d, Y" }}</time>
+          </div>
+        </div>
+
+        <div class="wc-meta-item">
+          <div class="wc-meta-icon">
+            <i class="fas fa-tasks"></i>
+          </div>
+          <div class="wc-meta-content">
+            <span class="wc-meta-label">Assignments</span>
+            <span class="wc-meta-value">
+              {{ wc.assignment_count|default:"0" }}
+              <span class="wc-meta-unit">tasks</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= CARD FOOTER ================= -->
+    <footer class="wc-card-footer">
+      <a href="{% url 'admin_app:workcycle-assignments' wc.id %}" 
+         class="wc-view-btn">
+        <i class="fas fa-arrow-right"></i>
+        <span>View Assignments</span>
+      </a>
+    </footer>
+
+  </article>
+  {% endfor %}
+
+</section>
+
+{% else %}
+
+<section class="wc-empty-state">
+  <div class="wc-empty-icon">
+    <i class="fas fa-inbox"></i>
+  </div>
+  <h3 class="wc-empty-title">No Work Cycles Found</h3>
+  <p class="wc-empty-text">Create your first work cycle to get started.</p>
+  <button type="button"
+          class="wc-empty-action"
+          data-bs-toggle="modal"
+          data-bs-target="#createWorkcycleModal">
+    <i class="fas fa-plus"></i>
+    Create Work Cycle
+  </button>
+</section>
+
+{% endif %}
+
+<!-- =========================
+     STYLES
+========================= -->
+<style>
+/* =============================
+   CARD GRID
+============================= */
+.wc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+/* =============================
+   CARD STYLES
+============================= */
+.wc-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.wc-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  border-color: #d1d5db;
+}
+
+.wc-card:focus-within {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+/* CARD HEADER */
+.wc-card-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.wc-status-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wc-lifecycle-badge,
+.wc-active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.wc-badge-text {
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+/* Lifecycle States */
+.wc-lifecycle-badge.lifecycle-ongoing {
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.wc-lifecycle-badge.lifecycle-due_soon {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.wc-lifecycle-badge.lifecycle-lapsed {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* Active/Inactive States */
+.wc-active-badge.wc-badge-active {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.wc-active-badge.wc-badge-inactive {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.wc-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.wc-card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.4;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* ACTION MENU */
+.wc-card-actions {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.wc-action-menu-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wc-action-menu-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.wc-dropdown-menu {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  padding: 8px 0;
+  min-width: 220px;
+}
+
+.wc-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  color: #475569;
+  text-decoration: none;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.wc-dropdown-item:hover {
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+.wc-dropdown-item-danger {
+  color: #dc2626;
+}
+
+.wc-dropdown-item-danger:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.wc-dropdown-form {
+  margin: 0;
+}
+
+/* CARD BODY */
+.wc-card-body {
+  padding: 20px;
+  flex: 1;
+}
+
+/* TIMELINE ROW */
+.wc-timeline-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.wc-deadline-card,
+.wc-timer-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.wc-deadline-header,
+.wc-timer-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.wc-deadline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wc-deadline-date {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.wc-deadline-time {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.wc-timer-content {
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+/* Timer colors based on lifecycle */
+.wc-timer-content.lifecycle-ongoing {
+  color: #0369a1;
+  border-color: #bae6fd;
+  background: #f0f9ff;
+}
+
+.wc-timer-content.lifecycle-due_soon {
+  color: #92400e;
+  border-color: #fde68a;
+  background: #fef3c7;
+}
+
+.wc-timer-content.lifecycle-lapsed {
+  color: #991b1b;
+  border-color: #fecaca;
+  background: #fee2e2;
+}
+
+/* META GRID */
+.wc-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding-top: 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.wc-meta-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.wc-meta-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border-radius: 8px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.wc-meta-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wc-meta-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.wc-meta-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.wc-meta-unit {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-left: 2px;
+}
+
+/* CARD FOOTER */
+.wc-card-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.wc-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #8b5cf6;
+  color: white;
+  text-decoration: none;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  width: 100%;
+  justify-content: center;
+}
+
+.wc-view-btn:hover {
+  background: #7c3aed;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  color: white;
+}
+
+/* EMPTY STATE */
+.wc-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: #ffffff;
+  border: 2px dashed #e5e7eb;
+  border-radius: 20px;
+  margin-top: 24px;
+}
+
+.wc-empty-icon {
+  font-size: 3rem;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+}
+
+.wc-empty-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.wc-empty-text {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #94a3b8;
+  margin-bottom: 20px;
+}
+
+.wc-empty-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wc-empty-action:hover {
+  background: #7c3aed;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* RESPONSIVE */
+@media (max-width: 1200px) {
+  .wc-grid {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .wc-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .wc-timeline-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .wc-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .wc-card-header,
+  .wc-card-body,
+  .wc-card-footer {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .wc-status-row {
+    flex-wrap: wrap;
+  }
+  
+  .wc-title-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .wc-card-actions {
+    align-self: flex-end;
+  }
+}
+</style>

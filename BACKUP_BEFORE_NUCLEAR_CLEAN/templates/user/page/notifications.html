@@ -1,0 +1,269 @@
+{% extends "user/layout/base.html" %}
+{% load static %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/user/notifications.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="notif-page-container">
+
+  <!-- =========================
+       PAGE HEADER
+  ========================= -->
+  <div class="notif-page-header">
+    <div class="notif-header-left">
+      <div class="notif-header-icon">
+        <i class="fas fa-bell"></i>
+      </div>
+      <div>
+        <h4 class="notif-page-title">Notifications</h4>
+        <p class="notif-page-subtitle">
+          Updates, reminders, reviews, and messages related to your work
+        </p>
+      </div>
+    </div>
+    
+    <div class="notif-header-actions">
+      {% if page_obj and page_obj.object_list %}
+        <button type="button" class="notif-mark-all-btn" id="markAllReadBtn">
+          <i class="fas fa-check-double"></i>
+          Mark all as read
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- =========================
+       FILTER TABS
+  ========================= -->
+  <div class="notif-filter-bar">
+    <a href="{% url 'user_app:user-notifications' %}" 
+       class="notif-filter-tab {% if not category %}active{% endif %}">
+      <i class="fas fa-inbox"></i>
+      All
+    </a>
+    {% for cat_value, cat_label in categories %}
+      <a href="?category={{ cat_value }}" 
+         class="notif-filter-tab {% if category == cat_value %}active{% endif %}">
+        {% if cat_value == 'reminder' %}
+          <i class="fas fa-clock"></i>
+        {% elif cat_value == 'status' %}
+          <i class="fas fa-check-circle"></i>
+        {% elif cat_value == 'review' %}
+          <i class="fas fa-clipboard-check"></i>
+        {% elif cat_value == 'assignment' %}
+          <i class="fas fa-user-plus"></i>
+        {% elif cat_value == 'message' %}
+          <i class="fas fa-comment"></i>
+        {% elif cat_value == 'system' %}
+          <i class="fas fa-cog"></i>
+        {% else %}
+          <i class="fas fa-bell"></i>
+        {% endif %}
+        {{ cat_label }}
+      </a>
+    {% endfor %}
+  </div>
+
+  <!-- =========================
+       NOTIFICATION LIST
+  ========================= -->
+  {% if page_obj and page_obj.object_list %}
+    <div class="notif-list" id="notificationList">
+      {% for notif in page_obj %}
+        {% with action_url=notif.action_url|default:"" %}
+        <a href="{% if notif.work_item %}{% url 'user_app:work-item-detail' notif.work_item.id %}{% elif action_url %}{{ action_url }}{% else %}#{% endif %}"
+           class="notif-card {% if not notif.is_read %}notif-unread{% endif %}"
+           data-notif-id="{{ notif.id }}"
+           {% if not notif.work_item and not action_url %}onclick="event.preventDefault(); markAsRead({{ notif.id }}, this);"{% endif %}>
+          
+          <!-- Icon -->
+          <div class="notif-card-icon notif-icon-{{ notif.category }}">
+            {% if notif.category == "status" %}
+              <i class="fas fa-check-circle"></i>
+            {% elif notif.category == "review" %}
+              <i class="fas fa-clipboard-check"></i>
+            {% elif notif.category == "message" %}
+              <i class="fas fa-comment"></i>
+            {% elif notif.category == "reminder" %}
+              <i class="fas fa-clock"></i>
+            {% elif notif.category == "assignment" %}
+              <i class="fas fa-user-plus"></i>
+            {% elif notif.category == "system" %}
+              <i class="fas fa-cog"></i>
+            {% else %}
+              <i class="fas fa-bell"></i>
+            {% endif %}
+          </div>
+
+          <!-- Content -->
+          <div class="notif-card-content">
+            <div class="notif-card-header">
+              <span class="notif-card-title">{{ notif.title }}</span>
+              <span class="notif-card-badge badge-{{ notif.category }}">
+                {{ notif.get_category_display }}
+              </span>
+            </div>
+            
+            <p class="notif-card-message">{{ notif.message }}</p>
+            
+            <div class="notif-card-footer">
+              <span class="notif-card-time">
+                <i class="far fa-clock"></i>
+                {{ notif.created_at|timesince }} ago
+              </span>
+              
+              {% if notif.priority == 'danger' %}
+                <span class="notif-priority priority-danger">
+                  <i class="fas fa-exclamation-circle"></i> Urgent
+                </span>
+              {% elif notif.priority == 'warning' %}
+                <span class="notif-priority priority-warning">
+                  <i class="fas fa-exclamation-triangle"></i> Important
+                </span>
+              {% endif %}
+              
+              {% if notif.work_item or action_url %}
+                <span class="notif-card-action">
+                  View details <i class="fas fa-arrow-right"></i>
+                </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Unread indicator -->
+          {% if not notif.is_read %}
+            <div class="notif-unread-dot"></div>
+          {% endif %}
+        </a>
+        {% endwith %}
+      {% endfor %}
+    </div>
+
+    <!-- =========================
+         PAGINATION
+    ========================= -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="notif-pagination">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if category %}&category={{ category }}{% endif %}">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+          </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active">
+              <span class="page-link">{{ num }}</span>
+            </li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ num }}{% if category %}&category={{ category }}{% endif %}">{{ num }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if category %}&category={{ category }}{% endif %}">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+
+  {% else %}
+    <!-- Empty State -->
+    <div class="notif-empty-state">
+      <div class="notif-empty-icon">
+        <i class="fas fa-bell-slash"></i>
+      </div>
+      <h5>No notifications</h5>
+      <p>You're all caught up! New notifications will appear here.</p>
+    </div>
+  {% endif %}
+
+</div>
+
+<!-- =========================
+     SCRIPTS
+========================= -->
+<script>
+// Mark single notification as read
+async function markAsRead(notifId, element) {
+  try {
+    const response = await fetch(`/api/notifications/${notifId}/read/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
+    
+    if (response.ok) {
+      element.classList.remove('notif-unread');
+      const dot = element.querySelector('.notif-unread-dot');
+      if (dot) dot.remove();
+    }
+  } catch (err) {
+    console.error('Failed to mark as read:', err);
+  }
+}
+
+// Mark all as read
+document.getElementById('markAllReadBtn')?.addEventListener('click', async function() {
+  this.disabled = true;
+  this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Marking...';
+  
+  try {
+    const response = await fetch('/api/notifications/mark-all-read/', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
+    
+    if (response.ok) {
+      document.querySelectorAll('.notif-unread').forEach(el => {
+        el.classList.remove('notif-unread');
+        const dot = el.querySelector('.notif-unread-dot');
+        if (dot) dot.remove();
+      });
+      if (window.notify) notify('All notifications marked as read', 'success');
+    }
+  } catch (err) {
+    if (window.notify) notify('Failed to mark notifications', 'error');
+  }
+  
+  this.disabled = false;
+  this.innerHTML = '<i class="fas fa-check-double"></i> Mark all as read';
+});
+
+// Auto-mark as read when clicking notification links
+document.querySelectorAll('.notif-card[data-notif-id]').forEach(card => {
+  card.addEventListener('click', function() {
+    const notifId = this.dataset.notifId;
+    if (this.classList.contains('notif-unread')) {
+      // Fire and forget - mark as read in background
+      fetch(`/api/notifications/${notifId}/read/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+    }
+  });
+});
+</script>
+
+{% endblock %}

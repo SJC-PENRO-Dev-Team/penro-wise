@@ -1,0 +1,868 @@
+<!-- File Preview Modal -->
+<div class="modal fade" id="filePreviewModal" tabindex="-1" aria-labelledby="filePreviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen-lg-down modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius: 12px; overflow: hidden;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 1.25rem 1.5rem;">
+        <div class="d-flex align-items-center gap-3 flex-grow-1">
+          <div class="file-icon-preview" id="previewFileIcon" style="font-size: 1.75rem;">
+            <i class="fas fa-file"></i>
+          </div>
+          <div class="flex-grow-1" style="min-width: 0;">
+            <h5 class="modal-title mb-0" id="previewModalTitle" style="font-weight: 600; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              <span id="previewFileName">File Preview</span>
+            </h5>
+            <small id="previewFileInfo" class="d-block mt-1" style="opacity: 0.9; font-size: 0.85rem;"></small>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body p-0" style="background: #f8f9fa; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;">
+        <!-- Loading State -->
+        <div id="previewLoading" class="d-flex flex-column align-items-center justify-content-center" style="min-height: 500px;">
+          <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="text-muted mb-0" style="font-size: 0.95rem;">Loading preview...</p>
+        </div>
+        
+        <!-- Error State -->
+        <div id="previewError" class="d-none p-4">
+          <div class="alert alert-danger d-flex align-items-start gap-3 mb-0" role="alert" style="border-radius: 8px; border-left: 4px solid #dc3545;">
+            <i class="fas fa-exclamation-triangle mt-1" style="font-size: 1.5rem;"></i>
+            <div class="flex-grow-1">
+              <h6 class="alert-heading mb-2">Unable to Preview</h6>
+              <p class="mb-0" id="previewErrorMessage">Unable to preview this file.</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Preview Container -->
+        <div id="previewContainer" class="d-none" style="width: 100%; height: 100%; flex: 1; overflow: hidden;">
+          <!-- PDF Viewer -->
+          <div id="pdfViewer" class="d-none" style="width: 100%; height: 100%; background: #525659;">
+            <iframe id="pdfFrame" style="width: 100%; height: 100%; border: none; display: block;"></iframe>
+          </div>
+          
+          <!-- Image Viewer -->
+          <div id="imageViewer" class="d-none d-flex align-items-center justify-content-center" style="width: 100%; height: 100%; background: #000; overflow: hidden; padding: 1rem;">
+            <img id="imagePreview" style="max-width: calc(100% - 2rem); max-height: calc(100% - 2rem); height: auto; width: auto; object-fit: contain;" alt="Image preview">
+          </div>
+          
+          <!-- Office Document Viewer -->
+          <div id="officeViewer" class="d-none h-100">
+            <iframe id="officeFrame" style="width: 100%; height: 100%; border: none; display: block;"></iframe>
+          </div>
+          
+          <!-- Text/CSV Viewer -->
+          <div id="textViewer" class="d-none p-4">
+            <div class="card border-0 shadow-sm" style="border-radius: 8px;">
+              <div class="card-body p-0">
+                <pre id="textContent" class="mb-0" style="max-height: 70vh; overflow: auto; background: #ffffff; padding: 1.5rem; border-radius: 8px; font-size: 0.875rem; line-height: 1.6; font-family: 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word;"></pre>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Unsupported File Type -->
+          <div id="unsupportedViewer" class="d-none p-5 text-center" style="min-height: 500px; display: flex; align-items: center; justify-content: center;">
+            <div>
+              <div class="mb-4" style="font-size: 5rem; color: #cbd5e1;">
+                <i class="fas fa-file-alt"></i>
+              </div>
+              <h5 class="mb-3" style="color: #475569;">Preview Not Available</h5>
+              <p class="text-muted mb-2">This file type cannot be previewed in the browser.</p>
+              <p class="text-muted mb-4">
+                <strong id="unsupportedFileName" style="color: #64748b;"></strong>
+              </p>
+              <a id="unsupportedDownloadBtn" href="#" class="btn btn-primary" download>
+                <i class="fas fa-download me-2"></i>Download File
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="background: white; border-top: 1px solid #e2e8f0; padding: 1rem 1.5rem;">
+        <button type="button" id="fullscreenBtn" class="btn btn-secondary" onclick="FilePreview.toggleFullscreen()" style="border-radius: 6px; padding: 0.5rem 1.25rem; font-weight: 500;">
+          <i class="fas fa-expand me-2"></i><span id="fullscreenBtnText">Fullscreen</span>
+        </button>
+        <a id="downloadFileBtn" href="#" class="btn btn-primary" download style="border-radius: 6px; padding: 0.5rem 1.25rem; font-weight: 500;">
+          <i class="fas fa-download me-2"></i>Download
+        </a>
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 6px; padding: 0.5rem 1.25rem; font-weight: 500;">
+          <i class="fas fa-times me-2"></i>Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Fullscreen Exit Button (shown only in fullscreen mode) -->
+<button type="button" id="fullscreenExitBtn" onclick="FilePreview.toggleFullscreen()">
+  <i class="fas fa-compress me-2"></i>Exit Fullscreen
+</button>
+
+<!-- Fullscreen Preview Mode Message -->
+<div id="fullscreenPreviewMessage">
+  <i class="fas fa-info-circle me-2"></i>
+  <div>
+    <strong>Preview Mode Only</strong>
+    <div style="font-size: 0.85rem; opacity: 0.9;">Please download the file to edit</div>
+  </div>
+</div>
+
+<style>
+/* File Preview Modal Improvements */
+#filePreviewModal .modal-xl {
+  max-width: 95%;
+  margin: 1rem auto;
+}
+
+#filePreviewModal .modal-content {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+#filePreviewModal .modal-body {
+  position: relative;
+}
+
+#filePreviewModal .btn-close-white {
+  opacity: 0.9;
+  transition: opacity 0.2s;
+}
+
+#filePreviewModal .btn-close-white:hover {
+  opacity: 1;
+}
+
+/* File icon colors */
+.file-icon-preview .fa-file-pdf { color: #fef3c7; }
+.file-icon-preview .fa-file-word { color: #dbeafe; }
+.file-icon-preview .fa-file-excel { color: #d1fae5; }
+.file-icon-preview .fa-file-powerpoint { color: #fed7aa; }
+.file-icon-preview .fa-file-image { color: #e0e7ff; }
+.file-icon-preview .fa-file-alt { color: #f3f4f6; }
+
+/* Loading animation */
+#previewLoading {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Image viewer */
+#imageViewer {
+  animation: fadeIn 0.4s ease-in;
+}
+
+#imagePreview {
+  animation: zoomIn 0.3s ease-out;
+  display: block;
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Text viewer */
+#textContent {
+  color: #1e293b;
+  tab-size: 4;
+}
+
+#textContent::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+#textContent::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+#textContent::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+#textContent::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #filePreviewModal .modal-xl {
+    max-width: 100%;
+    margin: 0;
+  }
+  
+  #filePreviewModal .modal-content {
+    border-radius: 0;
+    height: 100vh;
+  }
+  
+  #filePreviewModal .modal-header {
+    padding: 1rem;
+  }
+  
+  #filePreviewModal .modal-title {
+    font-size: 1rem;
+  }
+  
+  #imageViewer {
+    padding: 1rem;
+  }
+  
+  #textViewer {
+    padding: 1rem;
+  }
+}
+
+/* Button improvements */
+#filePreviewModal .btn {
+  transition: all 0.2s ease;
+}
+
+#filePreviewModal .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+#filePreviewModal .btn:active {
+  transform: translateY(0);
+}
+
+/* Fullscreen mode adjustments */
+#filePreviewModal .modal-fullscreen .modal-header,
+#filePreviewModal .modal-fullscreen .modal-footer {
+  display: none;
+}
+
+#filePreviewModal .modal-fullscreen .modal-body {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  position: relative;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+#filePreviewModal .modal-fullscreen .modal-content {
+  border-radius: 0;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  background: transparent !important;
+}
+
+#filePreviewModal .modal-fullscreen .modal-dialog {
+  margin: 0 !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+}
+
+#filePreviewModal .modal-fullscreen #previewContainer {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  min-height: 100vh !important;
+  overflow: hidden !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* PDF Viewer in Fullscreen */
+#filePreviewModal .modal-fullscreen #pdfViewer {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  min-height: 100vh !important;
+  background: #525659 !important;
+  display: block !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden !important;
+}
+
+#filePreviewModal .modal-fullscreen #pdfViewer.d-none {
+  display: none !important;
+}
+
+#filePreviewModal .modal-fullscreen #pdfFrame {
+  height: 100vh !important;
+  width: 100vw !important;
+}
+
+/* Image Viewer in Fullscreen */
+#filePreviewModal .modal-fullscreen #imageViewer {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  width: 100vw !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: #000 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+#filePreviewModal .modal-fullscreen #imageViewer.d-none {
+  display: none !important;
+}
+
+#filePreviewModal .modal-fullscreen #imagePreview {
+  max-width: 90vw !important;
+  max-height: 90vh !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain;
+  border-radius: 0;
+  box-shadow: none;
+  display: block;
+}
+
+/* Office Viewer in Fullscreen */
+#filePreviewModal .modal-fullscreen #officeViewer {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  background: #fff !important;
+  display: block !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden !important;
+}
+
+#filePreviewModal .modal-fullscreen #officeViewer.d-none {
+  display: none !important;
+}
+
+#filePreviewModal .modal-fullscreen #officeFrame {
+  height: 100vh !important;
+  width: 100vw !important;
+  background: #fff !important;
+}
+
+/* Text Viewer in Fullscreen */
+#filePreviewModal .modal-fullscreen #textViewer {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: auto !important;
+  padding: 0 !important;
+  background: #fff !important;
+  display: block !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+#filePreviewModal .modal-fullscreen #textViewer.d-none {
+  display: none !important;
+}
+
+#filePreviewModal .modal-fullscreen #textContent {
+  max-height: none;
+  height: auto;
+  min-height: 100vh;
+  background: #fff;
+  color: #1e293b;
+  padding: 2rem;
+  overflow: visible;
+}
+
+#filePreviewModal .modal-fullscreen #textContent table {
+  width: auto;
+  min-width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  margin: 0;
+}
+
+#filePreviewModal .modal-fullscreen #textContent table td,
+#filePreviewModal .modal-fullscreen #textContent table th {
+  border: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+#filePreviewModal .modal-fullscreen #textContent table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #1e293b;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+#filePreviewModal .modal-fullscreen #textContent table tr:hover {
+  background: #f8fafc;
+}
+
+#filePreviewModal .modal-fullscreen #unsupportedViewer {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  color: #fff;
+}
+
+/* Hide loading and error states in fullscreen */
+#filePreviewModal .modal-fullscreen #previewLoading,
+#filePreviewModal .modal-fullscreen #previewError {
+  background: #000;
+  color: #fff;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Fullscreen exit button */
+#fullscreenExitBtn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1060;
+  display: none;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+}
+
+#fullscreenExitBtn:hover {
+  background: rgba(0, 0, 0, 0.95);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+}
+
+#fullscreenExitBtn:active {
+  transform: translateY(0);
+}
+
+/* Fullscreen preview mode message */
+#fullscreenPreviewMessage {
+  position: fixed;
+  bottom: 30px;
+  left: 30px;
+  z-index: 1060;
+  display: none;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.95), rgba(118, 75, 162, 0.95));
+  color: white;
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  animation: slideInLeft 0.4s ease-out;
+  max-width: 320px;
+  align-items: center;
+  gap: 12px;
+}
+
+#fullscreenPreviewMessage i {
+  font-size: 1.5rem;
+  opacity: 0.9;
+}
+
+#fullscreenPreviewMessage.show {
+  display: flex !important;
+}
+
+#fullscreenPreviewMessage.hide {
+  animation: slideOutLeft 0.4s ease-in forwards;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+}
+
+/* Only show exit button when modal is in fullscreen mode */
+#filePreviewModal.show .modal-dialog.modal-fullscreen ~ #fullscreenExitBtn {
+  display: block;
+}
+</style>
+
+<script>
+// File Preview Modal Handler
+const FilePreview = {
+  currentFileId: null,
+  currentFileInfo: null,
+  
+  // Show preview modal
+  show: async function(attachmentId) {
+    this.currentFileId = attachmentId;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('filePreviewModal'));
+    modal.show();
+    
+    // Reset state
+    this.resetModal();
+    
+    // Detect if we're in admin or user context
+    // Check for document tracking user URLs or general user URLs
+    const isUserContext = window.location.pathname.startsWith('/user/') || 
+                          window.location.pathname.startsWith('/documents/submission/') ||
+                          window.location.pathname.match(/^\/documents\/(submit|my-submissions)/);
+    const urlPrefix = isUserContext ? '/user' : '/admin';
+    
+    // Load file info
+    try {
+      const response = await fetch(`${urlPrefix}/documents/files/info/${attachmentId}/`);
+      if (!response.ok) throw new Error('Failed to load file info');
+      
+      const fileInfo = await response.json();
+      this.currentFileInfo = fileInfo;
+      
+      // Update modal title and info
+      document.getElementById('previewFileName').textContent = fileInfo.name;
+      document.getElementById('previewFileInfo').textContent = 
+        `${this.formatFileSize(fileInfo.size)} • ${fileInfo.extension.toUpperCase()}`;
+      document.getElementById('downloadFileBtn').href = fileInfo.download_url;
+      document.getElementById('downloadFileBtn').download = fileInfo.name;
+      document.getElementById('unsupportedDownloadBtn').href = fileInfo.download_url;
+      document.getElementById('unsupportedDownloadBtn').download = fileInfo.name;
+      
+      // Set appropriate icon
+      this.setFileIcon(fileInfo.type, fileInfo.extension);
+      
+      // Load preview based on file type
+      await this.loadPreview(fileInfo);
+      
+    } catch (error) {
+      console.error('Preview error:', error);
+      this.showError('Unable to load file preview');
+    }
+  },
+  
+  // Reset modal to initial state
+  resetModal: function() {
+    document.getElementById('previewLoading').classList.remove('d-none');
+    document.getElementById('previewError').classList.add('d-none');
+    document.getElementById('previewContainer').classList.add('d-none');
+    
+    // Hide all viewers
+    document.querySelectorAll('#previewContainer > div').forEach(el => {
+      el.classList.add('d-none');
+    });
+  },
+  
+  // Load preview based on file type
+  loadPreview: async function(fileInfo) {
+    document.getElementById('previewLoading').classList.add('d-none');
+    document.getElementById('previewContainer').classList.remove('d-none');
+    
+    switch(fileInfo.type) {
+      case 'pdf':
+        this.showPdfPreview(fileInfo);
+        break;
+      case 'image':
+        this.showImagePreview(fileInfo);
+        break;
+      case 'word':
+      case 'excel':
+      case 'powerpoint':
+        this.showOfficePreview(fileInfo);
+        break;
+      case 'text':
+        await this.showTextPreview(fileInfo);
+        break;
+      default:
+        this.showUnsupported(fileInfo);
+    }
+  },
+  
+  // Show PDF preview
+  showPdfPreview: function(fileInfo) {
+    const viewer = document.getElementById('pdfViewer');
+    const frame = document.getElementById('pdfFrame');
+    frame.src = fileInfo.url;
+    viewer.classList.remove('d-none');
+  },
+  
+  // Show image preview
+  showImagePreview: function(fileInfo) {
+    const viewer = document.getElementById('imageViewer');
+    const img = document.getElementById('imagePreview');
+    img.src = fileInfo.url;
+    img.alt = fileInfo.name;
+    viewer.classList.remove('d-none');
+  },
+  
+  // Show Office document preview
+  showOfficePreview: async function(fileInfo) {
+    // For DOCX files, try server-side conversion first
+    if (fileInfo.extension === '.docx' && fileInfo.convert_url) {
+      try {
+        const response = await fetch(fileInfo.convert_url);
+        const data = await response.json();
+        
+        if (data.success && data.html) {
+          // Show converted HTML
+          const viewer = document.getElementById('textViewer');
+          const content = document.getElementById('textContent');
+          content.innerHTML = data.html;
+          content.style.fontFamily = 'Arial, sans-serif';
+          content.style.whiteSpace = 'normal';
+          viewer.classList.remove('d-none');
+          return;
+        }
+      } catch (error) {
+        console.log('DOCX conversion failed, falling back to Office viewer:', error);
+      }
+    }
+    
+    // For Excel files, try server-side conversion
+    if ((fileInfo.extension === '.xlsx' || fileInfo.extension === '.xls') && fileInfo.convert_url) {
+      try {
+        const response = await fetch(fileInfo.convert_url);
+        const data = await response.json();
+        
+        if (data.success && data.html) {
+          // Show converted HTML
+          const viewer = document.getElementById('textViewer');
+          const content = document.getElementById('textContent');
+          content.innerHTML = data.html;
+          content.style.fontFamily = 'Arial, sans-serif';
+          content.style.whiteSpace = 'normal';
+          viewer.classList.remove('d-none');
+          return;
+        }
+      } catch (error) {
+        console.log('Excel conversion failed:', error);
+      }
+    }
+    
+    // For PowerPoint files, try server-side conversion
+    if ((fileInfo.extension === '.pptx' || fileInfo.extension === '.ppt') && fileInfo.convert_url) {
+      try {
+        const response = await fetch(fileInfo.convert_url);
+        const data = await response.json();
+        
+        if (data.success && data.html) {
+          // Show converted HTML
+          const viewer = document.getElementById('textViewer');
+          const content = document.getElementById('textContent');
+          content.innerHTML = data.html;
+          content.style.fontFamily = 'Arial, sans-serif';
+          content.style.whiteSpace = 'normal';
+          viewer.classList.remove('d-none');
+          return;
+        }
+      } catch (error) {
+        console.log('PowerPoint conversion failed:', error);
+      }
+    }
+    
+    // Fallback: Show download message for Office documents
+    this.showError(
+      'Office document preview is not available. Please download the file to view it.'
+    );
+  },
+  
+  // Show text/CSV preview
+  showTextPreview: async function(fileInfo) {
+    const viewer = document.getElementById('textViewer');
+    const content = document.getElementById('textContent');
+    
+    try {
+      const response = await fetch(fileInfo.url);
+      const text = await response.text();
+      content.textContent = text;
+      viewer.classList.remove('d-none');
+    } catch (error) {
+      this.showError('Unable to load text content');
+    }
+  },
+  
+  // Show unsupported file type message
+  showUnsupported: function(fileInfo) {
+    const viewer = document.getElementById('unsupportedViewer');
+    document.getElementById('unsupportedFileName').textContent = fileInfo.name;
+    viewer.classList.remove('d-none');
+  },
+  
+  // Show error message
+  showError: function(message) {
+    document.getElementById('previewLoading').classList.add('d-none');
+    document.getElementById('previewContainer').classList.add('d-none');
+    document.getElementById('previewError').classList.remove('d-none');
+    document.getElementById('previewErrorMessage').textContent = message;
+  },
+  
+  // Format file size
+  formatFileSize: function(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  },
+  
+  // Set file icon based on type
+  setFileIcon: function(type, extension) {
+    const iconEl = document.getElementById('previewFileIcon');
+    let iconClass = 'fas fa-file';
+    
+    switch(type) {
+      case 'pdf':
+        iconClass = 'fas fa-file-pdf';
+        break;
+      case 'image':
+        iconClass = 'fas fa-file-image';
+        break;
+      case 'word':
+        iconClass = 'fas fa-file-word';
+        break;
+      case 'excel':
+        iconClass = 'fas fa-file-excel';
+        break;
+      case 'powerpoint':
+        iconClass = 'fas fa-file-powerpoint';
+        break;
+      case 'text':
+        iconClass = 'fas fa-file-alt';
+        break;
+      case 'archive':
+        iconClass = 'fas fa-file-archive';
+        break;
+      default:
+        iconClass = 'fas fa-file';
+    }
+    
+    iconEl.innerHTML = `<i class="${iconClass}"></i>`;
+  },
+  
+  // Toggle fullscreen mode
+  toggleFullscreen: function() {
+    const modal = document.getElementById('filePreviewModal');
+    const modalDialog = modal.querySelector('.modal-dialog');
+    const btn = document.getElementById('fullscreenBtn');
+    const btnText = document.getElementById('fullscreenBtnText');
+    const btnIcon = btn.querySelector('i');
+    const exitBtn = document.getElementById('fullscreenExitBtn');
+    const modalBody = modal.querySelector('.modal-body');
+    const previewMessage = document.getElementById('fullscreenPreviewMessage');
+    
+    if (modalDialog.classList.contains('modal-fullscreen')) {
+      // Exit fullscreen
+      modalDialog.classList.remove('modal-fullscreen');
+      modalDialog.classList.add('modal-fullscreen-lg-down', 'modal-xl');
+      btnIcon.className = 'fas fa-expand me-2';
+      btnText.textContent = 'Fullscreen';
+      exitBtn.style.display = 'none';
+      
+      // Hide preview message
+      previewMessage.classList.remove('show');
+      
+      // Reset modal body background
+      modalBody.style.background = '#f8f9fa';
+    } else {
+      // Enter fullscreen
+      modalDialog.classList.remove('modal-fullscreen-lg-down', 'modal-xl');
+      modalDialog.classList.add('modal-fullscreen');
+      btnIcon.className = 'fas fa-compress me-2';
+      btnText.textContent = 'Exit Fullscreen';
+      exitBtn.style.display = 'block';
+      
+      // Show preview message
+      previewMessage.classList.add('show');
+      previewMessage.classList.remove('hide');
+      
+      // Auto-hide message after 4 seconds
+      setTimeout(() => {
+        previewMessage.classList.add('hide');
+        setTimeout(() => {
+          previewMessage.classList.remove('show', 'hide');
+        }, 400); // Wait for animation to complete
+      }, 4000);
+      
+      // Set appropriate background based on content type
+      const imageViewer = document.getElementById('imageViewer');
+      const officeViewer = document.getElementById('officeViewer');
+      const pdfViewer = document.getElementById('pdfViewer');
+      const textViewer = document.getElementById('textViewer');
+      
+      // Determine which viewer is active and set background accordingly
+      if (!imageViewer.classList.contains('d-none')) {
+        // Images use black background
+        modalBody.style.background = '#000';
+      } else if (!officeViewer.classList.contains('d-none')) {
+        // Office documents need white background
+        modalBody.style.background = '#fff';
+      } else if (!textViewer.classList.contains('d-none')) {
+        // Text/Excel converted HTML needs white background
+        modalBody.style.background = '#fff';
+      } else if (!pdfViewer.classList.contains('d-none')) {
+        // PDFs use gray background
+        modalBody.style.background = '#525659';
+      } else {
+        // Default to black
+        modalBody.style.background = '#000';
+      }
+    }
+  }
+};
+
+// Make FilePreview globally available
+window.FilePreview = FilePreview;
+
+// Fix accessibility warning: Remove focus from close button before modal closes
+document.getElementById('filePreviewModal').addEventListener('hide.bs.modal', function() {
+  // Blur any focused element inside the modal
+  const focusedElement = this.querySelector(':focus');
+  if (focusedElement) {
+    focusedElement.blur();
+  }
+});
+</script>

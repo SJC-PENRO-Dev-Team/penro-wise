@@ -1,0 +1,111 @@
+{% load static %}
+<!-- Workcycle Cards Partial (for AJAX) -->
+{% if workcycles %}
+<div class="wc-cards-grid">
+  {% for wc in workcycles %}
+  <div class="wc-card" data-id="{{ wc.id }}" data-lifecycle="{{ wc.lifecycle_state }}">
+    <!-- Card Header -->
+    <div class="wc-card-header">
+      <div class="wc-card-title">
+        <h4>{{ wc.title }}</h4>
+        <span class="wc-lifecycle-badge wc-lifecycle-{{ wc.lifecycle_state }}">
+          {{ wc.lifecycle_state|title }}
+        </span>
+      </div>
+      
+      <div class="wc-card-actions">
+        <div class="dropdown">
+          <button class="wc-action-btn" data-bs-toggle="dropdown">
+            <i class="fas fa-ellipsis-v"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <a class="dropdown-item" href="{% url 'admin_app:workcycle-assignments' wc.id %}">
+                <i class="fas fa-users"></i> View Assignments
+              </a>
+            </li>
+            <li>
+              <button class="dropdown-item"
+                      data-bs-toggle="modal"
+                      data-bs-target="#editWorkcycleModal"
+                      data-id="{{ wc.id }}"
+                      data-title="{{ wc.title }}"
+                      data-description="{{ wc.description }}"
+                      data-due="{{ wc.due_at|date:'Y-m-d H:i' }}">
+                <i class="fas fa-edit"></i> Edit
+              </button>
+            </li>
+            <li>
+              <button class="dropdown-item"
+                      data-bs-toggle="modal"
+                      data-bs-target="#reassignWorkcycleModal"
+                      data-id="{{ wc.id }}"
+                      data-title="{{ wc.title }}"
+                      data-users="{% for assignment in wc.assignments.all %}{% if assignment.assigned_user %}{{ assignment.assigned_user.get_full_name|default:assignment.assigned_user.username }}{% if not forloop.last %}|{% endif %}{% endif %}{% endfor %}"
+                      data-departments="{% for assignment in wc.assignments.all %}{% if assignment.assigned_department %}{{ assignment.assigned_department.name }}{% if not forloop.last %}|{% endif %}{% endif %}{% endfor %}">
+                <i class="fas fa-random"></i> Reassign
+              </button>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form method="post" action="{% url 'admin_app:workcycle-archive' wc.id %}"
+                    data-loading-text="Archiving..."
+                    data-loading-message="Archiving work cycle.">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item">
+                  <i class="fas fa-archive"></i> Archive
+                </button>
+              </form>
+            </li>
+            <li>
+              <button class="dropdown-item text-danger"
+                      data-bs-toggle="modal"
+                      data-bs-target="#deleteWorkcycleModal"
+                      data-delete-url="{% url 'admin_app:workcycle-delete' wc.id %}">
+                <i class="fas fa-trash"></i> Delete
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Body -->
+    <div class="wc-card-body">
+      {% if wc.description %}
+      <p class="wc-description">{{ wc.description|truncatewords:20 }}</p>
+      {% endif %}
+
+      <div class="wc-meta-row">
+        <div class="wc-meta-item">
+          <i class="far fa-calendar-alt"></i>
+          <span>Due: {{ wc.due_at|date:"M d, Y · g:i A" }}</span>
+        </div>
+        <div class="wc-meta-item">
+          <i class="far fa-clock"></i>
+          <span>{{ wc.time_remaining }}</span>
+        </div>
+      </div>
+
+      <div class="wc-assignments-preview">
+        <i class="fas fa-users"></i>
+        <span>{{ wc.assignment_count }} assignment{{ wc.assignment_count|pluralize }}</span>
+      </div>
+    </div>
+
+    <!-- Card Footer -->
+    <div class="wc-card-footer">
+      <a href="{% url 'admin_app:workcycle-assignments' wc.id %}" class="wc-view-btn">
+        <i class="fas fa-eye"></i> View Details
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="wc-empty-state">
+  <i class="fas fa-folder-open"></i>
+  <h4>No work cycles found</h4>
+  <p>Try adjusting your filters or create a new work cycle.</p>
+</div>
+{% endif %}

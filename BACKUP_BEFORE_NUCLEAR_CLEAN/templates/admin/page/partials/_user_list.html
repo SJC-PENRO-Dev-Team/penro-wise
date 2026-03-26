@@ -1,0 +1,63 @@
+<!-- User Cards Partial (for AJAX) -->
+{% if users %}
+<div class="user-cards-grid">
+  {% for user in users %}
+  <div class="user-card" data-id="{{ user.id }}">
+    <!-- Avatar & Basic Info -->
+    <div class="user-card-header">
+      <div class="user-avatar">
+        {% if user.profile_image %}
+        <img src="{{ user.profile_image.url }}" alt="{{ user.get_full_name }}">
+        {% else %}
+        <div class="user-avatar-placeholder">
+          {{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}
+        </div>
+        {% endif %}
+      </div>
+      
+      <div class="user-info">
+        <h4 class="user-name">{{ user.get_full_name|default:user.username }}</h4>
+        <span class="user-email">{{ user.email }}</span>
+        {% if user.position_title %}
+        <span class="user-position">{{ user.position_title }}</span>
+        {% endif %}
+      </div>
+
+      <span class="user-role-badge user-role-{{ user.login_role }}">
+        {{ user.login_role|title }}
+      </span>
+    </div>
+
+    <!-- Department Info -->
+    <div class="user-card-body">
+      {% if user.department %}
+      <div class="user-org-info">
+        <div class="org-item">
+          <i class="fas fa-building"></i>
+          <span>{{ user.department.name }}</span>
+        </div>
+      </div>
+      {% else %}
+      <div class="user-no-org">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>No department assigned</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Card Footer -->
+    <div class="user-card-footer">
+      <a href="{% url 'admin_app:user-profile' user.id %}" class="user-view-btn">
+        <i class="fas fa-user"></i> View Profile
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="user-empty-state">
+  <i class="fas fa-users-slash"></i>
+  <h4>No users found</h4>
+  <p>Try adjusting your filters or add a new user.</p>
+</div>
+{% endif %}

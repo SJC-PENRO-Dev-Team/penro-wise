@@ -1,0 +1,210 @@
+/* ============================================
+   MESSAGE MODAL STYLES
+   Separated from message_ui_modal.html for faster loading
+============================================ */
+
+/* ============================================
+   CRITICAL: Hide modal by default (prevents flash)
+============================================ */
+.msg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  font-family: "Montserrat", sans-serif;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.msg-modal-overlay[data-msg-state="open"] {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+}
+
+.msg-modal-overlay[data-msg-state="open"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(6px);
+  animation: msg-fadein 0.3s ease;
+}
+
+.msg-modal-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 440px;
+  max-width: calc(100vw - 48px);
+  height: 640px;
+  max-height: calc(100vh - 48px);
+  background: #ffffff;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  transform: translateY(100%) scale(0.95);
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+  font-family: "Montserrat", sans-serif;
+}
+
+.msg-modal-overlay[data-msg-state="open"] .msg-modal-container {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+/* Header */
+.msg-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.msg-modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.msg-modal-icon {
+  width: 42px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.msg-modal-icon i {
+  font-size: 18px;
+  color: #ffffff;
+}
+
+.msg-modal-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.msg-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.msg-modal-subtitle {
+  font-size: 12px;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.msg-modal-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  transition: all 0.25s ease;
+  font-size: 14px;
+}
+
+.msg-modal-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg);
+}
+
+/* Body */
+.msg-modal-body {
+  flex: 1;
+  position: relative;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.msg-modal-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #f8fafc;
+  z-index: 10;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.msg-modal-loader[data-msg-hidden="true"] {
+  display: none;
+}
+
+.msg-modal-spinner {
+  color: #3b82f6;
+}
+
+.msg-modal-spinner i {
+  font-size: 36px;
+}
+
+.msg-modal-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #f8fafc;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  display: none; /* Hidden by default to prevent broken image icon */
+}
+
+.msg-modal-iframe[data-msg-loaded="true"] {
+  opacity: 1;
+  display: block;
+}
+
+@keyframes msg-fadein {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Font Awesome fix */
+.msg-modal-overlay .fa,
+.msg-modal-overlay .fas,
+.msg-modal-overlay .far,
+.msg-modal-overlay .fab,
+.msg-modal-overlay .fal {
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .msg-modal-container {
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+  }
+}

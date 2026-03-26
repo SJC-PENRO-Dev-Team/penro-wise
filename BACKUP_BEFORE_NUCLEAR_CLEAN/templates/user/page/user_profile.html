@@ -1,0 +1,13 @@
+{% extends "user/layout/base.html" %}
+
+{% load static %}
+
+{% block title %}{% if is_own_profile %}My Profile{% else %}User Profile{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+{% include "shared/profile.html" %}
+{% endblock %}

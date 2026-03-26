@@ -1,0 +1,285 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+{% block title %}Assignments — {{ workcycle.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin/workcycle_assignments.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- HEADER (KEPT SPACIOUS) -->
+<div class="wc-header">
+  <div class="wc-title">
+    <h3 style="color:white;">
+      <i class="fas fa-tasks"></i>
+      {{ workcycle.title }}
+    </h3>
+
+    <div class="wc-meta">
+      <span>
+        <i class="far fa-calendar-alt"></i>
+        Due Date:  {{ workcycle.due_at|date:"l, F j, Y · g:i A" }}
+
+      </span>
+      <span>
+        <i class="fas fa-users"></i>
+        {{ assignments|length }} assignments
+      </span>
+    </div>
+
+    {% if workcycle.description %}
+    <div class="wc-desc">
+      <i class="fas fa-info-circle me-2"></i>
+      {{ workcycle.description }}
+    </div>
+    {% endif %}
+  </div>
+
+  <a href="{% url 'admin_app:workcycles' %}" class="wc-back-btn">
+    <i class="fas fa-arrow-left"></i> Back
+  </a>
+</div>
+
+<!-- COMPACT LAYOUT -->
+<div class="wc-layout">
+
+  <!-- ASSIGNED TO -->
+  <div class="wc-card">
+    <div class="wc-card-header">
+      <i class="fas fa-user-check"></i>
+      Assigned To
+    </div>
+
+    <div class="wc-assignees">
+      {% if assignments %}
+        {% for a in assignments %}
+          {% if a.assigned_user %}
+            <span class="wc-pill user">
+              <i class="far fa-user"></i>
+              {{ a.assigned_user.get_full_name|default:a.assigned_user.username }}
+            </span>
+          {% elif a.assigned_department %}
+            <span class="wc-pill team">
+              <i class="fas fa-building"></i>
+              {{ a.assigned_department.name }}
+            </span>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <span class="wc-empty">No assignments</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- STATS CARD -->
+  <div class="wc-card wc-stats-compact">
+    <!-- WORK STATUS -->
+    <div class="wc-stats-side">
+      <div class="wc-stats-title">
+        <i class="fas fa-tasks"></i>
+        Work Progress
+      </div>
+      <div class="wc-stats-grid">
+        <div class="wc-stat wc-status done">
+          <i class="fas fa-check-circle"></i>
+          <span>{{ status_counts.done }}</span>
+          <div class="wc-stat-label">Done</div>
+        </div>
+        <div class="wc-stat wc-status working_on_it">
+          <i class="fas fa-spinner"></i>
+          <span>{{ status_counts.working_on_it }}</span>
+          <div class="wc-stat-label">In Progress</div>
+        </div>
+        <div class="wc-stat wc-status not_started">
+          <i class="fas fa-circle-notch"></i>
+          <span>{{ status_counts.not_started }}</span>
+          <div class="wc-stat-label">Not Started</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="wc-stats-divider"></div>
+
+    <!-- REVIEW STATUS -->
+    <div class="wc-stats-side">
+      <div class="wc-stats-title">
+        <i class="fas fa-clipboard-check"></i>
+        Review Status
+      </div>
+      <div class="wc-stats-grid">
+        <div class="wc-stat wc-review pending">
+          <i class="fas fa-hourglass-half"></i>
+          <span>{{ review_counts.pending }}</span>
+          <div class="wc-stat-label">Pending</div>
+        </div>
+        <div class="wc-stat wc-review approved">
+          <i class="fas fa-check"></i>
+          <span>{{ review_counts.approved }}</span>
+          <div class="wc-stat-label">Approved</div>
+        </div>
+        <div class="wc-stat wc-review revision">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>{{ review_counts.revision }}</span>
+          <div class="wc-stat-label">Revision</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVE WORK -->
+  <div class="wc-card">
+    <div class="wc-card-header d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <i class="fas fa-play-circle"></i>
+        <span>Active Work Items</span>
+      </div>
+
+      <a href="{% url 'admin_app:done-workers-by-workcycle' workcycle.id %}" class="wc-review-link">
+        <i class="fas fa-clipboard-check"></i>
+        <span>Go to Review</span>
+      </a>
+    </div>
+
+    {% if active_items %}
+    <div class="wc-list">
+      <div class="wc-row wc-head">
+        <div>User</div>
+        <div>Status</div>
+        <div>Review</div>
+        <div>Submitted</div>
+      </div>
+
+      {% for item in active_items %}
+      <div class="wc-row">
+        <div class="wc-user">
+          {% if item.owner.profile_image %}
+            <img class="wc-avatar"
+                 src="{{ item.owner.profile_image.url }}"
+                 alt="{{ item.owner.get_full_name|default:item.owner.username }}">
+          {% else %}
+            <div class="wc-avatar" style="background: linear-gradient(135deg, var(--primary), var(--primary-accent));">
+              {{ item.owner.first_name|slice:":1" }}{{ item.owner.last_name|slice:":1" }}
+            </div>
+          {% endif %}
+          <div>
+            <div class="fw-semibold">{{ item.owner.get_full_name|default:item.owner.username }}</div>
+            <div class="text-muted small">{{ item.owner.email }}</div>
+          </div>
+        </div>
+
+        <div>
+          <span class="wc-badge wc-status {{ item.status }}">
+            <i class="fas {% if item.status == 'done' %}fa-check-circle
+              {% elif item.status == 'working_on_it' %}fa-spinner
+              {% else %}fa-circle-notch{% endif %}"></i>
+            {{ item.get_status_display }}
+          </span>
+        </div>
+
+        <div>
+          <span class="wc-badge wc-review {{ item.review_decision }}">
+            <i class="fas {% if item.review_decision == 'approved' %}fa-check
+              {% elif item.review_decision == 'revision' %}fa-exclamation-triangle
+              {% else %}fa-hourglass-half{% endif %}"></i>
+            {{ item.get_review_decision_display }}
+          </span>
+        </div>
+
+        <div>
+{% if item.submitted_at %}
+  <div class="wc-date">
+    {% if item.submission_status == "on_time" %}
+      <i class="fas fa-check-circle" style="color: var(--status-done);"></i>
+    {% else %}
+      <i class="fas fa-exclamation-circle" style="color: var(--lifecycle-lapsed);"></i>
+    {% endif %}
+
+    {{ item.submitted_at|date:"l, F j, Y · g:i A" }}
+
+    <span class="submission-indicator
+          {% if item.submission_status == 'on_time' %}on-time{% else %}late{% endif %}">
+      {% if item.submission_status == "on_time" %}
+        — On time
+      {% else %}
+        — Late by {{ item.submission_delta }}
+      {% endif %}
+    </span>
+  </div>
+{% else %}
+  <span class="wc-badge" style="background: var(--gray-200); color: var(--gray-700);">
+    <i class="fas fa-clock"></i>
+    Not Submitted
+  </span>
+{% endif %}
+
+
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <div class="wc-empty">No active work items found</div>
+    {% endif %}
+  </div>
+
+  <!-- ARCHIVED (WITH DARK RED THEME) -->
+  <div class="wc-card wc-archived">
+    <div class="wc-card-header">
+      <i class="fas fa-archive"></i>
+      Archived Work Items by Admins
+    </div>
+
+    {% if archived_items %}
+      <div class="wc-list">
+        <div class="wc-row wc-head">
+          <div>User</div>
+          <div>Status</div>
+          <div>Review</div>
+          <div>Archived Date</div>
+        </div>
+        {% for item in archived_items %}
+        <div class="wc-row">
+          <div class="wc-user">
+            {% if item.owner.profile_image %}
+              <img class="wc-avatar"
+                   src="{{ item.owner.profile_image.url }}"
+                   alt="{{ item.owner.get_full_name|default:item.owner.username }}">
+            {% else %}
+              <div class="wc-avatar" style="background: linear-gradient(135deg, #dc2626, #ef4444);">
+                {{ item.owner.first_name|slice:":1" }}{{ item.owner.last_name|slice:":1" }}
+              </div>
+            {% endif %}
+            <div>
+              <div class="fw-semibold">{{ item.owner.get_full_name|default:item.owner.username }}</div>
+              <div class="text-muted small">{{ item.owner.email }}</div>
+            </div>
+          </div>
+          <div>
+            <span class="wc-badge" style="background: #fee2e2; color: #991b1b; border-color: #fca5a5;">
+              {{ item.get_status_display }}
+            </span>
+          </div>
+          <div>
+            <span class="wc-badge" style="background: #fee2e2; color: #991b1b; border-color: #fca5a5;">
+              {{ item.get_review_decision_display|default:"—" }}
+            </span>
+          </div>
+          <div>
+            <div class="wc-date" style="color: #991b1b;">
+              <i class="far fa-calendar-alt"></i>
+              {{ item.inactive_at|date:"M d, Y · g:i A" }}
+            </div>
+            <div class="text-muted small">{{ item.updated_at|date:"H:i" }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="wc-empty">No archived work items</div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

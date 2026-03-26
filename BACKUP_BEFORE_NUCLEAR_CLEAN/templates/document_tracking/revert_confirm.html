@@ -1,0 +1,144 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}Revert Workflow - {{ submission.tracking_number }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/document-tracking.css' %}">
+
+<div class="dt-page">
+    <!-- UNIFIED HEADER -->
+    <div class="dt-unified-header">
+        <div class="dt-header-top">
+            <div class="dt-title-section">
+                <h3 class="dt-main-title">
+                    <i class="fas fa-undo-alt" style="color: #f59e0b;"></i>
+                    Revert Workflow
+                </h3>
+                <p class="dt-subtitle">Revert submission to a previous workflow step</p>
+            </div>
+            <div class="dt-action-buttons-top">
+                <a href="{% url 'document_tracking:admin_submission_detail' submission.id %}" class="dt-btn dt-btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Submission
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submission Info -->
+    <div class="dt-card" style="margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: 160px 1fr; gap: 16px;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Tracking Number</div>
+            <div>
+                <span style="background: #ede9fe; color: #6b21a8; padding: 6px 14px; border-radius: 999px; font-size: 0.875rem; font-weight: 600;">
+                    <i class="fas fa-hashtag" style="font-size: 0.75rem;"></i>
+                    {{ submission.tracking_number }}
+                </span>
+            </div>
+            
+            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Title</div>
+            <div style="font-weight: 600; color: #1e293b;">{{ submission.title }}</div>
+            
+            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Current Status</div>
+            <div>
+                <span class="dt-status-badge dt-status-{{ submission.status }}">
+                    {{ submission.get_status_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Box -->
+    <div class="alert alert-warning" style="margin-bottom: 20px;">
+        <h5 style="margin: 0 0 8px 0; font-size: 1rem; font-weight: 700;">
+            <i class="fas fa-exclamation-triangle"></i> Important
+        </h5>
+        <p style="margin: 0; font-size: 0.9rem;">
+            Reverting the workflow will change the submission status to a previous step. 
+            This action will be recorded in the Activity Log with your name, timestamp, and reason.
+        </p>
+    </div>
+
+    <!-- Revert Form -->
+    <div class="dt-card">
+        <h5 style="font-size: 1rem; font-weight: 700; margin-bottom: 20px; color: #1e293b;">
+            <i class="fas fa-undo-alt" style="color: #f59e0b;"></i>
+            Revert Workflow
+        </h5>
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <!-- Target Status -->
+            <div class="mb-4">
+                <label for="{{ form.target_status.id_for_label }}" class="form-label" style="font-weight: 600; color: #1e293b;">
+                    Revert to Step <span class="text-danger">*</span>
+                </label>
+                {{ form.target_status }}
+                {% if form.target_status.errors %}
+                <div class="text-danger small mt-1">{{ form.target_status.errors }}</div>
+                {% endif %}
+                <small class="form-text text-muted">{{ form.target_status.help_text }}</small>
+            </div>
+
+            <!-- Reason -->
+            <div class="mb-4">
+                <label for="{{ form.reason.id_for_label }}" class="form-label" style="font-weight: 600; color: #1e293b;">
+                    Reason for Revert <span class="text-danger">*</span>
+                </label>
+                {{ form.reason }}
+                {% if form.reason.errors %}
+                <div class="text-danger small mt-1">{{ form.reason.errors }}</div>
+                {% endif %}
+                <small class="form-text text-muted">{{ form.reason.help_text }}</small>
+            </div>
+
+            <!-- Info Box -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                <h6 style="font-size: 0.9rem; font-weight: 700; margin: 0 0 8px 0; color: #1e293b;">
+                    <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
+                    What happens when you revert?
+                </h6>
+                <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; color: #475569;">
+                    <li>Submission status will change to the selected previous step</li>
+                    <li>Activity Log will record: Admin name, Date/Time, From step → To step, Reason</li>
+                    <li>Email notification will be sent to the submitter</li>
+                    <li>Submission will be unlocked for reprocessing from the reverted step</li>
+                </ul>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex gap-2">
+                <button type="submit" class="dt-btn dt-btn-warning">
+                    <i class="fas fa-undo-alt"></i>
+                    Revert Workflow
+                </button>
+                <a href="{% url 'document_tracking:admin_submission_detail' submission.id %}" class="dt-btn dt-btn-secondary">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.dt-btn-warning {
+    background: #f59e0b;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dt-btn-warning:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(245, 158, 11, 0.3);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,2645 @@
+{% extends base_template|default:"admin/layout/base.html" %}
+{% load static %}
+{% block title %}{% if is_readonly %}Browse Files{% else %}File Manager{% endif %}{% endblock %}
+{% block page_title %}{% if is_readonly %}Browse Files{% else %}File Manager{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin/file_manager.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="fm-container">
+  <!-- =========================
+       SIDEBAR
+  ========================= -->
+  <aside class="fm-sidebar">
+    <div class="fm-sidebar-header">
+      {% if is_readonly %}
+      <a href="{% url 'user_app:dashboard' %}" class="fm-logo">
+        <i class="fas fa-folder-open"></i>
+        <span>File Browser</span>
+      </a>
+      {% else %}
+      <a href="{% url 'admin_app:documents' %}" class="fm-logo">
+        <i class="fas fa-folder-open"></i>
+        <span>File Manager</span>
+      </a>
+      {% endif %}
+    </div>
+    
+    {% if not is_readonly %}
+    <div class="fm-sidebar-actions">
+      <button class="fm-new-btn" onclick="showCreateFolderModal()">
+        <i class="fas fa-plus"></i>
+        <span>New Folder</span>
+      </button>
+      <button class="fm-upload-btn" onclick="document.getElementById('fileUpload').click()">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <span>Upload Files</span>
+      </button>
+      <button class="fm-upload-btn" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);" onclick="showAddLinkModal()">
+        <i class="fas fa-link"></i>
+        <span>Attach Link</span>
+      </button>
+    </div>
+    {% endif %}
+    
+    <!-- Navigation Arrows -->
+    <div class="fm-nav-arrows">
+      <button class="fm-nav-arrow" id="navBack" onclick="history.back()" title="Go back">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <button class="fm-nav-arrow" id="navForward" onclick="history.forward()" title="Go forward">
+        <i class="fas fa-arrow-right"></i>
+      </button>
+    </div>
+    
+    <nav class="fm-sidebar-nav">
+      {% if is_readonly %}
+      <a href="{% url 'user_app:file-manager' %}" class="fm-nav-item {% if not current_folder.parent %}active{% endif %}">
+        <i class="fas fa-home"></i>
+        <span>Root</span>
+      </a>
+      {% else %}
+      <a href="{% url 'admin_app:file-manager' %}" class="fm-nav-item {% if not current_folder.parent %}active{% endif %}">
+        <i class="fas fa-home"></i>
+        <span>Root</span>
+      </a>
+      {% endif %}
+      </a>
+      {% if is_readonly %}
+      <a href="{% url 'user_app:all-accepted-files' %}" class="fm-nav-item">
+        <i class="fas fa-check-circle"></i>
+        <span>Accepted Files</span>
+      </a>
+      <a href="{% url 'user_app:dashboard' %}" class="fm-nav-item">
+        <i class="fas fa-chart-bar"></i>
+        <span>Dashboard</span>
+      </a>
+      {% else %}
+      <a href="{% url 'admin_app:routed-documents' %}" class="fm-nav-item">
+        <i class="fas fa-route"></i>
+        <span>Routed Documents</span>
+      </a>
+      <a href="{% url 'admin_app:workstate-assets' %}" class="fm-nav-item">
+        <i class="fas fa-layer-group"></i>
+        <span>Workstate Assets</span>
+      </a>
+      <a href="{% url 'admin_app:documents' %}" class="fm-nav-item">
+        <i class="fas fa-chart-bar"></i>
+        <span>Analytics</span>
+      </a>
+      {% endif %}
+    </nav>
+    
+    <div class="fm-sidebar-info">
+      <div class="fm-storage-info">
+        <i class="fas fa-database"></i>
+        <span>{{ folders|length }} folders · {{ attachments|length }} files</span>
+      </div>
+    </div>
+  </aside>
+  
+  <!-- =========================
+       MAIN CONTENT
+  ========================= -->
+
+  <main class="fm-main">
+    <!-- Toolbar -->
+    <div class="fm-toolbar">
+      <!-- Breadcrumb -->
+      <nav class="fm-breadcrumb" id="breadcrumbNav">
+        <!-- Home/Root -->
+        {% if is_readonly %}
+        <a href="{% url 'user_app:file-manager' %}" class="fm-crumb fm-crumb-home" data-folder-id="{{ breadcrumb.0.id }}" data-folder-type="root">
+        {% else %}
+        <a href="{% url 'admin_app:file-manager' %}" class="fm-crumb fm-crumb-home folder-dropzone" data-folder-id="{{ breadcrumb.0.id }}" data-folder-type="root">
+        {% endif %}
+          <i class="fas fa-home"></i>
+        </a>
+        
+        <!-- Mobile: Show all breadcrumbs, make scrollable -->
+        {% for folder in breadcrumb %}
+          {% if not forloop.first %}
+            <i class="fas fa-chevron-right fm-crumb-sep"></i>
+            {% if forloop.last %}
+              <span class="fm-crumb current fm-crumb-current">{{ folder.name }}</span>
+            {% else %}
+              {% if is_readonly %}
+              <a href="{% url 'user_app:file-manager-folder' folder.id %}" 
+                 class="fm-crumb fm-crumb-intermediate"
+                 data-folder-id="{{ folder.id }}"
+                 data-folder-name="{{ folder.name }}"
+                 data-folder-type="{{ folder.folder_type }}">
+                {{ folder.name }}
+              </a>
+              {% else %}
+              <a href="{% url 'admin_app:file-manager-folder' folder.id %}" 
+                 class="fm-crumb fm-crumb-intermediate folder-dropzone"
+                 data-folder-id="{{ folder.id }}"
+                 data-folder-name="{{ folder.name }}"
+                 data-folder-type="{{ folder.folder_type }}">
+                {{ folder.name }}
+              </a>
+              {% endif %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+      </nav>
+      
+      <!-- View Toggle & Actions -->
+      <div class="fm-toolbar-actions">
+        <div class="fm-view-toggle d-none d-md-flex">
+          <button class="fm-view-btn active" data-view="grid" title="Grid view">
+            <i class="fas fa-th-large"></i>
+          </button>
+          <button class="fm-view-btn" data-view="list" title="List view">
+            <i class="fas fa-list"></i>
+          </button>
+        </div>
+        
+        <div class="fm-toolbar-divider"></div>
+        
+        <button class="fm-action-btn" onclick="refreshView()" title="Refresh">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Selection Bar (hidden by default) -->
+    <!-- Selection Bar -->
+    <div class="fm-selection-bar" id="selectionBar" style="display: none;">
+      <span class="fm-selection-count"><span id="selectedCount">0</span> selected</span>
+      <div class="fm-selection-actions">
+        <button class="fm-selection-btn" onclick="downloadSelected()">
+          <i class="fas fa-download"></i> Download
+        </button>
+        {% if not is_readonly %}
+        <button class="fm-selection-btn" onclick="showEnhancedMoveModal()">
+          <i class="fas fa-arrows-alt"></i> Move
+        </button>
+        <button class="fm-selection-btn danger" onclick="deleteSelected()">
+          <i class="fas fa-trash"></i> Delete
+        </button>
+        {% endif %}
+        <button class="fm-selection-btn" onclick="clearSelection()">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+      </div>
+    </div>
+    
+    <!-- Content Area -->
+    <div class="fm-content" id="fmContent">
+      {% if folders or attachments or link_groups %}
+        <!-- Folders Section -->
+        {% if folders %}
+        <div class="fm-section">
+          <h6 class="fm-section-title">Folders</h6>
+          <div class="fm-grid" id="foldersGrid">
+            {% for f in folders %}
+            <div class="fm-item folder {% if not is_readonly %}folder-dropzone{% endif %} {% if not f.is_system_generated and not is_readonly %}draggable{% endif %}"
+                 data-id="{{ f.id }}"
+                 data-type="folder"
+                 data-folder-id="{{ f.id }}"
+                 data-folder-type="{{ f.folder_type }}"
+                 data-name="{{ f.name }}"
+                 data-system="{{ f.is_system_generated|lower }}"
+                 {% if f.is_system_generated %}title="System folder - cannot be moved or deleted"{% endif %}
+                 {% if not f.is_system_generated and not is_readonly %}draggable="true"{% endif %}>
+              
+              <div class="fm-item-checkbox">
+                <input type="checkbox" class="fm-checkbox" data-id="{{ f.id }}" data-type="folder">
+              </div>
+              
+              {% if is_readonly %}
+              <a href="{% url 'user_app:file-manager-folder' f.id %}" class="fm-item-link">
+              {% else %}
+              <a href="{% url 'admin_app:file-manager-folder' f.id %}" class="fm-item-link">
+              {% endif %}
+                <div class="fm-item-icon folder-icon">
+                  {% if f.is_system_generated %}
+                    <i class="fas fa-folder"></i>
+                  {% else %}
+                    <i class="fas fa-folder" style="color: #f59e0b;"></i>
+                  {% endif %}
+                </div>
+                <div class="fm-item-info">
+                  <span class="fm-item-name" title="{{ f.name }}">{{ f.name }}</span>
+                  <span class="fm-item-meta">
+                    {% if f.is_system_generated %}<i class="fas fa-lock"></i> System{% else %}Folder{% endif %}
+                  </span>
+                </div>
+              </a>
+              
+              {% if not is_readonly %}
+              <button class="fm-item-menu" onclick="showContextMenu(event, 'folder', '{{ f.id }}', '{{ f.name|escapejs }}', {{ f.is_system_generated|lower }})">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Debug Info (remove after testing) -->
+        <!-- Attachments: {{ attachments|length }}, Link Groups: {{ link_groups|length }}, Folders: {{ folders|length }} -->
+
+        <!-- Files Section -->
+        {% if attachments or link_groups %}
+        <div class="fm-section">
+          <h6 class="fm-section-title">Files</h6>
+          <div class="fm-grid" id="filesGrid">
+            
+            <!-- Grouped Links -->
+            {% for group in link_groups %}
+            <div class="fm-item link-group {% if not is_readonly %}draggable{% endif %}"
+                 data-id="{{ group.first_link.id }}"
+                 data-type="link-group"
+                 data-group-name="{{ group.name|escapejs }}"
+                 data-name="{{ group.name|escapejs }}"
+                 {% if not is_readonly %}draggable="true"{% endif %}>
+              
+              <div class="fm-item-checkbox">
+                <input type="checkbox" class="fm-checkbox" data-id="{{ group.first_link.id }}" data-type="link-group" data-group-name="{{ group.name|escapejs }}">
+              </div>
+              
+              <!-- Grouped link item - opens modal -->
+              <div class="fm-item-link" onclick="showGroupedLinksModal('{{ group.name|escapejs }}', {{ current_folder.id }})">
+                <div class="fm-item-icon file-icon">
+                  {% if group.count == 1 %}
+                    <i class="fas fa-link" style="color: #8b5cf6;"></i>
+                  {% else %}
+                    <i class="fas fa-layer-group" style="color: #8b5cf6;"></i>
+                  {% endif %}
+                </div>
+                <div class="fm-item-info">
+                  <span class="fm-item-name" title="{{ group.name }}">
+                    {{ group.name|truncatechars:25 }}
+                  </span>
+                  <span class="fm-item-meta">
+                    <span class="badge bg-purple">{{ group.count }} link{{ group.count|pluralize }}</span>
+                    {{ group.first_link.uploaded_at|date:"M d, Y" }}
+                  </span>
+                </div>
+              </div>
+              
+              <button class="fm-item-menu" onclick="showContextMenu(event, 'link-group', '{{ group.first_link.id }}', '{{ group.name|escapejs }}', false, '{{ group.name|escapejs }}')">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+            </div>
+            {% endfor %}
+            
+            <!-- Individual Files and Links -->
+            {% for a in attachments %}
+            <div class="fm-item file {% if not is_readonly %}draggable{% endif %}"
+                 data-id="{{ a.id }}"
+                 data-type="{% if a.is_link %}link{% else %}file{% endif %}"
+                 data-name="{% if a.is_link %}Link{% else %}{{ a.file.name|cut:'work_items/' }}{% endif %}"
+                 {% if not is_readonly %}draggable="true"{% endif %}>
+              
+              <div class="fm-item-checkbox">
+                <input type="checkbox" class="fm-checkbox" data-id="{{ a.id }}" data-type="{% if a.is_link %}link{% else %}file{% endif %}">
+              </div>
+              
+              {% if a.is_link %}
+                <!-- Link attachment - displayed as file-style item -->
+                <div class="fm-item-link" onclick="window.open('{{ a.link_url }}', '_blank')">
+                  <div class="fm-item-icon file-icon">
+                    <i class="fas fa-link" style="color: #8b5cf6;"></i>
+                  </div>
+                  <div class="fm-item-info">
+                    <span class="fm-item-name" title="{{ a.link_title|default:'Link' }}">
+                      {{ a.link_title|default:"Link"|truncatechars:25 }}
+                    </span>
+                    <span class="fm-item-meta">{{ a.uploaded_at|date:"M d, Y" }}</span>
+                  </div>
+                </div>
+              {% else %}
+                <!-- File attachment -->
+                <div class="fm-item-link" ondblclick="FilePreview.show({{ a.id }})">
+                  <div class="fm-item-icon file-icon">
+                    {% with ext=a.file.name|slice:"-4:"|lower %}
+                      {% if ext == ".pdf" %}
+                        <i class="fas fa-file-pdf" style="color: #ef4444;"></i>
+                      {% elif ext == "docx" or ext == ".doc" %}
+                        <i class="fas fa-file-word" style="color: #2563eb;"></i>
+                      {% elif ext == "xlsx" or ext == ".xls" %}
+                        <i class="fas fa-file-excel" style="color: #10b981;"></i>
+                      {% elif ext == ".jpg" or ext == ".png" or ext == ".gif" or ext == "jpeg" %}
+                        <i class="fas fa-file-image" style="color: #06b6d4;"></i>
+                      {% else %}
+                        <i class="fas fa-file" style="color: #6b7280;"></i>
+                      {% endif %}
+                    {% endwith %}
+                  </div>
+                  <div class="fm-item-info">
+                    <span class="fm-item-name" title="{{ a.file.name|cut:'work_items/' }}">
+                      {{ a.file.name|cut:"work_items/"|truncatechars:25 }}
+                    </span>
+                    <span class="fm-item-meta">{{ a.uploaded_at|date:"M d, Y" }}</span>
+                  </div>
+                </div>
+              {% endif %}
+              
+              <button class="fm-item-menu" onclick="showContextMenu(event, '{% if a.is_link %}link{% else %}file{% endif %}', '{{ a.id }}', '{% if a.is_link %}Link{% else %}{{ a.file.name|cut:'work_items/'|escapejs }}{% endif %}', false)">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        
+      {% else %}
+        <!-- Empty State -->
+        <div class="fm-empty">
+          <div class="fm-empty-icon">
+            <i class="fas fa-folder-open"></i>
+          </div>
+          <h5>This folder is empty</h5>
+          {% if not is_readonly %}
+          <p>Drag files here or use the upload button</p>
+          <div class="fm-empty-actions">
+            <button class="fm-empty-btn" onclick="document.getElementById('fileUpload').click()">
+              <i class="fas fa-upload"></i> Upload Files
+            </button>
+            <button class="fm-empty-btn secondary" onclick="showCreateFolderModal()">
+              <i class="fas fa-folder-plus"></i> New Folder
+            </button>
+          </div>
+          {% else %}
+          <p>No files to display</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+    
+    <!-- Drop Zone Overlay -->
+    {% if not is_readonly %}
+    <div class="fm-drop-overlay" id="dropOverlay">
+      <div class="fm-drop-content">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <span>Drop files here</span>
+      </div>
+    </div>
+    {% endif %}
+  </main>
+</div>
+
+<!-- Hidden Upload Form -->
+{% if not is_readonly %}
+<form id="uploadForm" method="post" enctype="multipart/form-data" action="{% url 'admin_app:upload-files' %}" style="display:none">
+  {% csrf_token %}
+  <input type="hidden" name="folder_id" value="{{ current_folder.id }}">
+  <input type="hidden" name="action" value="upload_files">
+  <input type="file" id="fileUpload" name="files" multiple>
+</form>
+
+<!-- Link Attachment Form -->
+<form id="linkForm" method="post" action="{% url 'admin_app:upload-files' %}" style="display:none">
+  {% csrf_token %}
+  <input type="hidden" name="folder_id" value="{{ current_folder.id }}">
+  <input type="hidden" name="action" value="add_links">
+  <div id="linkInputsContainer"></div>
+</form>
+{% endif %}
+
+<script>
+// Simple file upload handler
+document.addEventListener('DOMContentLoaded', function() {
+  const fileInput = document.getElementById('fileUpload');
+  const uploadForm = document.getElementById('uploadForm');
+  
+  if (fileInput) {
+    fileInput.addEventListener('change', function(e) {
+      if (e.target.files.length > 0) {
+        console.log('Uploading', e.target.files.length, 'files...');
+        uploadForm.submit();
+      }
+    });
+  }
+  
+  // Show toast message if exists (using global notify function from base.html)
+  {% if toast_message %}
+  console.log('Toast message found:', '{{ toast_message|escapejs }}', 'Type:', '{{ toast_type|default:"info" }}');
+  // Use setTimeout to ensure window.notify is defined (runs after current call stack)
+  setTimeout(() => {
+    if (typeof window.notify === 'function') {
+      console.log('Calling window.notify');
+      window.notify('{{ toast_message|escapejs }}', '{{ toast_type|default:"info" }}');
+    } else {
+      console.error('window.notify is not available');
+    }
+  }, 100);
+  {% else %}
+  console.log('No toast message in context');
+  {% endif %}
+});
+</script>
+
+<!-- Context Menu -->
+<div class="fm-context-menu" id="contextMenu">
+  <div class="fm-context-item" data-action="open">
+    <i class="fas fa-folder-open"></i> Open
+  </div>
+  <div class="fm-context-item" data-action="preview">
+    <i class="fas fa-eye"></i> Preview
+  </div>
+  <div class="fm-context-item" data-action="download">
+    <i class="fas fa-download"></i> Download
+  </div>
+  {% if not is_readonly %}
+  <div class="fm-context-divider"></div>
+  <div class="fm-context-item" data-action="move">
+    <i class="fas fa-arrows-alt"></i> Move
+  </div>
+  <div class="fm-context-item" data-action="rename">
+    <i class="fas fa-edit"></i> Rename
+  </div>
+  <div class="fm-context-divider"></div>
+  <div class="fm-context-item danger" data-action="delete">
+    <i class="fas fa-trash"></i> Delete
+  </div>
+  {% endif %}
+</div>
+
+{% if not is_readonly %}
+
+<!-- Create Folder Modal -->
+<div class="modal fade" id="createFolderModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="fas fa-folder-plus me-2"></i>New Folder</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'admin_app:create-folder' %}">
+        {% csrf_token %}
+        <input type="hidden" name="parent_id" value="{{ current_folder.id }}">
+        <div class="modal-body">
+          <input type="text" name="name" class="form-control" placeholder="Folder name" required autofocus>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div class="modal fade" id="renameModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="fas fa-edit me-2"></i>Rename</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="renameForm">
+        <div class="modal-body">
+          <input type="text" id="renameInput" class="form-control" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Rename</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h6 class="modal-title"><i class="fas fa-trash me-2"></i>Delete Item</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">Are you sure you want to delete:</p>
+        <p class="fw-semibold text-danger mb-3" id="deleteItemName"></p>
+        
+        <div class="alert alert-warning mb-3">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <strong>This action cannot be undone.</strong>
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            Type <code id="deleteConfirmText" class="text-danger">DELETE</code> to confirm:
+          </label>
+          <input type="text" id="deleteConfirmInput" class="form-control" placeholder="Type DELETE" autocomplete="off">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn" disabled>
+          <i class="fas fa-trash me-1"></i>Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Delete Confirmation Modal -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h6 class="modal-title"><i class="fas fa-trash me-2"></i>Delete Selected Items</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="bulkDeleteContent">
+          <!-- Content will be dynamically inserted -->
+        </div>
+        
+        <div class="alert alert-warning mb-3">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <strong>This action cannot be undone.</strong>
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            Type <code class="text-danger">DELETE</code> to confirm:
+          </label>
+          <input type="text" id="bulkDeleteConfirmInput" class="form-control" placeholder="Type DELETE" autocomplete="off">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger btn-sm" id="confirmBulkDeleteBtn" disabled>
+          <i class="fas fa-trash me-1"></i>Delete All
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- System Folder Delete Confirmation Modal -->
+<div class="modal fade" id="systemFolderDeleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h6 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Delete System Folder</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning mb-3">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <strong>Warning:</strong> You are about to delete a system-generated folder.
+        </div>
+        
+        <p class="mb-2"><strong>Folder:</strong> <span id="systemFolderName" class="text-danger"></span></p>
+        <p class="mb-2"><strong>Type:</strong> <span id="systemFolderType"></span></p>
+        
+        <div id="systemFolderStats" class="mb-3">
+          <p class="mb-1"><i class="fas fa-folder me-2"></i><span id="systemFolderChildren">0</span> subfolders</p>
+          <p class="mb-1"><i class="fas fa-file me-2"></i><span id="systemFolderFiles">0</span> files</p>
+        </div>
+        
+        <div class="alert alert-danger mb-3">
+          <strong>Impact:</strong>
+          <ul class="mb-0 mt-2">
+            <li>All subfolders and files will be orphaned (folder set to null)</li>
+            <li>Work items may lose organizational structure</li>
+            <li id="workcycleWarning" style="display:none;">This folder is linked to a work cycle</li>
+          </ul>
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            Type the confirmation keyword to proceed:
+            <code id="confirmationKeyword" class="text-danger ms-2"></code>
+          </label>
+          <input type="text" id="systemFolderKeywordInput" class="form-control" placeholder="Enter keyword exactly as shown">
+          <small class="text-muted">This keyword is based on the folder name (max 30 characters)</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger btn-sm" id="confirmSystemFolderDeleteBtn" disabled>
+          <i class="fas fa-trash me-1"></i>Delete System Folder
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- System Folder Move Confirmation Modal -->
+<div class="modal fade" id="systemFolderMoveModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h6 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Move System Folder</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning mb-3">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <strong>Warning:</strong> You are about to move a system-generated folder.
+        </div>
+        
+        <p class="mb-2"><strong>Folder:</strong> <span id="moveFolderName"></span></p>
+        <p class="mb-2"><strong>Type:</strong> <span id="moveFolderType"></span></p>
+        <p class="mb-3"><strong>New Parent:</strong> <span id="moveTargetName"></span></p>
+        
+        <div class="alert alert-info mb-0">
+          <strong>Impact:</strong>
+          <ul class="mb-0 mt-2">
+            <li>This may affect work items and organizational structure</li>
+            <li id="moveWorkcycleWarning" style="display:none;">This folder is linked to a work cycle</li>
+            <li>Ensure the new location maintains proper hierarchy</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-warning btn-sm" id="confirmSystemFolderMoveBtn">
+          <i class="fas fa-arrows-alt me-1"></i>Move Folder
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Non-Empty Folder Delete Confirmation Modal (Step 3) -->
+<div class="modal fade" id="nonEmptyFolderDeleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h6 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Delete Non-Empty Folder</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-danger mb-3">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <strong>DESTRUCTIVE ACTION:</strong> This folder contains items that will also be deleted.
+        </div>
+        
+        <p class="mb-2"><strong>Folder:</strong> <span id="nonEmptyFolderName" class="text-danger"></span></p>
+        
+        <div class="mb-3">
+          <p class="mb-1 fw-semibold">Contents that will be deleted:</p>
+          <ul class="mb-0">
+            <li><span id="nonEmptyChildrenCount">0</span> direct subfolders</li>
+            <li><span id="nonEmptyFilesCount">0</span> direct files</li>
+            <li><span id="nonEmptyTotalDescendants">0</span> total descendant folders</li>
+            <li><span id="nonEmptyTotalFiles">0</span> total files (including descendants)</li>
+          </ul>
+        </div>
+        
+        <div class="alert alert-warning mb-0">
+          <strong>This action cannot be undone.</strong> All contents will be permanently deleted.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger btn-sm" id="confirmNonEmptyDeleteBtn">
+          <i class="fas fa-trash me-1"></i>Delete All Contents
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Link Attachment Modal -->
+<div class="modal fade" id="linkModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #ede9fe, #ddd6fe); border-bottom: 2px solid #8b5cf6;">
+        <h6 class="modal-title" style="color: #5b21b6;">
+          <i class="fas fa-link me-2"></i>Attach Links
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Title/Name Field -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            <i class="fas fa-tag me-1"></i>Title/Name
+            <span class="text-danger">*</span>
+          </label>
+          <input type="text" id="linkGroupTitle" class="form-control" placeholder="e.g., Project Documents, Reference Materials" required autocomplete="off">
+          <small class="text-muted">This will be displayed as the item name in the file manager</small>
+        </div>
+        
+        <hr>
+        
+        <!-- Link URLs -->
+        <div id="modalLinkInputsContainer">
+          <div class="mb-3 link-input-group">
+            <label class="form-label fw-semibold">Link URL 1</label>
+            <input type="url" class="form-control" placeholder="https://example.com/document" required autocomplete="off">
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addModalLinkInput()">
+          <i class="fas fa-plus me-1"></i>Add Another Link
+        </button>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="submitLinks()" style="background: #8b5cf6; border-color: #8b5cf6;">
+          <i class="fas fa-check me-1"></i>Add Links
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Link Modal (for viewing attached links) -->
+<div class="modal fade" id="viewLinkModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #ede9fe, #ddd6fe); border-bottom: 2px solid #8b5cf6;">
+        <h6 class="modal-title" style="color: #5b21b6;" id="viewLinkModalTitle">
+          <i class="fas fa-link me-2"></i>Link
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info d-flex align-items-center mb-3" style="background: #dbeafe; border-color: #3b82f6; color: #1e40af;">
+          <i class="fas fa-info-circle me-2"></i>
+          <span>Click the link below to open it in a new tab</span>
+        </div>
+        <div id="viewLinkContent" class="list-group">
+          <!-- Link will be inserted here -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Grouped Links Modal (for viewing multiple links in a group) -->
+<div class="modal fade" id="groupedLinksModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #ede9fe, #ddd6fe); border-bottom: 2px solid #8b5cf6;">
+        <h6 class="modal-title" style="color: #5b21b6;" id="groupedLinksModalTitle">
+          <i class="fas fa-layer-group me-2"></i>Grouped Links
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info d-flex align-items-center mb-3" style="background: #dbeafe; border-color: #3b82f6; color: #1e40af;">
+          <i class="fas fa-info-circle me-2"></i>
+          <span>Click any link below to open it in a new tab</span>
+        </div>
+        
+        <div id="groupedLinksLoadingSpinner" class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2 text-muted">Loading links...</p>
+        </div>
+        
+        <div id="groupedLinksContent" class="list-group" style="display: none;">
+          <!-- Links will be inserted here -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Enhanced Move Modal with Navigation -->
+<div class="modal fade" id="enhancedMoveModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">
+          <i class="fas fa-arrows-alt me-2"></i>
+          Move <span id="moveItemCount">0</span> Item(s)
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Current Location Breadcrumb -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Current Location:</label>
+          <nav aria-label="breadcrumb" style="overflow-x: auto; white-space: nowrap;">
+            <ol class="breadcrumb mb-0" id="moveModalBreadcrumb" style="flex-wrap: nowrap;">
+              <li class="breadcrumb-item active">Loading...</li>
+            </ol>
+          </nav>
+        </div>
+        
+        <!-- Folder Navigation -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Select Destination Folder:</label>
+          <div class="border rounded p-2" style="max-height: 300px; overflow-y: auto; background: #f8f9fa;">
+            <div id="moveFolderList">
+              <div class="text-center py-3">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mb-0 mt-2 text-muted small">Loading folders...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Create New Folder -->
+        <div class="mb-3">
+          <button type="button" class="btn btn-sm btn-outline-primary" id="showCreateFolderInMove">
+            <i class="fas fa-folder-plus me-1"></i>Create New Folder Here
+          </button>
+        </div>
+        
+        <!-- Create Folder Input (Hidden by default) -->
+        <div id="createFolderInMoveContainer" style="display: none;" class="mb-3">
+          <div class="input-group">
+            <input type="text" id="newFolderNameInMove" class="form-control" placeholder="New folder name">
+            <button type="button" class="btn btn-success" id="confirmCreateFolderInMove">
+              <i class="fas fa-check"></i>
+            </button>
+            <button type="button" class="btn btn-secondary" id="cancelCreateFolderInMove">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Selected Destination -->
+        <div class="alert alert-info mb-0">
+          <strong>Destination:</strong> <span id="selectedDestination">None selected</span>
+        </div>
+        
+        <!-- Warnings -->
+        <div id="moveWarningContainer" style="display: none;" class="alert alert-warning mt-3 mb-0">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <span id="moveWarningText"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" id="confirmEnhancedMoveBtn" disabled>
+          <i class="fas fa-arrows-alt me-1"></i>Move Here
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Keep the old bulk move modal for backward compatibility -->
+<!-- Bulk Move Modal -->
+<div class="modal fade" id="bulkMoveModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="fas fa-arrows-alt me-2"></i>Move Selected Items</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">Move <strong id="bulkMoveCount">0</strong> selected item(s) to:</p>
+        
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Select Target Folder</label>
+          <select id="bulkMoveTargetFolder" class="form-select">
+            <option value="">-- Select a folder --</option>
+            {% for folder in all_folders %}
+            <option value="{{ folder.id }}" 
+                    data-type="{{ folder.folder_type }}"
+                    {% if folder.id == current_folder.id %}disabled{% endif %}>
+              {{ folder.get_path_string }}
+            </option>
+            {% endfor %}
+          </select>
+          <small class="text-muted">
+            Note: Links will be skipped (they cannot be moved)
+          </small>
+        </div>
+        
+        <div id="bulkMoveWarning" class="alert alert-warning" style="display: none;">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <span id="bulkMoveWarningText"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" id="confirmBulkMoveBtn" disabled>
+          <i class="fas fa-arrows-alt me-1"></i>Move Items
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- =========================
+     SCRIPTS
+========================= -->
+<script>
+const FM = {
+  urls: {
+    {% if not is_readonly %}
+    moveAttachment: "{% url 'admin_app:move-attachment' %}",
+    moveFolder: "{% url 'admin_app:move-folder' %}",
+    bulkMove: "{% url 'admin_app:bulk-move' %}",
+    bulkDelete: "{% url 'admin_app:bulk-delete' %}",
+    renameFolder: "{% url 'admin_app:rename-folder' %}",
+    renameAttachment: "{% url 'admin_app:rename-attachment' %}",
+    deleteFolder: "{% url 'admin_app:delete-folder' %}",
+    deleteFile: "{% url 'admin_app:delete-file' %}",
+    {% endif %}
+    download: "{% if is_readonly %}/user/documents/download/{% else %}/admin/documents/files/download/{% endif %}",
+    downloadZip: "{% if is_readonly %}{% url 'user_app:download-zip' %}{% else %}{% url 'admin_app:download-zip' %}{% endif %}"
+  },
+  csrf: "{{ csrf_token }}",
+  currentFolder: {{ current_folder.id }},
+  context: { type: null, id: null, name: null, isSystem: false },
+  deleteContext: null,
+  bulkDeleteContext: null,
+  selected: new Set(),
+  dragData: { type: null, ids: [] },
+  pendingMove: null,
+  systemFolderKeyword: null,
+  isReadonly: {{ is_readonly|yesno:"true,false" }}
+};
+
+// Context Menu
+function showContextMenu(e, type, id, name, isSystem, groupName) {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  FM.context = { type, id, name, isSystem, groupName };
+  
+  const menu = document.getElementById('contextMenu');
+  const items = menu.querySelectorAll('.fm-context-item');
+  
+  items.forEach(item => {
+    const action = item.dataset.action;
+    
+    if (type === 'folder') {
+      // For folders: Open, Move, Rename, Delete
+      if (action === 'open') {
+        item.style.display = '';
+      } else if (action === 'move') {
+        // Links cannot be moved (they have folder=None)
+        item.style.display = FM.isReadonly ? 'none' : '';
+      } else if (action === 'rename') {
+        // System folders cannot be renamed
+        item.style.display = (isSystem || FM.isReadonly) ? 'none' : '';
+      } else if (action === 'delete') {
+        item.style.display = FM.isReadonly ? 'none' : '';
+      } else {
+        item.style.display = 'none';
+      }
+    } else if (type === 'link') {
+      // For links: Open, Rename, Delete (NO MOVE - links have folder=None)
+      if (action === 'open') {
+        item.style.display = '';
+      } else if (action === 'move') {
+        // Links cannot be moved
+        item.style.display = 'none';
+      } else if (action === 'rename' || action === 'delete') {
+        item.style.display = FM.isReadonly ? 'none' : '';
+      } else {
+        item.style.display = 'none';
+      }
+    } else if (type === 'link-group') {
+      // For link groups: Open (show modal), Move, Delete
+      if (action === 'open') {
+        item.style.display = '';
+      } else if (action === 'move' || action === 'delete') {
+        item.style.display = FM.isReadonly ? 'none' : '';
+      } else {
+        item.style.display = 'none';
+      }
+    } else {
+      // For files: Preview, Download, Move, Rename, Delete
+      if (action === 'preview' || action === 'download') {
+        item.style.display = '';
+      } else if (action === 'move' || action === 'rename' || action === 'delete') {
+        item.style.display = FM.isReadonly ? 'none' : '';
+      } else {
+        item.style.display = 'none';
+      }
+    }
+  });
+  
+  // Show dividers between action groups
+  const dividers = menu.querySelectorAll('.fm-context-divider');
+  dividers.forEach(div => div.style.display = '');
+  
+  menu.style.left = e.pageX + 'px';
+  menu.style.top = e.pageY + 'px';
+  menu.classList.add('show');
+}
+
+document.getElementById('contextMenu').addEventListener('click', function(e) {
+  const item = e.target.closest('.fm-context-item');
+  if (!item) return;
+  
+  const action = item.dataset.action;
+  this.classList.remove('show');
+  
+  switch(action) {
+    case 'open':
+      if (FM.context.type === 'folder') {
+        const urlPrefix = FM.isReadonly ? '/user/documents/browse/' : '/admin/documents/files/';
+        window.location.href = urlPrefix + FM.context.id + '/';
+      } else if (FM.context.type === 'link') {
+        // For links, we need to get the URL from the data attribute
+        // Find the link element and get its URL
+        const linkElement = document.querySelector(`[data-id="${FM.context.id}"][data-type="link"]`);
+        if (linkElement) {
+          const linkDiv = linkElement.querySelector('.fm-item-link');
+          if (linkDiv && linkDiv.onclick) {
+            // Trigger the onclick which opens the modal
+            linkDiv.click();
+          }
+        }
+      } else if (FM.context.type === 'link-group') {
+        // For link groups, open the grouped links modal
+        if (FM.context.groupName) {
+          showGroupedLinksModal(FM.context.groupName, FM.currentFolder);
+        }
+      }
+      break;
+    case 'preview':
+      if (FM.context.type === 'file') {
+        FilePreview.show(FM.context.id);
+      }
+      break;
+    case 'download':
+      window.location.href = FM.urls.download + FM.context.id + '/';
+      break;
+    case 'move':
+      if (!FM.isReadonly) showSingleMoveModal();
+      break;
+    case 'rename':
+      if (!FM.isReadonly) showRenameModal();
+      break;
+    case 'delete':
+      if (!FM.isReadonly) handleDelete();
+      break;
+  }
+});
+
+document.addEventListener('click', () => {
+  document.getElementById('contextMenu').classList.remove('show');
+});
+
+{% if not is_readonly %}
+// Rename
+function showRenameModal() {
+  const modal = new bootstrap.Modal(document.getElementById('renameModal'));
+  const input = document.getElementById('renameInput');
+  input.value = FM.context.name;
+  modal.show();
+  setTimeout(() => input.select(), 300);
+}
+
+document.getElementById('renameForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const newName = document.getElementById('renameInput').value.trim();
+  if (!newName) return;
+  
+  try {
+    let url, body;
+    
+    if (FM.context.type === 'folder') {
+      url = FM.urls.renameFolder;
+      body = new URLSearchParams({ folder_id: FM.context.id, new_name: newName });
+    } else {
+      // For files and links
+      url = FM.urls.renameAttachment;
+      body = new URLSearchParams({ attachment_id: FM.context.id, new_name: newName });
+    }
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': FM.csrf,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: body
+    });
+    const data = await response.json();
+    window.notify(data.message, data.status === 'success' ? 'success' : 'error');
+    if (data.status === 'success') setTimeout(() => location.reload(), 800);
+  } catch (err) {
+    window.notify('An error occurred', 'error');
+  }
+  
+  bootstrap.Modal.getInstance(document.getElementById('renameModal')).hide();
+});
+
+// Delete - Show Modal (Step 1: General Confirmation)
+function handleDelete() {
+  // Store context for multi-step flow
+  FM.deleteContext = {
+    type: FM.context.type,
+    id: FM.context.id,
+    name: FM.context.name,
+    isSystem: FM.context.isSystem,
+    step: 1
+  };
+  
+  // Show delete modal with confirmation input
+  document.getElementById('deleteItemName').textContent = FM.context.name;
+  document.getElementById('deleteConfirmText').textContent = 'DELETE';
+  document.getElementById('deleteConfirmInput').value = '';
+  document.getElementById('deleteConfirmInput').placeholder = 'Type DELETE';
+  document.getElementById('confirmDeleteBtn').disabled = true;
+  
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// Enable delete button when "DELETE" is typed
+document.getElementById('deleteConfirmInput').addEventListener('input', function() {
+  const input = this.value.trim();
+  const btn = document.getElementById('confirmDeleteBtn');
+  btn.disabled = (input !== 'DELETE');
+});
+
+// Confirm Delete from Modal (handles all steps)
+document.getElementById('confirmDeleteBtn').addEventListener('click', async function() {
+  const context = FM.deleteContext || FM.context;
+  
+  bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+  
+  // For files, links, and link-groups: use bulk delete endpoint
+  if (context.type === 'file' || context.type === 'link' || context.type === 'link-group') {
+    try {
+      // Build item object
+      const item = { type: context.type, id: context.id };
+      
+      // For link-group, add group_name
+      if (context.type === 'link-group' && context.groupName) {
+        item.group_name = context.groupName;
+      }
+      
+      // Use bulk delete endpoint for consistency
+      const response = await fetch(FM.urls.bulkDelete, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': FM.csrf,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          items: [item],
+          step: '3',
+          confirmations: {
+            non_empty_confirmed: true
+          }
+        })
+      });
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        window.notify(data.message, 'success');
+        setTimeout(() => location.reload(), 800);
+      } else {
+        window.notify(data.message, 'error');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      window.notify('An error occurred', 'error');
+    }
+    return;
+  }
+  
+  // For folders: Start with step 1
+  if (context.type === 'folder') {
+    try {
+      const response = await fetch(FM.urls.deleteFolder, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': FM.csrf,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({ 
+          folder_id: context.id,
+          step: '1'
+        })
+      });
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        window.notify(data.message, 'success');
+        setTimeout(() => location.reload(), 800);
+      } else if (data.status === 'confirm_step_1') {
+        // Step 1 confirmed, check if we need step 2 (system folder)
+        FM.deleteContext.folderInfo = data;
+        if (data.is_system) {
+          // Need step 2 - get keyword confirmation
+          proceedToStep2(data);
+        } else if (!data.is_empty) {
+          // Skip step 2, go to step 3 (non-empty)
+          proceedToStep3Direct(data);
+        } else {
+          // Empty user folder - delete directly
+          performFolderDeletion(context.id, '3', null, false);
+        }
+      } else {
+        window.notify(data.message, 'error');
+      }
+    } catch (err) {
+      window.notify('An error occurred', 'error');
+    }
+  }
+});
+
+// Step 2: System Folder Delete with Keyword
+async function proceedToStep2(data) {
+  try {
+    const response = await fetch(FM.urls.deleteFolder, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': FM.csrf,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({ 
+        folder_id: data.folder_id,
+        step: '2'
+      })
+    });
+    
+    const stepData = await response.json();
+    
+    if (stepData.status === 'confirm_step_2') {
+      showSystemFolderDeleteModal(stepData);
+    } else if (stepData.status === 'success') {
+      window.notify(stepData.message, 'success');
+      setTimeout(() => location.reload(), 800);
+    } else {
+      window.notify(stepData.message, 'error');
+    }
+  } catch (err) {
+    window.notify('An error occurred', 'error');
+  }
+}
+
+function showSystemFolderDeleteModal(data) {
+  document.getElementById('systemFolderName').textContent = data.folder_name;
+  document.getElementById('systemFolderType').textContent = data.folder_type;
+  document.getElementById('systemFolderChildren').textContent = data.children_count;
+  document.getElementById('systemFolderFiles').textContent = data.files_count;
+  document.getElementById('confirmationKeyword').textContent = data.confirmation_keyword;
+  document.getElementById('systemFolderKeywordInput').value = '';
+  document.getElementById('confirmSystemFolderDeleteBtn').disabled = true;
+  
+  // Show/hide workcycle warning
+  if (data.has_workcycle) {
+    document.getElementById('workcycleWarning').style.display = 'list-item';
+  } else {
+    document.getElementById('workcycleWarning').style.display = 'none';
+  }
+  
+  // Store for step 3
+  FM.deleteContext.folderInfo = data;
+  FM.deleteContext.confirmationKeyword = data.confirmation_keyword;
+  
+  new bootstrap.Modal(document.getElementById('systemFolderDeleteModal')).show();
+}
+
+// Enable delete button when keyword matches
+document.getElementById('systemFolderKeywordInput').addEventListener('input', function() {
+  const keyword = this.value.trim();
+  const btn = document.getElementById('confirmSystemFolderDeleteBtn');
+  btn.disabled = (keyword !== FM.deleteContext.confirmationKeyword);
+});
+
+// Confirm System Folder Delete (Step 2 complete)
+document.getElementById('confirmSystemFolderDeleteBtn').addEventListener('click', async function() {
+  const keyword = document.getElementById('systemFolderKeywordInput').value.trim();
+  const folderInfo = FM.deleteContext.folderInfo;
+  
+  bootstrap.Modal.getInstance(document.getElementById('systemFolderDeleteModal')).hide();
+  
+  // Proceed to Step 3 if folder is not empty
+  if (!folderInfo.is_empty) {
+    proceedToStep3WithKeyword(folderInfo.folder_id, keyword);
+  } else {
+    // Folder is empty - delete directly
+    performFolderDeletion(folderInfo.folder_id, '3', keyword, false);
+  }
+});
+
+// Step 3: Non-Empty Folder Confirmation (from step 1 - user folder)
+async function proceedToStep3Direct(data) {
+  try {
+    const response = await fetch(FM.urls.deleteFolder, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': FM.csrf,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({ 
+        folder_id: data.folder_id,
+        step: '3'
+      })
+    });
+    
+    const stepData = await response.json();
+    
+    if (stepData.status === 'confirm_step_3') {
+      showNonEmptyFolderModal(stepData, null);
+    } else if (stepData.status === 'success') {
+      window.notify(stepData.message, 'success');
+      setTimeout(() => location.reload(), 800);
+    } else {
+      window.notify(stepData.message, 'error');
+    }
+  } catch (err) {
+    window.notify('An error occurred', 'error');
+  }
+}
+
+// Step 3: Non-Empty Folder Confirmation (from step 2 - system folder with keyword)
+async function proceedToStep3WithKeyword(folderId, keyword) {
+  try {
+    const response = await fetch(FM.urls.deleteFolder, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': FM.csrf,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({ 
+        folder_id: folderId,
+        step: '3',
+        confirmation_keyword: keyword
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.status === 'confirm_step_3') {
+      showNonEmptyFolderModal(data, keyword);
+    } else if (data.status === 'success') {
+      window.notify(data.message, 'success');
+      setTimeout(() => location.reload(), 800);
+    } else {
+      window.notify(data.message, 'error');
+    }
+  } catch (err) {
+    window.notify('An error occurred', 'error');
+  }
+}
+
+// Show Non-Empty Folder Confirmation Modal
+function showNonEmptyFolderModal(data, keyword) {
+  document.getElementById('nonEmptyFolderName').textContent = data.folder_name;
+  document.getElementById('nonEmptyChildrenCount').textContent = data.children_count;
+  document.getElementById('nonEmptyFilesCount').textContent = data.files_count;
+  document.getElementById('nonEmptyTotalDescendants').textContent = data.total_descendants;
+  document.getElementById('nonEmptyTotalFiles').textContent = data.total_files;
+  
+  // Store for final deletion
+  FM.deleteContext.keyword = keyword;
+  
+  new bootstrap.Modal(document.getElementById('nonEmptyFolderDeleteModal')).show();
+}
+
+// Confirm Non-Empty Folder Delete (Step 3 complete)
+document.getElementById('confirmNonEmptyDeleteBtn').addEventListener('click', async function() {
+  const folderInfo = FM.deleteContext.folderInfo;
+  const keyword = FM.deleteContext.keyword || null;
+  
+  bootstrap.Modal.getInstance(document.getElementById('nonEmptyFolderDeleteModal')).hide();
+  
+  // Perform final deletion
+  performFolderDeletion(folderInfo.folder_id, '3', keyword, true);
+});
+
+// Perform Final Folder Deletion
+async function performFolderDeletion(folderId, step, keyword = null, confirmedNonEmpty = false) {
+  try {
+    const params = new URLSearchParams({ 
+      folder_id: folderId,
+      step: step
+    });
+    
+    if (keyword) {
+      params.append('confirmation_keyword', keyword);
+    }
+    
+    if (confirmedNonEmpty) {
+      params.append('confirmed_non_empty', 'true');
+    }
+    
+    const response = await fetch(FM.urls.deleteFolder, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': FM.csrf,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params
+    });
+    
+    const data = await response.json();
+    
+    if (data.status === 'success') {
+      window.notify(data.message, 'success');
+      setTimeout(() => location.reload(), 800);
+    } else {
+      window.notify(data.message, 'error');
+    }
+  } catch (err) {
+    window.notify('An error occurred', 'error');
+  }
+}
+
+// Create Folder
+function showCreateFolderModal() {
+  new bootstrap.Modal(document.getElementById('createFolderModal')).show();
+}
+{% endif %}
+
+// Refresh
+function refreshView() {
+  location.reload();
+}
+
+// Selection (available for both admin and users)
+function updateSelection() {
+  const bar = document.getElementById('selectionBar');
+  const count = document.getElementById('selectedCount');
+  
+  if (FM.selected.size > 0) {
+    bar.style.display = 'flex';
+    count.textContent = FM.selected.size;
+  } else {
+    bar.style.display = 'none';
+  }
+  
+  document.querySelectorAll('.fm-item').forEach(item => {
+    const id = item.dataset.id;
+    const type = item.dataset.type;
+    const key = `${type}-${id}`;
+    item.classList.toggle('selected', FM.selected.has(key));
+  });
+}
+
+function clearSelection() {
+  FM.selected.clear();
+  document.querySelectorAll('.fm-checkbox').forEach(cb => cb.checked = false);
+  updateSelection();
+}
+
+async function downloadSelected() {
+  if (FM.selected.size === 0) return;
+  
+  const items = Array.from(FM.selected).map(key => {
+    // Split only on the LAST hyphen to handle types like "link-group"
+    const lastHyphenIndex = key.lastIndexOf('-');
+    const type = key.substring(0, lastHyphenIndex);
+    const id = key.substring(lastHyphenIndex + 1);
+    return { type, id };
+  });
+  
+  try {
+    const response = await fetch(FM.urls.downloadZip, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': FM.csrf,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ items })
+    });
+    
+    if (response.ok) {
+      // Download the ZIP file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'download.zip';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      window.notify(`Downloaded ${FM.selected.size} item(s) as ZIP`, 'success');
+    } else {
+      window.notify('Failed to download files', 'error');
+    }
+  } catch (error) {
+    console.error('Download error:', error);
+    window.notify('An error occurred while downloading', 'error');
+  }
+}
+
+document.querySelectorAll('.fm-checkbox').forEach(cb => {
+  cb.addEventListener('change', function(e) {
+    e.stopPropagation();
+    const key = `${this.dataset.type}-${this.dataset.id}`;
+    if (this.checked) {
+      FM.selected.add(key);
+      // Force checkbox to stay visible
+      const checkboxContainer = this.closest('.fm-item-checkbox');
+      if (checkboxContainer) {
+        checkboxContainer.style.opacity = '1';
+      }
+    } else {
+      FM.selected.delete(key);
+      // Let CSS handle visibility
+      const checkboxContainer = this.closest('.fm-item-checkbox');
+      if (checkboxContainer) {
+        checkboxContainer.style.opacity = '';
+      }
+    }
+    updateSelection();
+  });
+});
+
+{% if not is_readonly %}
+async function deleteSelected() {
+  const items = Array.from(FM.selected);
+  
+  if (items.length === 0) {
+    window.notify('No items selected', 'warning');
+    return;
+  }
+  
+  // Analyze selection to determine what confirmations are needed
+  let hasSystemFolders = false;
+  let hasNonEmptyFolders = false;
+  let folderCount = 0;
+  let fileCount = 0;
+  let linkCount = 0;
+  let linkGroupCount = 0;
+  
+  for (const key of items) {
+    // Split only on the LAST hyphen to handle types like "link-group"
+    const lastHyphenIndex = key.lastIndexOf('-');
+    const type = key.substring(0, lastHyphenIndex);
+    const id = key.substring(lastHyphenIndex + 1);
+    const element = document.querySelector(`[data-id="${id}"][data-type="${type}"]`);
+    
+    if (type === 'folder') {
+      folderCount++;
+      if (element && element.dataset.system === 'true') {
+        hasSystemFolders = true;
+      }
+      // We can't easily check if folder is non-empty from frontend
+      // So we'll assume folders might be non-empty
+      hasNonEmptyFolders = true;
+    } else if (type === 'link') {
+      linkCount++;
+    } else if (type === 'link-group') {
+      linkGroupCount++;
+    } else {
+      fileCount++;
+    }
+  }
+  
+  // Build confirmation message
+  const content = document.getElementById('bulkDeleteContent');
+  
+  let html = `<p class="mb-3">You are about to delete <strong>${items.length}</strong> item(s):</p>`;
+  html += `<ul class="mb-3">`;
+  if (fileCount > 0) html += `<li>${fileCount} file(s)</li>`;
+  if (linkCount > 0) html += `<li>${linkCount} link(s)</li>`;
+  if (linkGroupCount > 0) html += `<li>${linkGroupCount} link group(s)</li>`;
+  if (folderCount > 0) html += `<li>${folderCount} folder(s)</li>`;
+  html += `</ul>`;
+  
+  if (hasSystemFolders) {
+    html += `<div class="alert alert-warning mb-2">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      <strong>Warning:</strong> Selection includes system-generated folders. These will be deleted with proper confirmation.
+    </div>`;
+  }
+  
+  if (hasNonEmptyFolders) {
+    html += `<div class="alert alert-danger mb-2">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      <strong>Warning:</strong> Folders may contain items. All contents will be permanently deleted.
+    </div>`;
+  }
+  
+  content.innerHTML = html;
+  
+  // Reset confirmation input
+  document.getElementById('bulkDeleteConfirmInput').value = '';
+  document.getElementById('confirmBulkDeleteBtn').disabled = true;
+  
+  new bootstrap.Modal(document.getElementById('bulkDeleteModal')).show();
+}
+
+// Enable bulk delete button when "DELETE" is typed
+document.getElementById('bulkDeleteConfirmInput').addEventListener('input', function() {
+  const input = this.value.trim();
+  const btn = document.getElementById('confirmBulkDeleteBtn');
+  btn.disabled = (input !== 'DELETE');
+});
+
+// Confirm Bulk Delete from Modal
+document.getElementById('confirmBulkDeleteBtn').addEventListener('click', async function() {
+  bootstrap.Modal.getInstance(document.getElementById('bulkDeleteModal')).hide();
+  
+  // Build items array with proper structure for backend
+  const items = [];
+  for (const key of FM.selected) {
+    // Split only on the LAST hyphen to handle types like "link-group"
+    const lastHyphenIndex = key.lastIndexOf('-');
+    const type = key.substring(0, lastHyphenIndex);
+    const id = key.substring(lastHyphenIndex + 1);
+    
+    // Validate ID is numeric
+    if (!id || isNaN(id)) {
+      console.error(`Invalid ID for ${type}: ${id}`);
+      continue;
+    }
+    
+    const element = document.querySelector(`[data-id="${id}"][data-type="${type}"]`);
+    
+    const item = { type, id: parseInt(id) };
+    
+    // For link-group, we need to pass the group_name
+    if (type === 'link-group' && element) {
+      item.group_name = element.dataset.groupName;
+    }
+    
+    items.push(item);
+  }
+  
+  if (items.length === 0) {
+    window.notify('No valid items selected for deletion', 'error');
+    return;
+  }
+  
+  console.log('Deleting items:', items);
+  
+  try {
+    // Step 1: Initial confirmation
+    let response = await fetch(FM.urls.bulkDelete, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': FM.csrf,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        items: items,
+        step: '1'
+      })
+    });
+    
+    let data = await response.json();
+    console.log('Step 1 response:', data);
+    
+    // Step 2: System folder confirmation (if needed)
+    if (data.status === 'confirm_step_2' && data.has_system_folders) {
+      // Auto-confirm system folders by providing keywords
+      const keywords = {};
+      for (const [folderId, keyword] of Object.entries(data.required_keywords || {})) {
+        keywords[folderId] = keyword;
+      }
+      
+      response = await fetch(FM.urls.bulkDelete, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': FM.csrf,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          items: items,
+          step: '2',
+          confirmations: {
+            system_folder_keywords: keywords
+          }
+        })
+      });
+      
+      data = await response.json();
+      console.log('Step 2 response:', data);
+    }
+    
+    // Step 3: Non-empty folder confirmation (if needed)
+    if (data.status === 'confirm_step_3' || data.status === 'confirm_step_1') {
+      response = await fetch(FM.urls.bulkDelete, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': FM.csrf,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          items: items,
+          step: '3',
+          confirmations: {
+            non_empty_confirmed: true
+          }
+        })
+      });
+      
+      data = await response.json();
+      console.log('Step 3 response:', data);
+    }
+    
+    if (data.status === 'success') {
+      window.notify(data.message, 'success');
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      window.notify(data.message || 'Delete operation failed', 'error');
+      console.error('Delete failed:', data);
+    }
+  } catch (err) {
+    console.error('Delete error:', err);
+    window.notify('An error occurred during delete operation', 'error');
+  }
+});
+
+// Bulk Move Functions
+function showMoveModal() {
+  document.getElementById('bulkMoveCount').textContent = FM.selected.size;
+  document.getElementById('bulkMoveTargetFolder').value = '';
+  document.getElementById('confirmBulkMoveBtn').disabled = true;
+  document.getElementById('bulkMoveWarning').style.display = 'none';
+  new bootstrap.Modal(document.getElementById('bulkMoveModal')).show();
+}
+
+// Enhanced Move Modal with Navigation
+const MoveModal = {
+  currentFolderId: null,
+  selectedFolderId: null,
+  itemsToMove: [],
+  modal: null,
+  
+  init() {
+    this.modal = new bootstrap.Modal(document.getElementById('enhancedMoveModal'));
+    this.setupEventListeners();
+  },
+  
+  setupEventListeners() {
+    // Create folder button
+    document.getElementById('showCreateFolderInMove').addEventListener('click', () => {
+      document.getElementById('createFolderInMoveContainer').style.display = 'block';
+      document.getElementById('newFolderNameInMove').focus();
+    });
+    
+    // Confirm create folder
+    document.getElementById('confirmCreateFolderInMove').addEventListener('click', () => {
+      this.createFolderInMove();
+    });
+    
+    // Cancel create folder
+    document.getElementById('cancelCreateFolderInMove').addEventListener('click', () => {
+      document.getElementById('createFolderInMoveContainer').style.display = 'none';
+      document.getElementById('newFolderNameInMove').value = '';
+    });
+    
+    // Confirm move
+    document.getElementById('confirmEnhancedMoveBtn').addEventListener('click', () => {
+      this.confirmMove();
+    });
+  },
+  
+  show(items) {
+    this.itemsToMove = items;
+    this.currentFolderId = FM.currentFolder;
+    this.selectedFolderId = null;
+    
+    // Update item count
+    document.getElementById('moveItemCount').textContent = items.length;
+    
+    // Reset UI
+    document.getElementById('selectedDestination').textContent = 'None selected';
+    document.getElementById('confirmEnhancedMoveBtn').disabled = true;
+    document.getElementById('createFolderInMoveContainer').style.display = 'none';
+    document.getElementById('newFolderNameInMove').value = '';
+    document.getElementById('moveWarningContainer').style.display = 'none';
+    
+    // Load root folder
+    this.loadFolder(this.currentFolderId);
+    
+    // Show modal
+    this.modal.show();
+  },
+  
+  async loadFolder(folderId) {
+    this.currentFolderId = folderId;
+    
+    try {
+      // Fetch folder structure
+      const response = await fetch(`/admin/documents/files/folder-structure/${folderId}/`, {
+        headers: { 'X-CSRFToken': FM.csrf }
+      });
+      
+      if (!response.ok) throw new Error('Failed to load folder');
+      
+      const data = await response.json();
+      
+      // Update breadcrumb
+      this.updateBreadcrumb(data.breadcrumb);
+      
+      // Update folder list
+      this.updateFolderList(data.folders);
+      
+      // Update selected destination
+      document.getElementById('selectedDestination').textContent = data.current_folder_path;
+      this.selectedFolderId = folderId;
+      
+      // Enable move button
+      this.validateMove();
+      
+    } catch (error) {
+      console.error('Error loading folder:', error);
+      window.notify('Failed to load folder structure', 'error');
+    }
+  },
+  
+  updateBreadcrumb(breadcrumb) {
+    const container = document.getElementById('moveModalBreadcrumb');
+    container.innerHTML = '';
+    
+    breadcrumb.forEach((folder, index) => {
+      const li = document.createElement('li');
+      li.className = 'breadcrumb-item';
+      
+      if (index === breadcrumb.length - 1) {
+        li.classList.add('active');
+        li.textContent = folder.name;
+      } else {
+        const link = document.createElement('a');
+        link.href = '#';
+        link.textContent = folder.name;
+        link.onclick = (e) => {
+          e.preventDefault();
+          this.loadFolder(folder.id);
+        };
+        li.appendChild(link);
+      }
+      
+      container.appendChild(li);
+    });
+  },
+  
+  updateFolderList(folders) {
+    const container = document.getElementById('moveFolderList');
+    
+    if (folders.length === 0) {
+      container.innerHTML = '<p class="text-muted text-center py-3 mb-0">No subfolders</p>';
+      return;
+    }
+    
+    container.innerHTML = '';
+    
+    folders.forEach(folder => {
+      const div = document.createElement('div');
+      div.className = 'p-2 border-bottom move-folder-item';
+      div.style.cursor = 'pointer';
+      div.innerHTML = `
+        <i class="fas fa-folder me-2" style="color: ${folder.is_system ? '#6b7280' : '#f59e0b'};"></i>
+        <span>${folder.name}</span>
+        ${folder.is_system ? '<span class="badge bg-secondary ms-2">System</span>' : ''}
+      `;
+      
+      div.onclick = () => this.loadFolder(folder.id);
+      
+      div.onmouseenter = () => div.style.background = '#e5e7eb';
+      div.onmouseleave = () => div.style.background = 'transparent';
+      
+      container.appendChild(div);
+    });
+  },
+  
+  async createFolderInMove() {
+    const folderName = document.getElementById('newFolderNameInMove').value.trim();
+    
+    if (!folderName) {
+      window.notify('Please enter a folder name', 'error');
+      return;
+    }
+    
+    try {
+      const response = await fetch(FM.urls.createFolder || '/admin/documents/files/create-folder/', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': FM.csrf,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          parent_id: this.currentFolderId,
+          name: folderName
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to create folder');
+      
+      // Reload current folder to show new folder
+      await this.loadFolder(this.currentFolderId);
+      
+      // Reset create folder UI
+      document.getElementById('createFolderInMoveContainer').style.display = 'none';
+      document.getElementById('newFolderNameInMove').value = '';
+      
+      window.notify(`Folder "${folderName}" created successfully`, 'success');
+      
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      window.notify('Failed to create folder', 'error');
+    }
+  },
+  
+  validateMove() {
+    const warningContainer = document.getElementById('moveWarningContainer');
+    const warningText = document.getElementById('moveWarningText');
+    const confirmBtn = document.getElementById('confirmEnhancedMoveBtn');
+    
+    // Check if trying to move a folder into itself or its descendants
+    const movingFolders = this.itemsToMove.filter(item => item.type === 'folder');
+    
+    if (movingFolders.length > 0) {
+      // Check for circular reference
+      const movingFolderIds = movingFolders.map(item => parseInt(item.id));
+      
+      if (movingFolderIds.includes(this.selectedFolderId)) {
+        warningContainer.style.display = 'block';
+        warningText.textContent = 'Cannot move a folder into itself';
+        confirmBtn.disabled = true;
+        return;
+      }
+    }
+    
+    // Hide warnings
+    warningContainer.style.display = 'none';
+    
+    // Enable move button
+    confirmBtn.disabled = false;
+  },
+  
+  async confirmMove() {
+    if (!this.selectedFolderId) {
+      window.notify('Please select a destination folder', 'error');
+      return;
+    }
+    
+    try {
+      const response = await fetch(FM.urls.bulkMove, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': FM.csrf,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          items: this.itemsToMove,
+          target_folder_id: this.selectedFolderId
+        })
+      });
+      
+      const data = await response.json();
+      this.modal.hide();
+      
+      if (data.status === 'success') {
+        window.notify(data.message, 'success');
+        setTimeout(() => location.reload(), 800);
+      } else if (data.status === 'warning') {
+        window.notify(data.message, 'warning');
+        setTimeout(() => location.reload(), 1200);
+      } else {
+        window.notify(data.message, 'error');
+      }
+      
+    } catch (error) {
+      console.error('Error moving items:', error);
+      this.modal.hide();
+      window.notify('An error occurred during move operation', 'error');
+    }
+  }
+};
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+  if (!FM.isReadonly) {
+    MoveModal.init();
+  }
+});
+
+// Single Item Move Function - Use Enhanced Modal
+function showSingleMoveModal() {
+  const item = { type: FM.context.type, id: FM.context.id };
+  
+  // For link-group, add group_name
+  if (FM.context.type === 'link-group' && FM.context.groupName) {
+    item.group_name = FM.context.groupName;
+  }
+  
+  const items = [item];
+  MoveModal.show(items);
+}
+
+// Update bulk move to use enhanced modal
+function showEnhancedMoveModal() {
+  const items = Array.from(FM.selected).map(key => {
+    // Split only on the LAST hyphen to handle types like "link-group"
+    const lastHyphenIndex = key.lastIndexOf('-');
+    const type = key.substring(0, lastHyphenIndex);
+    const id = key.substring(lastHyphenIndex + 1);
+    const element = document.querySelector(`[data-id="${id}"][data-type="${type}"]`);
+    
+    const item = { type, id };
+    
+    // For link-group, we need to pass the group_name
+    if (type === 'link-group' && element) {
+      item.group_name = element.dataset.groupName;
+    }
+    
+    return item;
+  });
+  
+  MoveModal.show(items);
+}
+
+// Enable move button when folder is selected
+document.getElementById('bulkMoveTargetFolder').addEventListener('change', function() {
+  const btn = document.getElementById('confirmBulkMoveBtn');
+  const warning = document.getElementById('bulkMoveWarning');
+  const warningText = document.getElementById('bulkMoveWarningText');
+  
+  if (this.value) {
+    btn.disabled = false;
+    
+    // Check if any links are selected
+    let linkCount = 0;
+    for (const key of FM.selected) {
+      // Split only on the LAST hyphen to handle types like "link-group"
+      const lastHyphenIndex = key.lastIndexOf('-');
+      const type = key.substring(0, lastHyphenIndex);
+      if (type === 'link') linkCount++;
+    }
+    
+    if (linkCount > 0) {
+      warning.style.display = 'block';
+      warningText.textContent = `${linkCount} link(s) will be skipped (links cannot be moved)`;
+    } else {
+      warning.style.display = 'none';
+    }
+  } else {
+    btn.disabled = true;
+    warning.style.display = 'none';
+  }
+});
+
+// Confirm Bulk Move
+document.getElementById('confirmBulkMoveBtn').addEventListener('click', async function() {
+  const targetFolderId = document.getElementById('bulkMoveTargetFolder').value;
+  
+  if (!targetFolderId) return;
+  
+  // Check if this is a single item move (from context menu) or bulk move (from selection)
+  const isSingleMove = FM.selected.size === 0 && FM.context.id;
+  
+  let items;
+  if (isSingleMove) {
+    // Single item move from context menu
+    items = [{ type: FM.context.type, id: FM.context.id }];
+  } else {
+    // Bulk move from selection
+    items = Array.from(FM.selected).map(key => {
+      // Split only on the LAST hyphen to handle types like "link-group"
+      const lastHyphenIndex = key.lastIndexOf('-');
+      const type = key.substring(0, lastHyphenIndex);
+      const id = key.substring(lastHyphenIndex + 1);
+      return { type, id };
+    });
+  }
+  
+  try {
+    const response = await fetch(FM.urls.bulkMove, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': FM.csrf,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        items: items,
+        target_folder_id: targetFolderId
+      })
+    });
+    
+    const data = await response.json();
+    bootstrap.Modal.getInstance(document.getElementById('bulkMoveModal')).hide();
+    
+    // Show notification based on status
+    if (data.status === 'success') {
+      window.notify(data.message, 'success');
+      setTimeout(() => location.reload(), 800);
+    } else if (data.status === 'warning') {
+      window.notify(data.message, 'warning');
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      window.notify(data.message, 'error');
+    }
+  } catch (err) {
+    bootstrap.Modal.getInstance(document.getElementById('bulkMoveModal')).hide();
+    window.notify('An error occurred during move operation', 'error');
+  }
+});
+
+// Drag and Drop
+function isValidDropTarget(folderType) {
+  return !['root', 'year', 'category'].includes(folderType);
+}
+
+// Handle system folders - show error toast if someone tries to drag them
+document.querySelectorAll('.fm-item.folder[data-system="true"]').forEach(el => {
+  // Detect drag attempt on system folders
+  el.addEventListener('dragstart', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const folderName = this.dataset.name;
+    window.notify(`System folder "${folderName}" cannot be moved`, 'error');
+  });
+});
+
+document.querySelectorAll('.draggable').forEach(el => {
+  el.addEventListener('dragstart', function(e) {
+    FM.dragData.type = this.dataset.type;
+    FM.dragData.ids = [this.dataset.id];
+    e.dataTransfer.effectAllowed = 'move';
+    this.style.opacity = '0.5';
+  });
+  
+  el.addEventListener('dragend', function() {
+    this.style.opacity = '1';
+    FM.dragData = { type: null, ids: [] };
+  });
+});
+
+document.querySelectorAll('.folder-dropzone').forEach(el => {
+  el.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    const folderType = this.dataset.folderType;
+    
+    if (FM.dragData.type === 'folder' && FM.dragData.ids[0] === this.dataset.folderId) {
+      e.dataTransfer.dropEffect = 'none';
+      return;
+    }
+    
+    // Files, links, and link-groups can be dropped, but validate folder type for files only
+    if (FM.dragData.type === 'file' && !isValidDropTarget(folderType)) {
+      e.dataTransfer.dropEffect = 'none';
+      return;
+    }
+    
+    this.classList.add('drag-over');
+    e.dataTransfer.dropEffect = 'move';
+  });
+  
+  el.addEventListener('dragleave', function(e) {
+    if (!this.contains(e.relatedTarget)) {
+      this.classList.remove('drag-over');
+    }
+  });
+  
+  el.addEventListener('drop', async function(e) {
+    e.preventDefault();
+    this.classList.remove('drag-over');
+    
+    const targetId = this.dataset.folderId;
+    const targetName = this.dataset.folderName || this.dataset.name || 'Unknown';
+    
+    // Handle files, links, and link-groups
+    if (FM.dragData.type === 'file' || FM.dragData.type === 'link' || FM.dragData.type === 'link-group') {
+      try {
+        const formData = new FormData();
+        
+        // For link-groups, we need to get the group name and move all links in the group
+        if (FM.dragData.type === 'link-group') {
+          // Get the group name from the dragged element
+          const draggedElement = document.querySelector(`[data-id="${FM.dragData.ids[0]}"][data-type="link-group"]`);
+          const groupName = draggedElement ? draggedElement.dataset.groupName : null;
+          
+          if (groupName) {
+            formData.append('group_name', groupName);
+            formData.append('type', 'link-group');
+          } else {
+            window.notify('Could not identify link group', 'error');
+            return;
+          }
+        } else {
+          // For regular files and links, send as array
+          FM.dragData.ids.forEach(id => {
+            formData.append('attachment_ids[]', id);
+          });
+        }
+        
+        formData.append('folder_id', targetId);
+        
+        const response = await fetch(FM.urls.moveAttachment, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': FM.csrf
+          },
+          body: formData
+        });
+        const data = await response.json();
+        
+        // Show appropriate notification based on status
+        if (data.status === 'success') {
+          window.notify(data.message, 'success');
+          setTimeout(() => location.reload(), 800);
+        } else if (data.status === 'warning') {
+          window.notify(data.message, 'warning');
+          setTimeout(() => location.reload(), 1200);
+        } else {
+          window.notify(data.message, 'error');
+        }
+      } catch (err) {
+        console.error('Move error:', err);
+        window.notify('An error occurred', 'error');
+      }
+    } else if (FM.dragData.type === 'folder') {
+      try {
+        const response = await fetch(FM.urls.moveFolder, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': FM.csrf,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({
+            folder_id: FM.dragData.ids[0],
+            target_folder_id: targetId,
+            force_move: 'false'
+          })
+        });
+        const data = await response.json();
+        
+        // Handle system folder move confirmation
+        if (data.status === 'confirm_required') {
+          showSystemFolderMoveModal(data, FM.dragData.ids[0], targetId, targetName);
+        } else {
+          window.notify(data.message, data.status === 'success' ? 'success' : 'error');
+          if (data.status === 'success') setTimeout(() => location.reload(), 800);
+        }
+      } catch (err) {
+        window.notify('An error occurred', 'error');
+      }
+    }
+  });
+});
+
+// Show System Folder Move Confirmation Modal
+function showSystemFolderMoveModal(data, folderId, targetId, targetName) {
+  document.getElementById('moveFolderName').textContent = data.folder_name;
+  document.getElementById('moveFolderType').textContent = data.folder_type;
+  document.getElementById('moveTargetName').textContent = targetName;
+  
+  // Show/hide workcycle warning
+  if (data.has_workcycle) {
+    document.getElementById('moveWorkcycleWarning').style.display = 'list-item';
+  } else {
+    document.getElementById('moveWorkcycleWarning').style.display = 'none';
+  }
+  
+  // Store move data
+  FM.pendingMove = { folderId, targetId };
+  
+  new bootstrap.Modal(document.getElementById('systemFolderMoveModal')).show();
+}
+
+// Confirm System Folder Move
+document.getElementById('confirmSystemFolderMoveBtn').addEventListener('click', async function() {
+  if (!FM.pendingMove) return;
+  
+  try {
+    const response = await fetch(FM.urls.moveFolder, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': FM.csrf,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        folder_id: FM.pendingMove.folderId,
+        target_folder_id: FM.pendingMove.targetId,
+        force_move: 'true'
+      })
+    });
+    const data = await response.json();
+    bootstrap.Modal.getInstance(document.getElementById('systemFolderMoveModal')).hide();
+    
+    window.notify(data.message, data.status === 'success' ? 'success' : 'error');
+    if (data.status === 'success') setTimeout(() => location.reload(), 800);
+  } catch (err) {
+    bootstrap.Modal.getInstance(document.getElementById('systemFolderMoveModal')).hide();
+    window.notify('An error occurred', 'error');
+  }
+});
+
+// Drop zone for file uploads
+const content = document.getElementById('fmContent');
+const overlay = document.getElementById('dropOverlay');
+
+['dragenter', 'dragover'].forEach(event => {
+  content.addEventListener(event, function(e) {
+    e.preventDefault();
+    if (e.dataTransfer.types.includes('Files')) {
+      overlay.classList.add('active');
+    }
+  });
+});
+
+['dragleave', 'drop'].forEach(event => {
+  overlay.addEventListener(event, function(e) {
+    e.preventDefault();
+    overlay.classList.remove('active');
+    
+    if (event === 'drop' && e.dataTransfer.files.length > 0) {
+      const input = document.getElementById('fileUpload');
+      input.files = e.dataTransfer.files;
+      handleFileUpload({ target: input });
+    }
+  });
+});
+{% endif %}
+
+// View Toggle with localStorage persistence
+function applyView(view) {
+  const grids = document.querySelectorAll('.fm-grid');
+  
+  grids.forEach(grid => {
+    if (view === 'list') {
+      grid.style.gridTemplateColumns = '1fr';
+    } else {
+      grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(180px, 1fr))';
+    }
+  });
+}
+
+// Restore saved view preference on page load
+window.addEventListener('load', function() {
+  const savedView = localStorage.getItem('fileManagerView') || 'grid';
+  
+  // Update button states
+  document.querySelectorAll('.fm-view-btn').forEach(btn => {
+    if (btn.dataset.view === savedView) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+  
+  // Apply the saved view
+  applyView(savedView);
+});
+
+// Navigation arrows state management
+function updateNavArrows() {
+  const backBtn = document.getElementById('navBack');
+  const forwardBtn = document.getElementById('navForward');
+  
+  if (backBtn && forwardBtn) {
+    // Check if we can go back
+    if (window.history.length <= 1) {
+      backBtn.classList.add('disabled');
+      backBtn.disabled = true;
+    } else {
+      backBtn.classList.remove('disabled');
+      backBtn.disabled = false;
+    }
+    
+    // Forward button is always enabled (browser handles it)
+    // But we can add a visual indicator
+    forwardBtn.classList.remove('disabled');
+  }
+}
+
+// Update on page load
+window.addEventListener('load', updateNavArrows);
+
+// Update on navigation
+window.addEventListener('popstate', updateNavArrows);
+
+// View toggle buttons
+document.querySelectorAll('.fm-view-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.fm-view-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    
+    const view = this.dataset.view;
+    
+    // Save preference to localStorage
+    localStorage.setItem('fileManagerView', view);
+    
+    // Apply the view
+    applyView(view);
+  });
+});
+
+{% if not is_readonly %}
+// Link Modal Functions (for adding links)
+let modalLinkCounter = 1;
+
+function showAddLinkModal() {
+  const modal = new bootstrap.Modal(document.getElementById('linkModal'));
+  modal.show();
+  // Reset title
+  document.getElementById('linkGroupTitle').value = '';
+  // Reset to single input
+  document.getElementById('modalLinkInputsContainer').innerHTML = `
+    <div class="mb-3 link-input-group">
+      <label class="form-label fw-semibold">Link URL 1</label>
+      <input type="url" class="form-control" placeholder="https://example.com/document" required>
+    </div>
+  `;
+  modalLinkCounter = 1;
+}
+
+function addModalLinkInput() {
+  modalLinkCounter++;
+  const container = document.getElementById('modalLinkInputsContainer');
+  const newInput = document.createElement('div');
+  newInput.className = 'mb-3 link-input-group';
+  newInput.innerHTML = `
+    <label class="form-label fw-semibold">Link URL ${modalLinkCounter}</label>
+    <div class="input-group">
+      <input type="url" class="form-control" placeholder="https://example.com/document">
+      <button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.link-input-group').remove()">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  `;
+  container.appendChild(newInput);
+}
+
+function submitLinks() {
+  const title = document.getElementById('linkGroupTitle').value.trim();
+  const inputs = document.querySelectorAll('#modalLinkInputsContainer input[type="url"]');
+  const linkForm = document.getElementById('linkForm');
+  const container = document.getElementById('linkInputsContainer');
+  
+  // Validate title
+  if (!title) {
+    window.notify('Please enter a title/name for the links', 'error');
+    return;
+  }
+  
+  // Clear existing inputs
+  container.innerHTML = '';
+  
+  // Add title as hidden input
+  const titleInput = document.createElement('input');
+  titleInput.type = 'hidden';
+  titleInput.name = 'link_title';
+  titleInput.value = title;
+  container.appendChild(titleInput);
+  
+  // Add all link URL inputs to the form (ONLY actual URLs, not the title)
+  let linkIndex = 1;
+  let hasLinks = false;
+  
+  inputs.forEach(input => {
+    const url = input.value.trim();
+    // Skip if URL is empty OR if it matches the title (to prevent duplicate)
+    if (url && url !== title) {
+      const hiddenInput = document.createElement('input');
+      hiddenInput.type = 'hidden';
+      hiddenInput.name = `link_${linkIndex}`;
+      hiddenInput.value = url;
+      container.appendChild(hiddenInput);
+      linkIndex++;
+      hasLinks = true;
+    }
+  });
+  
+  if (hasLinks) {
+    // Close modal
+    bootstrap.Modal.getInstance(document.getElementById('linkModal')).hide();
+    // Submit form
+    linkForm.submit();
+  } else {
+    window.notify('Please enter at least one link URL', 'error');
+  }
+}
+{% endif %}
+
+// View Link Modal Function (for viewing attached links)
+function showLinkModal(attachmentId, linkUrl, linkTitle) {
+  const modal = new bootstrap.Modal(document.getElementById('viewLinkModal'));
+  const content = document.getElementById('viewLinkContent');
+  const modalTitle = document.getElementById('viewLinkModalTitle');
+  
+  // Set modal title
+  modalTitle.innerHTML = `<i class="fas fa-link me-2"></i>${linkTitle || 'Link'}`;
+  
+  // Set link content
+  content.innerHTML = `
+    <a href="${linkUrl}" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center" style="border-color: #8b5cf6;">
+      <i class="fas fa-external-link-alt me-3" style="color: #8b5cf6;"></i>
+      <div class="flex-grow-1">
+        <div class="fw-semibold" style="color: #5b21b6;">${linkTitle || 'Open Link'}</div>
+        <small class="text-muted text-break">${linkUrl}</small>
+      </div>
+    </a>
+  `;
+  
+  modal.show();
+}
+
+// Grouped Links Modal Function (for viewing multiple links in a group)
+async function showGroupedLinksModal(groupName, folderId) {
+  const modal = new bootstrap.Modal(document.getElementById('groupedLinksModal'));
+  const modalTitle = document.getElementById('groupedLinksModalTitle');
+  const content = document.getElementById('groupedLinksContent');
+  const spinner = document.getElementById('groupedLinksLoadingSpinner');
+  
+  // Set modal title
+  modalTitle.innerHTML = `<i class="fas fa-layer-group me-2"></i>${groupName}`;
+  
+  // Show spinner, hide content
+  spinner.style.display = 'block';
+  content.style.display = 'none';
+  content.innerHTML = '';
+  
+  // Show modal
+  modal.show();
+  
+  try {
+    // Fetch grouped links
+    const response = await fetch(`/admin/documents/files/grouped-links/${folderId}/${encodeURIComponent(groupName)}/`, {
+      headers: {
+        'X-CSRFToken': FM.csrf
+      }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load links');
+    
+    const data = await response.json();
+    
+    if (data.status === 'success' && data.links.length > 0) {
+      // Build links list
+      let html = '';
+      data.links.forEach((link, index) => {
+        // Format URL for display (truncate if too long)
+        const displayUrl = link.url.length > 60 ? link.url.substring(0, 60) + '...' : link.url;
+        
+        html += `
+          <a href="${link.url}" target="_blank" class="list-group-item list-group-item-action" 
+             style="border-left: 4px solid #8b5cf6; transition: all 0.2s;">
+            <div class="d-flex align-items-start">
+              <i class="fas fa-external-link-alt me-3 mt-1" style="color: #8b5cf6; font-size: 1.1rem;"></i>
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-1">
+                  <span class="badge bg-light text-dark me-2" style="font-size: 0.75rem;">Link ${index + 1}</span>
+                </div>
+                <div class="fw-semibold text-primary mb-1" style="font-size: 0.95rem; word-break: break-all;">
+                  ${displayUrl}
+                </div>
+                <div class="text-muted" style="font-size: 0.8rem;">
+                  <i class="fas fa-user me-1"></i>${link.uploaded_by}
+                  <i class="fas fa-calendar ms-3 me-1"></i>${link.uploaded_at}
+                </div>
+              </div>
+              <i class="fas fa-chevron-right ms-2 text-muted" style="font-size: 0.8rem;"></i>
+            </div>
+          </a>
+        `;
+      });
+      
+      content.innerHTML = html;
+      
+      // Add hover effect
+      content.querySelectorAll('.list-group-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+          this.style.background = '#f3f4f6';
+          this.style.borderLeftColor = '#7c3aed';
+        });
+        item.addEventListener('mouseleave', function() {
+          this.style.background = '';
+          this.style.borderLeftColor = '#8b5cf6';
+        });
+      });
+    } else {
+      content.innerHTML = '<div class="alert alert-warning">No links found in this group.</div>';
+    }
+    
+    // Hide spinner, show content
+    spinner.style.display = 'none';
+    content.style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error loading grouped links:', error);
+    content.innerHTML = '<div class="alert alert-danger">Failed to load links. Please try again.</div>';
+    spinner.style.display = 'none';
+    content.style.display = 'block';
+  }
+}
+
+</script>
+
+<!-- External JS -->
+<!-- Mobile Drag Drop Touch Polyfill -->
+<script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/index.min.js"></script>
+<script>
+// Configure mobile drag drop
+MobileDragDrop.polyfill({
+  dragImageTranslateOverride: MobileDragDrop.scrollBehaviourDragImageTranslateOverride
+});
+</script>
+<script src="{% static 'js/file_manager.js' %}"></script>
+
+<!-- Include File Preview Modal -->
+{% include "admin/page/modals/file_preview_modal.html" %}
+
+{% endblock %}

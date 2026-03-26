@@ -1,0 +1,954 @@
+{% extends "user/layout/base.html" %}
+{% load static %}
+{% block title %}My Email Logs{% endblock %}
+
+{% block content %}
+<div class="email-logs-container">
+
+  <!-- =========================
+       PAGE HEADER
+  ========================= -->
+  <div class="email-logs-header">
+    <div class="email-header-left">
+      <div class="email-header-icon">
+        <i class="fas fa-envelope"></i>
+      </div>
+      <div>
+        <h4 class="email-page-title">My Email Logs</h4>
+        <p class="email-page-subtitle">
+          View emails you've sent and received
+        </p>
+      </div>
+    </div>
+    
+    <div class="email-header-stats">
+      <div class="email-stat">
+        <span class="email-stat-value">{{ total_count }}</span>
+        <span class="email-stat-label">Total</span>
+      </div>
+      <div class="email-stat stat-sent">
+        <span class="email-stat-value">{{ sent_count }}</span>
+        <span class="email-stat-label">Sent</span>
+      </div>
+      <div class="email-stat stat-received">
+        <span class="email-stat-value">{{ received_count }}</span>
+        <span class="email-stat-label">Received</span>
+      </div>
+      {% if unread_count > 0 %}
+      <div class="email-stat stat-unread">
+        <span class="email-stat-value">{{ unread_count }}</span>
+        <span class="email-stat-label">Unread</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- =========================
+       FILTER TABS
+  ========================= -->
+  <div class="email-filter-bar">
+    <div class="email-direction-tabs">
+      <a href="{% url 'user_app:email-logs' %}" 
+         class="email-dir-tab {% if not direction %}active{% endif %}">
+        <i class="fas fa-inbox"></i> All
+      </a>
+      <a href="?direction=received" 
+         class="email-dir-tab {% if direction == 'received' %}active{% endif %}">
+        <i class="fas fa-download"></i> Received
+      </a>
+      <a href="?direction=sent" 
+         class="email-dir-tab {% if direction == 'sent' %}active{% endif %}">
+        <i class="fas fa-upload"></i> Sent
+      </a>
+    </div>
+    
+    <form method="get" class="email-filter-form" id="filterForm">
+      {% if direction %}
+        <input type="hidden" name="direction" value="{{ direction }}">
+      {% endif %}
+      
+      <select name="type" class="email-filter-select" onchange="this.form.submit()">
+        <option value="">All Types</option>
+        {% for type_value, type_label in email_types %}
+          <option value="{{ type_value }}" {% if email_type == type_value %}selected{% endif %}>
+            {{ type_label }}
+          </option>
+        {% endfor %}
+      </select>
+      
+      <select name="status" class="email-filter-select" onchange="this.form.submit()">
+        <option value="">All Status</option>
+        {% for status_value, status_label in statuses %}
+          <option value="{{ status_value }}" {% if status == status_value %}selected{% endif %}>
+            {{ status_label }}
+          </option>
+        {% endfor %}
+      </select>
+      
+      {% if email_type or status %}
+        <a href="{% url 'user_app:email-logs' %}{% if direction %}?direction={{ direction }}{% endif %}" class="email-clear-btn">
+          <i class="fas fa-times"></i> Clear
+        </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- =========================
+       EMAIL LIST
+  ========================= -->
+  {% if page_obj and page_obj.object_list %}
+    <div class="email-list">
+      {% for email in page_obj %}
+        <div class="email-card {% if email.recipient == request.user and not email.is_read %}unread{% endif %}" onclick="viewEmailDetail({{ email.id }})" data-email-id="{{ email.id }}">
+          <!-- Direction indicator -->
+          <div class="email-direction-indicator {% if email.sender == request.user %}sent{% else %}received{% endif %}">
+            {% if email.sender == request.user %}
+              <i class="fas fa-arrow-up"></i>
+            {% else %}
+              <i class="fas fa-arrow-down"></i>
+            {% endif %}
+          </div>
+          
+          <!-- Unread indicator -->
+          {% if email.recipient == request.user and not email.is_read %}
+          <div class="email-unread-dot"></div>
+          {% endif %}
+          
+          <!-- Icon -->
+          <div class="email-card-icon type-{{ email.email_type }}">
+            {% if email.email_type == "welcome" %}
+              <i class="fas fa-user-plus"></i>
+            {% elif email.email_type == "org_change" %}
+              <i class="fas fa-building"></i>
+            {% elif email.email_type == "profile_update" %}
+              <i class="fas fa-user-edit"></i>
+            {% elif email.email_type == "password_reset" %}
+              <i class="fas fa-key"></i>
+            {% elif email.email_type == "notification" %}
+              <i class="fas fa-bell"></i>
+            {% elif email.email_type == "system" %}
+              <i class="fas fa-cog"></i>
+            {% else %}
+              <i class="fas fa-envelope"></i>
+            {% endif %}
+          </div>
+
+          <!-- Content -->
+          <div class="email-card-content">
+            <div class="email-card-header">
+              <span class="email-card-subject">{{ email.subject|truncatechars:60 }}</span>
+              <span class="email-card-badge badge-{{ email.email_type }}">
+                {{ email.get_email_type_display }}
+              </span>
+            </div>
+            
+            <div class="email-card-meta">
+              {% if email.sender == request.user %}
+                <span class="email-meta-item">
+                  <i class="fas fa-paper-plane"></i> To:
+                  {% if email.recipient %}
+                    {{ email.recipient.get_full_name|default:email.recipient.username }}
+                  {% else %}
+                    {{ email.recipient_email }}
+                  {% endif %}
+                </span>
+              {% else %}
+                <span class="email-meta-item">
+                  <i class="fas fa-inbox"></i> From:
+                  {% if email.sender %}
+                    {{ email.sender.get_full_name|default:email.sender.username }}
+                  {% else %}
+                    System
+                  {% endif %}
+                </span>
+              {% endif %}
+            </div>
+            
+            <div class="email-card-footer">
+              <span class="email-card-time">
+                <i class="far fa-clock"></i>
+                {{ email.created_at|timesince }} ago
+              </span>
+              
+              <span class="email-status-badge status-{{ email.status }}">
+                {% if email.status == "sent" %}
+                  <i class="fas fa-check-circle"></i> Delivered
+                {% elif email.status == "failed" %}
+                  <i class="fas fa-times-circle"></i> Failed
+                {% else %}
+                  <i class="fas fa-clock"></i> Pending
+                {% endif %}
+              </span>
+            </div>
+          </div>
+
+          <!-- View button -->
+          <div class="email-card-action">
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- =========================
+         PAGINATION
+    ========================= -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="email-pagination">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if direction %}&direction={{ direction }}{% endif %}{% if email_type %}&type={{ email_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+          </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active">
+              <span class="page-link">{{ num }}</span>
+            </li>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ num }}{% if direction %}&direction={{ direction }}{% endif %}{% if email_type %}&type={{ email_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}">{{ num }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if direction %}&direction={{ direction }}{% endif %}{% if email_type %}&type={{ email_type }}{% endif %}{% if status %}&status={{ status }}{% endif %}">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+
+  {% else %}
+    <!-- Empty State -->
+    <div class="email-empty-state">
+      <div class="email-empty-icon">
+        <i class="fas fa-inbox"></i>
+      </div>
+      <h5>No emails found</h5>
+      <p>{% if direction or email_type or status %}Try adjusting your filters{% else %}Your email history will appear here{% endif %}</p>
+    </div>
+  {% endif %}
+
+</div>
+
+<!-- =========================
+     EMAIL DETAIL MODAL
+========================= -->
+<div class="modal fade" id="emailDetailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content email-modal-content">
+      <div class="modal-header email-modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-envelope-open-text"></i>
+          <span id="modalSubject">Email Details</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body email-modal-body" id="emailModalBody">
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================
+     SCRIPTS
+========================= -->
+<script>
+// Wait for DOM and Bootstrap to be ready
+let emailDetailModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize modal after Bootstrap is loaded
+  emailDetailModal = new bootstrap.Modal(document.getElementById('emailDetailModal'));
+});
+
+async function viewEmailDetail(emailId) {
+  // Ensure modal is initialized
+  if (!emailDetailModal) {
+    emailDetailModal = new bootstrap.Modal(document.getElementById('emailDetailModal'));
+  }
+  // Show modal with loading state
+  document.getElementById('modalSubject').textContent = 'Loading...';
+  document.getElementById('emailModalBody').innerHTML = `
+    <div class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  `;
+  emailDetailModal.show();
+  
+  try {
+    const response = await fetch(`/user/api/email-logs/${emailId}/`, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load email');
+    
+    const data = await response.json();
+    
+    document.getElementById('modalSubject').textContent = data.subject;
+    
+    // Build modal content
+    let statusClass = data.status === 'sent' ? 'success' : (data.status === 'failed' ? 'danger' : 'warning');
+    let statusIcon = data.status === 'sent' ? 'check-circle' : (data.status === 'failed' ? 'times-circle' : 'clock');
+    
+    let html = `
+      <div class="email-detail-header">
+        <div class="email-detail-meta">
+          <div class="email-detail-row">
+            <span class="email-detail-label">From:</span>
+            <span class="email-detail-value">${data.sender_name ? data.sender_name + ' &lt;' + data.sender_email + '&gt;' : data.sender_email}</span>
+          </div>
+          <div class="email-detail-row">
+            <span class="email-detail-label">To:</span>
+            <span class="email-detail-value">${data.recipient_name ? data.recipient_name + ' &lt;' + data.recipient_email + '&gt;' : data.recipient_email}</span>
+          </div>
+          <div class="email-detail-row">
+            <span class="email-detail-label">Type:</span>
+            <span class="email-detail-value">
+              <span class="badge bg-secondary">${data.email_type_display}</span>
+            </span>
+          </div>
+          <div class="email-detail-row">
+            <span class="email-detail-label">Status:</span>
+            <span class="email-detail-value">
+              <span class="badge bg-${statusClass}">
+                <i class="fas fa-${statusIcon}"></i> ${data.status_display}
+              </span>
+            </span>
+          </div>
+          <div class="email-detail-row">
+            <span class="email-detail-label">Date:</span>
+            <span class="email-detail-value">${data.created_at}</span>
+          </div>
+          ${data.is_read && data.read_at ? `
+          <div class="email-detail-row">
+            <span class="email-detail-label">Read:</span>
+            <span class="email-detail-value">${data.read_at}</span>
+          </div>
+          ` : ''}
+        </div>
+      </div>
+      
+      <div class="email-detail-tabs">
+        <button class="email-tab-btn active" onclick="showEmailTab('html', this)">
+          <i class="fas fa-code"></i> HTML Preview
+        </button>
+        <button class="email-tab-btn" onclick="showEmailTab('text', this)">
+          <i class="fas fa-align-left"></i> Plain Text
+        </button>
+      </div>
+      
+      <div class="email-detail-content">
+        <div id="emailHtmlContent" class="email-content-panel active">
+          ${data.body_html ? `<iframe srcdoc="${data.body_html.replace(/"/g, '&quot;')}" class="email-html-frame"></iframe>` : '<p class="text-muted p-4">No HTML content</p>'}
+        </div>
+        <div id="emailTextContent" class="email-content-panel">
+          <pre class="email-text-content">${data.body_text}</pre>
+        </div>
+      </div>
+    `;
+    
+    document.getElementById('emailModalBody').innerHTML = html;
+    
+    // If email was unread and now marked as read, update the UI
+    const emailCard = document.querySelector(`[data-email-id="${emailId}"]`);
+    if (emailCard && emailCard.classList.contains('unread')) {
+      emailCard.classList.remove('unread');
+      const unreadDot = emailCard.querySelector('.email-unread-dot');
+      if (unreadDot) unreadDot.remove();
+      
+      // Update unread count in header
+      const unreadStat = document.querySelector('.stat-unread .email-stat-value');
+      if (unreadStat) {
+        const currentCount = parseInt(unreadStat.textContent);
+        if (currentCount > 1) {
+          unreadStat.textContent = currentCount - 1;
+        } else {
+          // Remove the entire unread stat if count reaches 0
+          document.querySelector('.stat-unread').remove();
+        }
+      }
+    }
+    
+  } catch (err) {
+    document.getElementById('emailModalBody').innerHTML = `
+      <div class="text-center py-5 text-danger">
+        <i class="fas fa-exclamation-circle fa-3x mb-3"></i>
+        <p>Failed to load email details</p>
+      </div>
+    `;
+  }
+}
+
+function showEmailTab(tab, btn) {
+  document.querySelectorAll('.email-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.email-content-panel').forEach(p => p.classList.remove('active'));
+  
+  btn.classList.add('active');
+  
+  if (tab === 'html') {
+    document.getElementById('emailHtmlContent').classList.add('active');
+  } else {
+    document.getElementById('emailTextContent').classList.add('active');
+  }
+}
+</script>
+
+<!-- =========================
+     STYLES
+========================= -->
+<style>
+:root {
+  --email-primary: #1e3a5f;
+  --email-primary-light: #e8f4fd;
+  --email-success: #10b981;
+  --email-warning: #f59e0b;
+  --email-danger: #ef4444;
+  --email-muted: #64748b;
+  --email-border: #e2e8f0;
+  --email-bg: #f8fafc;
+}
+
+/* Container */
+.email-logs-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Header */
+.email-logs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--email-border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.email-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.email-header-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--email-primary), #2d5a87);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.email-page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.email-page-subtitle {
+  font-size: 0.85rem;
+  color: var(--email-muted);
+  margin: 4px 0 0 0;
+}
+
+.email-header-stats {
+  display: flex;
+  gap: 24px;
+}
+
+.email-stat {
+  text-align: center;
+}
+
+.email-stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--email-primary);
+}
+
+.email-stat.stat-sent .email-stat-value { color: #3b82f6; }
+.email-stat.stat-received .email-stat-value { color: var(--email-success); }
+.email-stat.stat-unread .email-stat-value { color: var(--email-warning); }
+
+.email-stat-label {
+  font-size: 0.75rem;
+  color: var(--email-muted);
+  text-transform: uppercase;
+}
+
+/* Filter Bar */
+.email-filter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--email-border);
+  flex-wrap: wrap;
+}
+
+.email-direction-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.email-dir-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--email-muted);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.email-dir-tab:hover {
+  background: var(--email-bg);
+  color: #1e293b;
+}
+
+.email-dir-tab.active {
+  background: var(--email-primary);
+  color: #fff;
+}
+
+.email-filter-form {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.email-filter-select {
+  padding: 8px 28px 8px 12px;
+  border: 1px solid var(--email-border);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.email-clear-btn {
+  padding: 8px 12px;
+  background: #fee2e2;
+  color: var(--email-danger);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.email-clear-btn:hover {
+  background: #fecaca;
+  color: var(--email-danger);
+}
+
+/* Email List */
+.email-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Email Card */
+.email-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid var(--email-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  align-items: center;
+}
+
+.email-card.unread {
+  background: #fefce8;
+  border-color: #fde047;
+}
+
+.email-card.unread .email-card-subject {
+  font-weight: 700;
+}
+
+.email-card:hover {
+  border-color: var(--email-primary);
+  box-shadow: 0 4px 12px rgba(30, 58, 95, 0.1);
+  transform: translateY(-2px);
+}
+
+.email-unread-dot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  background: var(--email-warning);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.email-direction-indicator {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.email-direction-indicator.sent {
+  background: #dbeafe;
+  color: #3b82f6;
+}
+
+.email-direction-indicator.received {
+  background: #d1fae5;
+  color: var(--email-success);
+}
+
+/* Card Icon */
+.email-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.type-welcome { background: #d1fae5; color: var(--email-success); }
+.type-org_change { background: #dbeafe; color: #3b82f6; }
+.type-profile_update { background: #e0e7ff; color: #6366f1; }
+.type-password_reset { background: #fef3c7; color: var(--email-warning); }
+.type-notification { background: #fce7f3; color: #ec4899; }
+.type-system { background: #f1f5f9; color: var(--email-muted); }
+.type-other { background: #f1f5f9; color: var(--email-muted); }
+
+/* Card Content */
+.email-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.email-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.email-card-subject {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.email-card-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.badge-welcome { background: #d1fae5; color: #065f46; }
+.badge-org_change { background: #dbeafe; color: #1e40af; }
+.badge-profile_update { background: #e0e7ff; color: #4338ca; }
+.badge-password_reset { background: #fef3c7; color: #92400e; }
+.badge-notification { background: #fce7f3; color: #9d174d; }
+.badge-system { background: #f1f5f9; color: #475569; }
+.badge-other { background: #f1f5f9; color: #475569; }
+
+.email-card-meta {
+  font-size: 0.8rem;
+  color: var(--email-muted);
+  margin-bottom: 8px;
+}
+
+.email-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.email-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.75rem;
+}
+
+.email-card-time {
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.email-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.email-status-badge.status-sent { background: #d1fae5; color: #065f46; }
+.email-status-badge.status-failed { background: #fee2e2; color: #991b1b; }
+.email-status-badge.status-pending { background: #fef3c7; color: #92400e; }
+
+.email-card-action {
+  color: #cbd5e1;
+  font-size: 1rem;
+}
+
+.email-card:hover .email-card-action {
+  color: var(--email-primary);
+}
+
+/* Pagination */
+.email-pagination {
+  margin-top: 24px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--email-border);
+}
+
+.email-pagination .page-link {
+  border: none;
+  color: var(--email-muted);
+  border-radius: 8px;
+  margin: 0 2px;
+}
+
+.email-pagination .page-item.active .page-link {
+  background: var(--email-primary);
+  color: #fff;
+}
+
+/* Empty State */
+.email-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--email-border);
+}
+
+.email-empty-icon {
+  font-size: 3rem;
+  color: #cbd5e1;
+  margin-bottom: 16px;
+}
+
+.email-empty-state h5 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.email-empty-state p {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Modal Styles */
+.email-modal-content {
+  border: none;
+  border-radius: 16px;
+}
+
+.email-modal-header {
+  background: linear-gradient(135deg, var(--email-primary), #2d5a87);
+  color: #fff;
+  border-radius: 16px 16px 0 0;
+  padding: 16px 24px;
+}
+
+.email-modal-header .modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.email-modal-header .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.email-modal-body {
+  padding: 0;
+}
+
+.email-detail-header {
+  padding: 20px 24px;
+  background: var(--email-bg);
+  border-bottom: 1px solid var(--email-border);
+}
+
+.email-detail-row {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.email-detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.email-detail-label {
+  width: 60px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--email-muted);
+}
+
+.email-detail-value {
+  flex: 1;
+  font-size: 0.85rem;
+  color: #1e293b;
+}
+
+.email-detail-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--email-border);
+}
+
+.email-tab-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--email-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.email-tab-btn:hover {
+  background: var(--email-bg);
+}
+
+.email-tab-btn.active {
+  background: var(--email-primary);
+  color: #fff;
+}
+
+.email-detail-content {
+  padding: 0;
+}
+
+.email-content-panel {
+  display: none;
+}
+
+.email-content-panel.active {
+  display: block;
+}
+
+.email-html-frame {
+  width: 100%;
+  height: 400px;
+  border: none;
+}
+
+.email-text-content {
+  margin: 0;
+  padding: 20px 24px;
+  background: #f8fafc;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .email-logs-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .email-header-stats {
+    width: 100%;
+    justify-content: space-around;
+  }
+  
+  .email-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .email-direction-tabs {
+    justify-content: center;
+  }
+  
+  .email-filter-form {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .email-card {
+    padding: 14px 16px;
+  }
+  
+  .email-card-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+  }
+}
+</style>
+
+{% endblock %}

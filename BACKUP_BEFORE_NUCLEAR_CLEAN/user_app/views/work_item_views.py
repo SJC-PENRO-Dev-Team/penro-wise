@@ -1,0 +1,878 @@
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.db.models import Q
+from django.utils import timezone
+from django.urls import reverse
+from django.http import JsonResponse
+from datetime import timedelta
+
+from accounts.models import WorkItem, WorkItemMessage, WorkItemAttachment
+from ..services.work_item_service import (
+    update_work_item_status,
+    submit_work_item,
+    add_attachment_to_work_item,
+    update_work_item_context,
+)
+
+
+# ============================================================
+# TIME REMAINING LOGIC (STATUS-AWARE)
+# ============================================================
+
+def calculate_time_remaining(due_at, status, submitted_at=None):
+    """
+    Human-readable time logic based on:
+    - deadline
+    - submission timestamp
+
+    RULES:
+    1. Not submitted → live countdown
+    2. Submitted → frozen at submitted_at
+    """
+
+    now = timezone.now()
+
+    # -------------------------------------------------
+    # NOT SUBMITTED → LIVE COUNTDOWN
+    # -------------------------------------------------
+    if status != "done" or not submitted_at:
+        delta = due_at - now
+
+        if delta.total_seconds() >= 0:
+            days = delta.days
+            hours = delta.seconds // 3600
+            minutes = (delta.seconds % 3600) // 60
+
+            if days > 0:
+                return f"{days}d remaining"
+            elif hours > 0:
+                return f"{hours}h remaining"
+            else:
+                return f"{minutes}m remaining"
+
+        # overdue & not submitted
+        overdue = abs(delta)
+        days = overdue.days
+        hours = overdue.seconds // 3600
+        minutes = (overdue.seconds % 3600) // 60
+
+        if days > 0:
+            return f"{days}d {hours}h overdue"
+        elif hours > 0:
+            return f"{hours}h {minutes}m overdue"
+        else:
+            return f"{minutes}m overdue"
+
+    # -------------------------------------------------
+    # SUBMITTED → FROZEN TIME
+    # -------------------------------------------------
+    delta = due_at - submitted_at
+
+    if delta.total_seconds() >= 0:
+        days = delta.days
+        hours = delta.seconds // 3600
+        minutes = (delta.seconds % 3600) // 60
+
+        if days > 0:
+            return f"Submitted {days}d early"
+        elif hours > 0:
+            return f"Submitted {hours}h early"
+        else:
+            return f"Submitted {minutes}m early"
+
+    # submitted late
+    late = abs(delta)
+    days = late.days
+    hours = late.seconds // 3600
+    minutes = (late.seconds % 3600) // 60
+
+    if days > 0:
+        return f"Submitted {days}d {hours}h late"
+    elif hours > 0:
+        return f"Submitted {hours}h {minutes}m late"
+    else:
+        return f"Submitted {minutes}m late"
+
+
+def get_submission_indicator(due_at, submitted_at):
+    """
+    Returns:
+    - submission_status: 'on_time' | 'late' | None
+    - submission_delta: human-readable string
+    """
+
+    if not submitted_at:
+        return None, None
+
+    delta = due_at - submitted_at
+    seconds = abs(int(delta.total_seconds()))
+
+    days = seconds // 86400
+    hours = (seconds % 86400) // 3600
+    minutes = (seconds % 3600) // 60
+
+    if days > 0:
+        diff = f"{days}d {hours}h"
+    elif hours > 0:
+        diff = f"{hours}h {minutes}m"
+    else:
+        diff = f"{minutes}m"
+
+    if delta.total_seconds() >= 0:
+        return "on_time", diff
+    else:
+        return "late", diff
+
+
+# ============================================================
+# ACTIVE WORK ITEMS (WITH FILTER COUNTS & TIME REMAINING)
+# ============================================================
+
+@login_required
+def user_work_items(request):
+    """
+    List ACTIVE work items with:
+    - search
+    - work item filters (status, review)
+    - work cycle lifecycle filters (derived)
+    - due date sorting
+    - total active count
+    - filter counts
+    - status-aware time remaining
+    """
+
+    now = timezone.now()
+    soon_threshold = now + timedelta(days=3)
+
+    # -------------------------------------------------
+    # BASE QUERYSET (ACTIVE ONLY)
+    # -------------------------------------------------
+    base_qs = (
+        WorkItem.objects
+        .select_related("workcycle")
+        .filter(
+            owner=request.user,
+            is_active=True,
+            workcycle__is_active=True
+        )
+    )
+
+    qs = base_qs
+
+    # -------------------------------------------------
+    # SEARCH
+    # -------------------------------------------------
+    search = request.GET.get("q", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(workcycle__title__icontains=search) |
+            Q(message__icontains=search)
+        )
+
+    # -------------------------------------------------
+    # WORK ITEM FILTERS
+    # -------------------------------------------------
+    status = request.GET.get("status")
+    if status in {"not_started", "working_on_it", "done"}:
+        qs = qs.filter(status=status)
+
+    review = request.GET.get("review")
+    if review in {"pending", "approved", "revision"}:
+        qs = qs.filter(review_decision=review)
+
+    # -------------------------------------------------
+    # WORK CYCLE LIFECYCLE FILTER
+    # -------------------------------------------------
+    lifecycle = request.GET.get("lifecycle")
+
+    if lifecycle == "ongoing":
+        qs = qs.filter(workcycle__due_at__gt=soon_threshold)
+
+    elif lifecycle == "due_soon":
+        qs = qs.filter(
+            workcycle__due_at__gt=now,
+            workcycle__due_at__lte=soon_threshold
+        )
+
+    elif lifecycle == "lapsed":
+        qs = qs.filter(workcycle__due_at__lte=now)
+
+    # -------------------------------------------------
+    # FILTER COUNTS (FROM BASE)
+    # -------------------------------------------------
+    count_base = base_qs
+    if search:
+        count_base = count_base.filter(
+            Q(workcycle__title__icontains=search) |
+            Q(message__icontains=search)
+        )
+
+    status_counts = {
+        "not_started": count_base.filter(status="not_started").count(),
+        "working_on_it": count_base.filter(status="working_on_it").count(),
+        "done": count_base.filter(status="done").count(),
+    }
+
+    review_counts = {
+        "pending": count_base.filter(review_decision="pending").count(),
+        "approved": count_base.filter(review_decision="approved").count(),
+        "revision": count_base.filter(review_decision="revision").count(),
+    }
+
+    lifecycle_counts = {
+        "ongoing": count_base.filter(workcycle__due_at__gt=soon_threshold).count(),
+        "due_soon": count_base.filter(
+            workcycle__due_at__gt=now,
+            workcycle__due_at__lte=soon_threshold
+        ).count(),
+        "lapsed": count_base.filter(workcycle__due_at__lte=now).count(),
+    }
+
+    # -------------------------------------------------
+    # SORTING
+    # -------------------------------------------------
+    sort = request.GET.get("sort")
+
+    if sort == "due_asc":
+        qs = qs.order_by("workcycle__due_at")
+    elif sort == "due_desc":
+        qs = qs.order_by("-workcycle__due_at")
+    else:
+        qs = qs.order_by("workcycle__due_at")
+
+    # -------------------------------------------------
+    # APPLY TIME REMAINING
+    # -------------------------------------------------
+    work_items_list = list(qs)
+    for item in work_items_list:
+        item.time_remaining = calculate_time_remaining(
+            due_at=item.workcycle.due_at,
+            status=item.status,
+            submitted_at=item.submitted_at
+        )
+
+    total_active_count = base_qs.count()
+
+    return render(
+        request,
+        "user/page/work_items.html",
+        {
+            "work_items": work_items_list,
+            "search_query": search,
+            "active_status": status,
+            "active_review": review,
+            "active_lifecycle": lifecycle,
+            "active_sort": sort,
+            "total_active_count": total_active_count,
+            "status_counts": status_counts,
+            "review_counts": review_counts,
+            "lifecycle_counts": lifecycle_counts,
+            "view_mode": "active",
+        }
+    )
+
+
+# ============================================================
+# WORK ITEM DETAIL
+# ============================================================
+@login_required
+def user_work_item_detail(request, item_id):
+    work_item = get_object_or_404(
+        WorkItem,
+        id=item_id,
+        owner=request.user,   # ✅ allow inactive
+    )
+
+    # -------------------------------------------------
+    # READ-ONLY MODE FOR ARCHIVED
+    # -------------------------------------------------
+    is_read_only = not work_item.is_active
+
+    # -------------------------------------------------
+    # TIME REMAINING
+    # -------------------------------------------------
+    work_item.time_remaining = (
+        calculate_time_remaining(
+            due_at=work_item.workcycle.due_at,
+            status=work_item.status,
+            submitted_at=work_item.submitted_at
+        )
+        if work_item.is_active
+        else None
+    )
+
+    # -------------------------------------------------
+    # SUBMISSION STATUS
+    # -------------------------------------------------
+    submission_status, submission_delta = get_submission_indicator(
+        due_at=work_item.workcycle.due_at,
+        submitted_at=work_item.submitted_at
+    )
+
+    # -------------------------------------------------
+    # BLOCK ALL MUTATIONS IF ARCHIVED
+    # -------------------------------------------------
+    if request.method == "POST":
+        if is_read_only:
+            messages.error(
+                request,
+                "This work item is archived and cannot be modified."
+            )
+            return redirect(
+                "user_app:work-item-detail",
+                item_id=work_item.id
+            )
+
+        action = request.POST.get("action")
+
+        try:
+            old_status = work_item.status
+
+            if action == "update_status":
+                update_work_item_status(
+                    work_item,
+                    request.POST.get("status")
+                )
+
+                # Create async job for notifications
+                from accounts.models import WorkItemStatusJob
+                WorkItemStatusJob.objects.create(
+                    work_item=work_item,
+                    old_status=old_status,
+                    new_status=work_item.status,
+                    actor=request.user,
+                )
+
+                messages.success(request, "Status updated.")
+
+            elif action == "update_context":
+                update_work_item_context(
+                    work_item=work_item,
+                    label=request.POST.get("status_label", "").strip(),
+                    message=request.POST.get("message", "").strip(),
+                )
+                messages.success(request, "Notes updated.")
+
+            elif action == "submit":
+                submit_work_item(
+                    work_item=work_item,
+                    user=request.user
+                )
+
+                # Create async job for notifications
+                from accounts.models import WorkItemStatusJob
+                WorkItemStatusJob.objects.create(
+                    work_item=work_item,
+                    old_status=old_status,
+                    new_status=work_item.status,
+                    actor=request.user,
+                )
+
+                messages.success(request, "Work item submitted.")
+
+            elif action == "undo_submit":
+                if (
+                    work_item.status == "done"
+                    and work_item.review_decision == "pending"
+                ):
+                    work_item.status = "working_on_it"
+                    work_item.save()
+
+                    # Create async job for notifications
+                    from accounts.models import WorkItemStatusJob
+                    WorkItemStatusJob.objects.create(
+                        work_item=work_item,
+                        old_status=old_status,
+                        new_status=work_item.status,
+                        actor=request.user,
+                    )
+
+                    messages.info(request, "Submission reverted.")
+                else:
+                    messages.error(request, "Cannot undo after review.")
+
+            return redirect(
+                "user_app:work-item-detail",
+                item_id=work_item.id
+            )
+
+        except Exception as e:
+            messages.error(request, str(e))
+
+    # -------------------------------------------------
+    # ATTACHMENTS (VIEW ONLY IF ARCHIVED)
+    # -------------------------------------------------
+    attachments = work_item.attachments.select_related("folder").all()
+
+    attachment_types = [
+        ("matrix_a", "Monthly Report Form – Matrix A"),
+        ("matrix_b", "Monthly Report Form – Matrix B"),
+        ("mov", "Means of Verification (MOV)"),
+    ]
+
+    uploaded_types = set(
+        work_item.attachments.values_list("attachment_type", flat=True)
+    )
+
+    return render(
+        request,
+        "user/page/work_item_detail.html",
+        {
+            "work_item": work_item,
+            "attachments": attachments,
+            "can_edit": not is_read_only and work_item.status != "done",
+            "is_read_only": is_read_only,
+            "status_choices": WorkItem._meta.get_field("status").choices,
+            "attachment_types": attachment_types,
+            "uploaded_types": uploaded_types,
+            "submission_status": submission_status,
+            "submission_delta": submission_delta,
+        }
+    )
+
+# ============================================================
+# INACTIVE WORK ITEMS (WITH FILTER COUNTS)
+# ============================================================
+
+@login_required
+def user_inactive_work_items(request):
+    """
+    Archived work items (is_active=False)
+    """
+
+    # ------------------------------------
+    # BASE QUERYSET (ARCHIVED ONLY)
+    # ------------------------------------
+    base_qs = (
+        WorkItem.objects
+        .select_related("workcycle")
+        .filter(
+            owner=request.user,
+            is_active=False,
+        )
+    )
+
+    qs = base_qs
+
+    # ------------------------------------
+    # SEARCH
+    # ------------------------------------
+    search = request.GET.get("q", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(workcycle__title__icontains=search) |
+            Q(message__icontains=search) |
+            Q(inactive_note__icontains=search)
+        )
+
+    # ------------------------------------
+    # FILTERS
+    # ------------------------------------
+    status = request.GET.get("status")
+    if status in {"not_started", "working_on_it", "done"}:
+        qs = qs.filter(status=status)
+
+    review = request.GET.get("review")
+    if review in {"pending", "approved", "revision"}:
+        qs = qs.filter(review_decision=review)
+
+    # ------------------------------------
+    # STATS (THIS FIXES YOUR CARD ISSUE)
+    # ------------------------------------
+    total_archived_count = base_qs.count()
+
+    completed_count = base_qs.filter(
+        status="done"
+    ).count()
+
+    # ------------------------------------
+    # PREP LIST (NO COUNTDOWN)
+    # ------------------------------------
+    work_items = list(qs)
+    for item in work_items:
+        item.time_remaining = None
+
+    # ------------------------------------
+    # SORTING
+    # ------------------------------------
+    sort = request.GET.get("sort")
+
+    if sort == "due_asc":
+        work_items.sort(key=lambda x: x.workcycle.due_at)
+    elif sort == "due_desc":
+        work_items.sort(key=lambda x: x.workcycle.due_at, reverse=True)
+    else:
+        # Most recently archived
+        work_items.sort(
+            key=lambda x: x.inactive_at or x.created_at,
+            reverse=True
+        )
+
+    # ------------------------------------
+    # RENDER
+    # ------------------------------------
+    return render(
+        request,
+        "user/page/work_items_inactive.html",
+        {
+            "work_items": work_items,
+            "search_query": search,
+            "active_status": status,
+            "active_review": review,
+            "active_sort": sort,
+
+            # ✅ REQUIRED FOR ARCHIVED STATS CARDS
+            "total_archived_count": total_archived_count,
+            "completed_count": completed_count,
+
+            "view_mode": "archived",
+        }
+    )
+
+# ============================================================
+# WORK ITEM ATTACHMENTS (FLEXIBLE UPLOAD)
+# ============================================================
+
+@login_required
+def user_work_item_attachments(request, item_id):
+    work_item = get_object_or_404(
+        WorkItem,
+        id=item_id,
+        owner=request.user
+    )
+
+    # Get attachment type from query param
+    attachment_type = request.GET.get("type", "matrix_a")
+    
+    # Validate attachment type
+    valid_types = {"matrix_a", "matrix_b", "mov"}
+    if attachment_type not in valid_types:
+        attachment_type = "matrix_a"
+
+    # Map type to label
+    type_labels = {
+        "matrix_a": "Monthly Report Form – Matrix A",
+        "matrix_b": "Monthly Report Form – Matrix B",
+        "mov": "Means of Verification (MOV)",
+    }
+    attachment_label = type_labels.get(attachment_type, "Attachments")
+
+    # Block modifications for archived work items
+    if not work_item.is_active and request.method == "POST":
+        messages.error(
+            request,
+            "Cannot modify attachments of archived work items."
+        )
+        return redirect(
+            "user_app:work-item-detail",
+            item_id=work_item.id
+        )
+
+    # Handle POST (file upload or link submission)
+    if request.method == "POST":
+        action = request.POST.get("action")
+        
+        if action == "add_attachment":
+            files = request.FILES.getlist("attachments")
+            upload_type = request.POST.get("attachment_type", attachment_type)
+            
+            if not files:
+                messages.error(request, "No files selected.")
+            else:
+                try:
+                    count = add_attachment_to_work_item(
+                        work_item=work_item,
+                        files=files,
+                        attachment_type=upload_type,
+                        user=request.user,
+                    )
+                    messages.success(
+                        request,
+                        f"Successfully uploaded {count} file(s)."
+                    )
+                except Exception as e:
+                    messages.error(request, str(e))
+            
+            return redirect(
+                f"{reverse('user_app:work-item-attachments', args=[work_item.id])}"
+                f"?type={upload_type}"
+            )
+        
+        elif action == "add_links":
+            from ..services.work_item_service import add_link_to_work_item
+            
+            # Get link title and URLs
+            link_title = request.POST.get("link_title", "").strip()
+            links = []
+            for key in request.POST:
+                if key.startswith("link_url_"):
+                    link = request.POST.get(key, "").strip()
+                    if link:
+                        links.append(link)
+            
+            upload_type = request.POST.get("attachment_type", attachment_type)
+            
+            if not link_title:
+                messages.error(request, "Link title is required.")
+            elif not links:
+                messages.error(request, "At least one link URL is required.")
+            else:
+                try:
+                    count = add_link_to_work_item(
+                        work_item=work_item,
+                        links=links,
+                        link_title=link_title,
+                        attachment_type=upload_type,
+                        user=request.user,
+                    )
+                    messages.success(
+                        request,
+                        f"Successfully added {count} link(s)."
+                    )
+                except Exception as e:
+                    messages.error(request, str(e))
+            
+            return redirect(
+                f"{reverse('user_app:work-item-attachments', args=[work_item.id])}"
+                f"?type={upload_type}"
+            )
+
+    # Get attachments for this work item
+    attachments = work_item.attachments.filter(
+        attachment_type=attachment_type
+    ).select_related("folder").order_by("-uploaded_at")
+
+    return render(
+        request,
+        "user/page/work_item_attachments.html",
+        {
+            "work_item": work_item,
+            "attachments": attachments,
+            "attachment_type": attachment_type,
+            "attachment_label": attachment_label,
+        }
+    )
+
+# ============================================================
+# DELETE ATTACHMENT
+# ============================================================
+
+@login_required
+def delete_work_item_attachment(request, attachment_id):
+    """
+    Delete an attachment (file or link) with proper permission and state checks.
+    """
+    attachment = get_object_or_404(
+        WorkItemAttachment.objects.select_related("work_item"),
+        id=attachment_id,
+        work_item__owner=request.user
+    )
+
+    work_item = attachment.work_item
+    attachment_type = attachment.attachment_type
+
+    # Safety: Cannot modify approved work items
+    if work_item.review_decision == "approved":
+        messages.error(
+            request,
+            "Cannot delete attachments from approved work items."
+        )
+        return redirect(
+            f"{reverse('user_app:work-item-attachments', args=[work_item.id])}"
+            f"?type={attachment_type}"
+        )
+
+    if request.method == "POST":
+        try:
+            # Delete physical file if it exists
+            if attachment.file:
+                attachment.file.delete(save=False)
+            
+            # Delete database record
+            attachment.delete()
+            
+            if attachment.is_link():
+                messages.success(request, "Link deleted successfully.")
+            else:
+                messages.success(request, "Attachment deleted successfully.")
+        except Exception as e:
+            messages.error(request, f"Delete failed: {str(e)}")
+
+    return redirect(
+        f"{reverse('user_app:work-item-attachments', args=[work_item.id])}"
+        f"?type={attachment_type}"
+    )
+
+
+# ============================================================
+# WORK ITEM COMMENTS
+# ============================================================
+@login_required
+def user_work_item_comments(request, item_id):
+    work_item = get_object_or_404(
+        WorkItem,
+        id=item_id,
+        owner=request.user,
+    )
+
+    if not work_item.is_active:
+        messages.error(
+            request,
+            "Archived work items are read-only."
+        )
+        return redirect(
+            "user_app:work-item-detail",
+            item_id=work_item.id
+        )
+
+    if request.method == "POST":
+        text = request.POST.get("message", "").strip()
+
+        if not text:
+            messages.warning(request, "Comment cannot be empty.")
+            return redirect(
+                "user_app:work-item-comments",
+                item_id=work_item.id
+            )
+
+        WorkItemMessage.objects.create(
+            work_item=work_item,
+            sender=request.user,
+            sender_role=request.user.login_role,
+            message=text
+        )
+
+        messages.success(request, "Comment posted.")
+        return redirect(
+            "user_app:work-item-comments",
+            item_id=work_item.id
+        )
+
+    messages_qs = (
+        work_item.messages
+        .select_related("sender")
+        .order_by("created_at")
+    )
+
+    return render(
+        request,
+        "user/page/work_item_comments.html",
+        {
+            "work_item": work_item,
+            "messages": messages_qs,
+        }
+    )
+
+@login_required
+def toggle_work_item_archive(request, item_id):
+    """
+    Toggle archive state for a WorkItem.
+
+    Rules:
+    - Active item → archive
+    - Inactive item archived by SAME user → unarchive
+    - Inactive item archived by admin → forbidden
+    """
+
+    if request.method != "POST":
+        return redirect("user_app:work-items")
+
+    item = get_object_or_404(
+        WorkItem,
+        id=item_id,
+        owner=request.user,
+    )
+
+    # =====================================================
+    # ARCHIVE
+    # =====================================================
+    if item.is_active:
+        item.is_active = False
+        item.inactive_reason = "archived"
+        item.inactive_note = "Archived by user"
+        item.inactive_at = timezone.now()
+        item.inactive_by = request.user
+        item.save()
+
+        messages.success(request, "Work item archived.")
+        return redirect("user_app:work-items")
+
+    # =====================================================
+    # UNARCHIVE
+    # =====================================================
+    if not item.is_active:
+
+        # ❌ Admin-archived items cannot be restored by users
+        if item.inactive_by and item.inactive_by.login_role == "admin":
+            messages.error(
+                request,
+                "This work item was archived by an administrator and cannot be restored."
+            )
+            return redirect("user_app:work-items-archived")
+
+        # ❌ Safety: user mismatch
+        if item.inactive_by and item.inactive_by != request.user:
+            messages.error(
+                request,
+                "You are not allowed to restore this work item."
+            )
+            return redirect("user_app:work-items-archived")
+
+        # ✅ Restore
+        item.is_active = True
+        item.inactive_reason = ""
+        item.inactive_note = ""
+        item.inactive_at = None
+        item.inactive_by = None
+        item.save()
+
+        messages.success(request, "Work item restored.")
+        return redirect("user_app:work-items")
+
+
+# ============================================================
+# GET GROUPED LINKS (API ENDPOINT)
+# ============================================================
+
+@login_required
+def get_grouped_links(request, item_id, group_name):
+    """
+    Returns all links in a group for the modal.
+    Used when user clicks on a grouped link item in work item attachments.
+    """
+    work_item = get_object_or_404(
+        WorkItem,
+        id=item_id,
+        owner=request.user
+    )
+    
+    # Get attachment type from query param
+    attachment_type = request.GET.get("type", "matrix_a")
+    
+    # Get all links with this group name for this work item and attachment type
+    links = WorkItemAttachment.objects.filter(
+        work_item=work_item,
+        attachment_type=attachment_type,
+        link_title=group_name,
+        link_url__isnull=False
+    ).select_related("uploaded_by").order_by('uploaded_at')
+    
+    # Build response
+    links_data = []
+    for link in links:
+        links_data.append({
+            'id': link.id,
+            'url': link.link_url,
+            'title': link.link_title,
+            'uploaded_at': link.uploaded_at.strftime('%b %d, %Y %I:%M %p'),
+            'uploaded_by': link.uploaded_by.get_full_name() if link.uploaded_by else 'Unknown',
+            'acceptance_status': link.acceptance_status,
+        })
+    
+    return JsonResponse({
+        'status': 'success',
+        'group_name': group_name,
+        'count': len(links_data),
+        'links': links_data
+    })

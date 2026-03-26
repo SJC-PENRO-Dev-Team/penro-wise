@@ -1,0 +1,180 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}Reset Submission - Confirmation{% endblock %}
+
+{% block content %}
+<div class="section-header mb-4">
+  <div class="section-title">
+    <i class="fas fa-undo"></i>
+    Reset Submission to Start
+  </div>
+  <a href="{% url 'document_tracking:admin_submission_detail' submission.id %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Cancel
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card border-warning">
+      <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0">
+          <i class="fas fa-exclamation-triangle"></i> Confirm Reset to Start
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-warning">
+          <h6 class="alert-heading">
+            <i class="fas fa-info-circle"></i> Important Information
+          </h6>
+          <p class="mb-2">You are about to reset this archived submission back to the initial state. This action will:</p>
+          <ul class="mb-0">
+            <li>Change status from <strong>Archived</strong> to <strong>Pending Tracking Assignment</strong></li>
+            <li>Unlock the submission record for editing</li>
+            <li>Allow tracking number reassignment</li>
+            <li>Restart the entire workflow process</li>
+            <li>Send email notification to the submitter</li>
+            <li>Create a logbook entry with your remarks</li>
+          </ul>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header">
+            <h6 class="mb-0">Submission Details</h6>
+          </div>
+          <div class="card-body">
+            <div class="row mb-2">
+              <div class="col-md-4"><strong>Tracking Number:</strong></div>
+              <div class="col-md-8">
+                <span class="badge bg-dark">{{ submission.tracking_number }}</span>
+              </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4"><strong>Title:</strong></div>
+              <div class="col-md-8">{{ submission.title }}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4"><strong>Submitted By:</strong></div>
+              <div class="col-md-8">{{ submission.submitted_by.get_full_name }} ({{ submission.submitted_by.email }})</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4"><strong>Current Status:</strong></div>
+              <div class="col-md-8">
+                <span class="badge bg-dark">{{ submission.get_status_display }}</span>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4"><strong>Archived At:</strong></div>
+              <div class="col-md-8">{{ submission.updated_at|date:"F d, Y g:i A" }}</div>
+            </div>
+          </div>
+        </div>
+
+        <form method="post" id="resetForm">
+          {% csrf_token %}
+          
+          <div class="mb-4">
+            <label for="remarks" class="form-label fw-bold">
+              <i class="fas fa-comment-alt"></i> Remarks (Required)
+              <span class="text-danger">*</span>
+            </label>
+            <textarea 
+              name="remarks" 
+              id="remarks" 
+              class="form-control" 
+              rows="4" 
+              required
+              minlength="10"
+              placeholder="Please explain why this submission needs to be reset (minimum 10 characters)..."></textarea>
+            <small class="form-text text-muted">
+              Provide a clear explanation for why this reset is necessary. This will be logged and included in the email notification.
+            </small>
+          </div>
+
+          <div class="alert alert-danger">
+            <h6 class="alert-heading">
+              <i class="fas fa-exclamation-circle"></i> Warning
+            </h6>
+            <p class="mb-0">
+              This action will restart the entire workflow process. The submission will need to go through all steps again.
+              Make sure this is what you intend to do before proceeding.
+            </p>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <a href="{% url 'document_tracking:admin_submission_detail' submission.id %}" class="btn btn-secondary">
+              <i class="fas fa-times"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-warning" id="confirmBtn">
+              <i class="fas fa-undo"></i> Confirm Reset to Start
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('resetForm');
+  const confirmBtn = document.getElementById('confirmBtn');
+  const remarksField = document.getElementById('remarks');
+  
+  form.addEventListener('submit', function(e) {
+    const remarks = remarksField.value.trim();
+    
+    if (remarks.length < 10) {
+      e.preventDefault();
+      alert('Please provide at least 10 characters explaining why this reset is necessary.');
+      remarksField.focus();
+      return false;
+    }
+    
+    const confirmed = confirm(
+      'Are you absolutely sure you want to reset this submission to the initial state?\n\n' +
+      'This will:\n' +
+      '- Unlock the submission\n' +
+      '- Reset status to Pending Tracking\n' +
+      '- Allow the entire workflow to restart\n\n' +
+      'This action cannot be undone easily.'
+    );
+    
+    if (!confirmed) {
+      e.preventDefault();
+      return false;
+    }
+    
+    // Disable button to prevent double submission
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+  });
+  
+  // Enable/disable button based on remarks length
+  remarksField.addEventListener('input', function() {
+    if (this.value.trim().length >= 10) {
+      confirmBtn.disabled = false;
+    } else {
+      confirmBtn.disabled = true;
+    }
+  });
+  
+  // Initial state
+  confirmBtn.disabled = true;
+});
+</script>
+
+<style>
+.card.border-warning {
+  border-width: 2px;
+}
+
+.alert-warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.alert-danger {
+  border-left: 4px solid #ef4444;
+}
+</style>
+{% endblock %}

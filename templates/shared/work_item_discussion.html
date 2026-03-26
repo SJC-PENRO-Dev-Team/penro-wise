@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Discussion</title>
+
+  {% load static %}
+
+  <!-- Favicon (ICO for instant loading, no flicker) -->
+  <link rel="icon" href="/static/img/favicon_io/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="/static/img/favicon_io/favicon.ico" type="image/x-icon">
+
+  <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* =========================================================
+       LOCAL MONTSERRAT FONT SETUP
+    ========================================================= */
+    @font-face {
+      font-family: "Montserrat";
+      src: url("{% static 'fonts/Montserrat-VariableFont_wght.ttf' %}") format("truetype-variations");
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    * { 
+      box-sizing: border-box;
+      font-family: "Montserrat", sans-serif !important;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    body.chat-iframe-wrap {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .fa, .fas, .far, .fab, .fal {
+      font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+    }
+
+    /* =========================================================
+       THREAD AREA
+    ========================================================= */
+    .chat-thread {
+      flex: 1;
+      padding: 20px 16px 130px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+
+    .chat-thread::-webkit-scrollbar { width: 6px; }
+    .chat-thread::-webkit-scrollbar-track { background: transparent; }
+    .chat-thread::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    .chat-thread::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* =========================================================
+       EMPTY STATE
+    ========================================================= */
+    .chat-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #64748b;
+      padding: 40px 20px;
+    }
+
+    .chat-empty-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .chat-empty-icon i { font-size: 28px; color: #64748b; }
+    .chat-empty-title { font-weight: 700; font-size: 16px; color: #475569; margin-bottom: 8px; }
+    .chat-empty-desc { font-size: 13px; color: #94a3b8; font-weight: 500; }
+
+    /* =========================================================
+       MESSAGE ROW
+    ========================================================= */
+    .chat-row {
+      display: flex;
+      gap: 10px;
+      max-width: 85%;
+      animation: chat-fadein 0.3s ease-out;
+    }
+
+    .chat-row--self {
+      margin-left: auto;
+      flex-direction: row-reverse;
+    }
+
+    /* =========================================================
+       AVATAR
+    ========================================================= */
+    .chat-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      border: 2px solid #ffffff;
+      margin-top: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .chat-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .chat-row--self .chat-avatar {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+
+    /* =========================================================
+       MESSAGE CONTENT
+    ========================================================= */
+    .chat-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .chat-meta {
+      display: flex;
+      gap: 6px;
+      font-size: 11px;
+      color: #64748b;
+      align-items: center;
+      font-weight: 500;
+      flex-wrap: wrap;
+      margin-bottom: 2px;
+    }
+
+    .chat-row--self .chat-meta { justify-content: flex-end; }
+
+    .chat-sender { font-weight: 600; color: #475569; white-space: nowrap; }
+
+    .chat-role {
+      background: #e2e8f0;
+      color: #475569;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+    }
+
+    .chat-role--admin { background: #dbeafe; color: #1d4ed8; }
+    .chat-role--user { background: #dcfce7; color: #166534; }
+
+    .chat-time {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+
+    .chat-time i { font-size: 9px; }
+
+    /* =========================================================
+       MESSAGE BUBBLE
+    ========================================================= */
+    .chat-bubble {
+      background: #ffffff;
+      border-radius: 16px;
+      border-top-left-radius: 6px;
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #334155;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e2e8f0;
+      word-wrap: break-word;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      white-space: pre-wrap;
+      max-width: 100%;
+      min-width: 60px;
+    }
+
+    .chat-row--self .chat-bubble {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: #ffffff;
+      border-top-right-radius: 6px;
+      border-top-left-radius: 16px;
+      border: none;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+    }
+
+    .chat-bubble.compact { padding: 8px 12px; font-size: 13.5px; line-height: 1.4; }
+    .chat-bubble.long { padding: 14px 16px; line-height: 1.6; }
+
+    /* =========================================================
+       READ RECEIPT
+    ========================================================= */
+    .chat-receipt {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      margin-top: 2px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .chat-row--self .chat-receipt { justify-content: flex-end; }
+
+    .chat-receipt i { font-size: 11px; }
+    .chat-receipt--seen { color: #3b82f6; }
+    .chat-receipt--seen i { color: #3b82f6; }
+
+    /* =========================================================
+       COMPOSER
+    ========================================================= */
+    .chat-composer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 14px 16px 18px;
+      background: linear-gradient(to top, #ffffff 0%, rgba(255, 255, 255, 0.98) 100%);
+      border-top: 1px solid #e2e8f0;
+      box-shadow: 0 -3px 16px rgba(0, 0, 0, 0.04);
+      backdrop-filter: blur(10px);
+    }
+
+    .chat-composer-inner {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .chat-input {
+      width: 100%;
+      resize: none;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      padding: 10px 14px;
+      font-size: 14px;
+      background: #f8fafc;
+      transition: all 0.2s ease;
+      line-height: 1.5;
+      min-height: 44px;
+      max-height: 100px;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .chat-input::placeholder { color: #94a3b8; font-size: 13.5px; }
+
+    .chat-send {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
+      flex-shrink: 0;
+    }
+
+    .chat-send:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 5px 14px rgba(37, 99, 235, 0.3);
+    }
+
+    .chat-send:active { transform: translateY(0); }
+    .chat-send:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .chat-send i { font-size: 16px; }
+
+    @keyframes chat-fadein {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 480px) {
+      .chat-row { max-width: 90%; gap: 8px; }
+      .chat-thread { padding: 14px 12px 110px; gap: 14px; }
+      .chat-bubble { padding: 10px 12px; font-size: 13.5px; }
+      .chat-avatar { width: 32px; height: 32px; font-size: 13px; }
+      .chat-composer { padding: 12px 12px 16px; }
+      .chat-input { padding: 9px 12px; font-size: 13.5px; }
+      .chat-send { width: 40px; height: 40px; }
+    }
+  </style>
+</head>
+
+<body class="chat-iframe-wrap">
+
+  <!-- THREAD -->
+  <div class="chat-thread" id="chatThread">
+    {% if has_messages %}
+      {% for m in messages %}
+        <div class="chat-row {% if m.sender == request.user %}chat-row--self{% endif %}">
+          <div class="chat-avatar">
+            {% if m.sender.profile_image %}
+              <img src="{{ m.sender.profile_image.url }}" alt="{{ m.sender.get_full_name|default:m.sender.username }}">
+            {% else %}
+              {{ m.sender.first_name|default:m.sender.username|slice:":1"|upper }}
+            {% endif %}
+          </div>
+
+          <div class="chat-content">
+            <div class="chat-meta">
+              <span class="chat-sender">{{ m.sender.get_full_name|default:m.sender.username|truncatechars:20 }}</span>
+              <span class="chat-role chat-role--{{ m.sender_role }}">{{ m.sender_role }}</span>
+              <span class="chat-time">
+                <i class="far fa-clock"></i>
+                {{ m.created_at|date:"D, M d, g:i A" }}
+              </span>
+            </div>
+
+            <div class="chat-bubble {% if m.message|length < 50 %}compact{% elif m.message|length > 200 %}long{% endif %}">{{ m.message }}</div>
+
+            {% if m.sender == request.user %}
+              <div class="chat-receipt {% if m.id <= last_read_message_id %}chat-receipt--seen{% endif %}">
+                {% if m.id <= last_read_message_id %}
+                  <i class="fas fa-check-double"></i>
+                  <span>Seen</span>
+                {% else %}
+                  <i class="fas fa-check"></i>
+                  <span>Sent</span>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="chat-empty">
+        <div class="chat-empty-icon">
+          <i class="far fa-comments"></i>
+        </div>
+        <div class="chat-empty-title">No messages yet</div>
+        <div class="chat-empty-desc">Start the conversation below</div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- COMPOSER -->
+  <form method="post" class="chat-composer" id="chatForm">
+    {% csrf_token %}
+    <div class="chat-composer-inner">
+      <textarea name="message" class="chat-input" id="chatInput" placeholder="Type your message…" rows="1" required></textarea>
+      <button type="submit" class="chat-send" id="chatSendBtn">
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </div>
+  </form>
+
+  <script>
+    // Scroll to bottom
+    const thread = document.getElementById('chatThread');
+    if (thread) thread.scrollTop = thread.scrollHeight;
+
+    // Auto-resize textarea
+    const textarea = document.querySelector('.chat-input');
+    if (textarea) {
+      textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+      });
+      
+      // Submit on Enter (without Shift)
+      textarea.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          document.getElementById('chatForm').dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+      });
+    }
+
+    // Handle form submission with AJAX
+    const form = document.getElementById('chatForm');
+    const sendBtn = document.getElementById('chatSendBtn');
+    const input = document.getElementById('chatInput');
+    
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const message = input.value.trim();
+        if (!message) return;
+        
+        // Disable button while sending
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        const formData = new FormData(form);
+        
+        fetch(window.location.href, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+        .then(response => {
+          if (response.ok || response.redirected) {
+            // Success - reload the iframe content
+            window.location.reload();
+          } else {
+            throw new Error('Failed to send message');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          // Re-enable button on error
+          sendBtn.disabled = false;
+          sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+          alert('Failed to send message. Please try again.');
+        });
+      });
+    }
+
+    // ============================================================
+    // IMMEDIATELY UPDATE UNREAD COUNT IN PARENT WINDOW
+    // ============================================================
+    // When this discussion is opened, messages are marked as read
+    // We need to immediately update the badge in the parent window
+    // instead of waiting for the 30-second polling interval
+    
+    function updateParentUnreadCount() {
+      try {
+        // Check if we're in an iframe and can access parent
+        if (window.parent && window.parent !== window) {
+          // Try to trigger immediate refresh in parent window
+          if (window.parent.refreshUnreadCounts) {
+            console.log('[Discussion] Triggering immediate unread count refresh in parent');
+            window.parent.refreshUnreadCounts('discussions');
+          } else if (window.parent.unreadCountManager) {
+            console.log('[Discussion] Triggering immediate unread count refresh via manager');
+            window.parent.unreadCountManager.refreshCounts('discussions');
+          } else {
+            console.log('[Discussion] Parent unread count manager not found, dispatching event');
+            // Fallback: dispatch custom event
+            window.parent.document.dispatchEvent(new CustomEvent('unread-count:refresh', {
+              detail: { type: 'discussions' }
+            }));
+          }
+        }
+      } catch (error) {
+        // Cross-origin or access denied - silently fail
+        console.log('[Discussion] Could not access parent window:', error.message);
+      }
+    }
+    
+    // Update immediately when page loads (messages just marked as read)
+    updateParentUnreadCount();
+    
+    // Also update after sending a message (in case admin replied)
+    window.addEventListener('load', function() {
+      // Give the server a moment to process the read state
+      setTimeout(updateParentUnreadCount, 500);
+    });
+  </script>
+
+</body>
+</html>

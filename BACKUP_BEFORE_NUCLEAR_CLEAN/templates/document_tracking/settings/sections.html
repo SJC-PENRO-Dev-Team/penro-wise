@@ -1,0 +1,92 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}Manage Sections - Document Tracking Settings{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/document-tracking.css' %}">
+
+<div class="dt-page">
+    <!-- UNIFIED HEADER -->
+    <div class="dt-unified-header">
+        <div class="dt-header-top">
+            <div class="dt-title-section">
+                <h3 class="dt-main-title">
+                    <i class="fas fa-folder-tree"></i>
+                    Section Directory
+                </h3>
+                <p class="dt-subtitle">Manage sections for File Manager organization</p>
+            </div>
+            <div class="dt-action-buttons-top">
+                <a href="{% url 'document_tracking:settings' %}" class="dt-btn dt-btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Settings
+                </a>
+                <a href="{% url 'document_tracking:settings_section_create' %}" class="dt-btn dt-btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Create Section
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sections List -->
+    <div class="dt-card">
+        {% if sections %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Display Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in sections %}
+                    <tr>
+                        <td>
+                            <code style="background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">{{ item.section.name }}</code>
+                        </td>
+                        <td>
+                            <strong>{{ item.section.display_name }}</strong>
+                        </td>
+                        <td>
+                            <a href="{% url 'document_tracking:settings_section_edit' item.section.id %}" 
+                               class="dt-btn dt-btn-sm dt-btn-primary" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'document_tracking:settings_section_delete' item.section.id %}" 
+                               class="dt-btn dt-btn-sm dt-btn-danger" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-folder-tree fa-3x text-muted mb-3"></i>
+            <p class="text-muted">No sections configured yet.</p>
+            <a href="{% url 'document_tracking:settings_section_create' %}" class="dt-btn dt-btn-primary">
+                <i class="fas fa-plus"></i> Create First Section
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Info Box -->
+    <div class="dt-info-box" style="margin-top: 20px;">
+        <h5 style="font-size: 0.95rem; font-weight: 700; margin: 0 0 8px 0;">
+            <i class="fas fa-info-circle"></i> About Section Directory
+        </h5>
+        <p style="margin: 0; font-size: 0.85rem; line-height: 1.6;">
+            Sections are used by the File Manager to organize folders and files. 
+            When documents are approved in Document Tracking, they are stored in folders organized by section.
+            <br><code style="background: #fff; padding: 4px 8px; border-radius: 4px; font-weight: 600; margin-top: 8px; display: inline-block;">File Manager Path: ROOT / {{ current_year }} / Submissions / [Section Name] / [Document Title]</code>
+        </p>
+    </div>
+</div>
+{% endblock %}

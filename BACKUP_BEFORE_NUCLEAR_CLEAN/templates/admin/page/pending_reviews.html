@@ -1,0 +1,87 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}Pending Reviews{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/admin/pending_reviews.css' %}">
+
+<!-- Header -->
+<div class="pr-header">
+  <div class="pr-title-section">
+    <h3 class="pr-title">
+      <i class="fas fa-clipboard-check"></i>
+      Pending Reviews
+    </h3>
+    <p class="pr-subtitle">Review submitted work items from users</p>
+  </div>
+  
+  <div class="pr-header-actions">
+    <a href="{% url 'admin_app:documents' %}" class="pr-dashboard-btn">
+      <i class="fas fa-home"></i>
+      <span>Docs Dashboard</span>
+    </a>
+    <div class="pr-stats-badge">
+      <span class="pr-badge-count">{{ total_pending }}</span>
+      <span class="pr-badge-label">Total Pending</span>
+    </div>
+  </div>
+</div>
+
+<!-- Content -->
+{% if users_data %}
+  <div class="pr-users-grid">
+    {% for data in users_data %}
+    <div class="pr-user-card">
+      <!-- User Header -->
+      <div class="pr-user-header">
+        <div class="pr-user-avatar">
+          {% if data.user.profile_image %}
+            <img src="{{ data.user.profile_image.url }}" alt="{{ data.user.get_full_name }}">
+          {% else %}
+            <i class="fas fa-user"></i>
+          {% endif %}
+        </div>
+        <div class="pr-user-info">
+          <div class="pr-user-name">{{ data.user.get_full_name|default:data.user.username }}</div>
+          <div class="pr-user-meta">
+            <span class="pr-pending-badge">{{ data.pending_count }} pending</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Pending Items List -->
+      <div class="pr-items-list">
+        {% for item in data.pending_items %}
+        <a href="{% url 'admin_app:work-item-review' item.id %}" class="pr-item">
+          <div class="pr-item-icon">
+            <i class="fas fa-file-alt"></i>
+          </div>
+          <div class="pr-item-content">
+            <div class="pr-item-title">{{ item.workcycle.title }}</div>
+            <div class="pr-item-meta">
+              <i class="far fa-clock"></i>
+              Submitted {{ item.submitted_at|timesince }} ago
+            </div>
+          </div>
+          <div class="pr-item-action">
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <!-- Empty State -->
+  <div class="pr-empty-state">
+    <div class="pr-empty-icon">
+      <i class="fas fa-check-circle"></i>
+    </div>
+    <h4 class="pr-empty-title">No Pending Reviews</h4>
+    <p class="pr-empty-text">All work items have been reviewed. Great job!</p>
+  </div>
+{% endif %}
+
+{% endblock %}

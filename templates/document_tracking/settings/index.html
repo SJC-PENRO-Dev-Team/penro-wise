@@ -1,0 +1,128 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}Settings - Document Tracking{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/document-tracking.css' %}">
+
+<div class="dt-page">
+  <!-- UNIFIED HEADER -->
+  <div class="dt-unified-header">
+    <div class="dt-header-top">
+      <div class="dt-title-section">
+        <h3 class="dt-main-title">
+          <i class="fas fa-cog"></i>
+          Document Tracking Settings
+        </h3>
+        <p class="dt-subtitle">Configure document types and tracking number prefixes</p>
+      </div>
+      <div class="dt-action-buttons-top">
+        <a href="{% url 'document_tracking:admin_overview' %}" class="dt-btn dt-btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to Overview
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS SECTIONS -->
+  <div style="display: grid; grid-template-columns: 1fr; gap: 16px;">
+    
+    <!-- DOCUMENT TYPES SECTION -->
+    <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+          <h4 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0 0 4px 0;">
+            <i class="fas fa-file-alt" style="color: #8b5cf6;"></i>
+            Document Types
+          </h4>
+          <p style="font-size: 0.8rem; color: #64748b; margin: 0;">
+            Manage document types and their tracking number prefixes
+          </p>
+        </div>
+        <a href="{% url 'document_tracking:document-types' %}" class="dt-btn dt-btn-primary">
+          <i class="fas fa-cog"></i>
+          Manage Types
+        </a>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-top: 16px;">
+        <div style="font-size: 0.85rem; color: #475569; line-height: 1.6;">
+          <p style="margin: 0 0 12px 0; font-weight: 600;">
+            <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
+            What you can do:
+          </p>
+          <ul style="margin: 0; padding-left: 20px;">
+            <li>View all document types</li>
+            <li>Add new document types with custom prefixes</li>
+            <li>Edit existing document types</li>
+            <li>Delete unused document types</li>
+            <li>Reorder document types (drag and drop)</li>
+            <li>Customize tracking number prefixes (2-5 uppercase letters)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTIONS/DEPARTMENTS SECTION -->
+    <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+          <h4 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0 0 4px 0;">
+            <i class="fas fa-folder-tree" style="color: #10b981;"></i>
+            Section Directory
+          </h4>
+          <p style="font-size: 0.8rem; color: #64748b; margin: 0;">
+            Manage sections for File Manager organization
+          </p>
+        </div>
+        <a href="{% url 'document_tracking:settings_sections' %}" class="dt-btn dt-btn-primary">
+          <i class="fas fa-cog"></i>
+          Manage Sections
+        </a>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-top: 16px;">
+        <div style="font-size: 0.85rem; color: #475569; line-height: 1.6;">
+          <p style="margin: 0 0 12px 0; font-weight: 600;">
+            <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
+            What you can do:
+          </p>
+          <ul style="margin: 0; padding-left: 20px;">
+            <li>Create and manage sections for File Manager</li>
+            <li>Organize approved documents by section</li>
+            <li>Control folder structure in File Manager</li>
+            <li>Assign sections to document submissions</li>
+          </ul>
+          <p style="margin: 12px 0 0 0; font-size: 0.75rem; color: #64748b;">
+            File Manager path: <code style="background: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 600;">ROOT / {{ current_year }} / Submissions / [Section] / [Title]</code>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACKING NUMBER FORMAT INFO -->
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px;">
+      <h4 style="font-size: 0.9rem; font-weight: 700; color: #1e293b; margin: 0 0 12px 0;">
+        <i class="fas fa-hashtag" style="color: #3b82f6;"></i>
+        Tracking Number Format
+      </h4>
+      <div style="font-size: 0.8rem; color: #475569; line-height: 1.6;">
+        <p style="margin: 0 0 8px 0;">
+          Tracking numbers follow the format: <code style="background: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 600; color: #8b5cf6;">PREFIX-YEAR-SERIAL</code>
+        </p>
+        <ul style="margin: 0; padding-left: 20px;">
+          <li><strong>PREFIX:</strong> Custom per document type (2-5 uppercase letters)</li>
+          <li><strong>YEAR:</strong> Automatically generated (4 digits)</li>
+          <li><strong>SERIAL:</strong> Auto-increment or manual entry</li>
+        </ul>
+        <p style="margin: 12px 0 0 0; font-size: 0.75rem; color: #64748b;">
+          Example: <code style="background: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 600;">MEM-2026-001</code>
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

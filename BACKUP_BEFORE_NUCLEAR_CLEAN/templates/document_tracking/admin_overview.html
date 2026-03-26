@@ -1,0 +1,343 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+
+{% block title %}Overview - Document Tracking{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/document-tracking.css' %}">
+
+<div class="dt-page">
+  <!-- UNIFIED HEADER -->
+  <div class="dt-unified-header">
+    <div class="dt-header-top">
+      <div class="dt-title-section">
+        <h3 class="dt-main-title">
+          <i class="fas fa-route"></i>
+          Document Tracking Overview
+        </h3>
+        <p class="dt-subtitle">Monitor and manage document submissions across all statuses</p>
+      </div>
+      <div class="dt-action-buttons-top">
+        <a href="{% url 'document_tracking:submit_document' %}" class="dt-btn dt-btn-primary">
+          <i class="fas fa-plus"></i>
+          Submit Document
+        </a>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS (INSIDE HEADER) -->
+    <div style="margin-top: 16px;">
+      <span class="dt-section-label" style="margin-bottom: 12px; display: flex;">
+        <i class="fas fa-bolt"></i>
+        Quick Actions
+      </span>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+        <a href="{% url 'document_tracking:admin_submissions' %}" class="dt-btn dt-btn-secondary" style="height: auto; padding: 16px; border-radius: 12px; justify-content: flex-start; text-align: left; display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; background: #dbeafe; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i class="fas fa-list" style="color: #3b82f6; font-size: 1.1rem;"></i>
+          </div>
+          <div>
+            <div style="font-weight: 600; color: #1e293b; margin-bottom: 2px;">All Submissions</div>
+            <div style="font-size: 0.7rem; color: #64748b; font-weight: 400;">Browse all documents</div>
+          </div>
+        </a>
+
+        <a href="/admin/documents/file-manager/" class="dt-btn dt-btn-secondary" style="height: auto; padding: 16px; border-radius: 12px; justify-content: flex-start; text-align: left; display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; background: #d1fae5; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i class="fas fa-folder-open" style="color: #10b981; font-size: 1.1rem;"></i>
+          </div>
+          <div>
+            <div style="font-weight: 600; color: #1e293b; margin-bottom: 2px;">File Manager</div>
+            <div style="font-size: 0.7rem; color: #64748b; font-weight: 400;">Manage document files</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS CARDS GRID -->
+  <div class="dt-stats-grid">
+    <!-- Pending Tracking -->
+    <a href="{% url 'document_tracking:admin_submissions' %}?status=pending_tracking" class="dt-stat-card-animated">
+      <div class="dt-stat-icon-animated pending-tracking-icon">
+        <i class="fas fa-clock"></i>
+      </div>
+      <div class="dt-stat-value">{{ status_counts.pending_tracking }}</div>
+      <div class="dt-stat-label">Pending Tracking</div>
+    </a>
+
+    <!-- Received -->
+    <a href="{% url 'document_tracking:admin_submissions' %}?status=received" class="dt-stat-card-animated">
+      <div class="dt-stat-icon-animated received-icon">
+        <i class="fas fa-inbox"></i>
+      </div>
+      <div class="dt-stat-value">{{ status_counts.received }}</div>
+      <div class="dt-stat-label">Received</div>
+    </a>
+
+    <!-- Under Review -->
+    <a href="{% url 'document_tracking:admin_submissions' %}?status=under_review" class="dt-stat-card-animated">
+      <div class="dt-stat-icon-animated review-icon">
+        <i class="fas fa-search"></i>
+      </div>
+      <div class="dt-stat-value">{{ status_counts.under_review }}</div>
+      <div class="dt-stat-label">Under Review</div>
+    </a>
+
+    <!-- For Compliance -->
+    <a href="{% url 'document_tracking:admin_submissions' %}?status=for_compliance" class="dt-stat-card-animated">
+      <div class="dt-stat-icon-animated compliance-icon">
+        <i class="fas fa-clipboard-check"></i>
+      </div>
+      <div class="dt-stat-value">{{ status_counts.for_compliance }}</div>
+      <div class="dt-stat-label">For Compliance</div>
+    </a>
+
+    <!-- Returned to Sender -->
+    <a href="{% url 'document_tracking:admin_submissions' %}?status=returned_to_sender" class="dt-stat-card-animated">
+      <div class="dt-stat-icon-animated returned-icon">
+        <i class="fas fa-undo"></i>
+      </div>
+      <div class="dt-stat-value">{{ status_counts.returned_to_sender }}</div>
+      <div class="dt-stat-label">Returned</div>
+    </a>
+
+    <!-- Approved -->
+    <a href="{% url 'document_tracking:admin_submissions' %}?status=approved" class="dt-stat-card-animated">
+      <div class="dt-stat-icon-animated approved-icon">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="dt-stat-value">{{ status_counts.approved }}</div>
+      <div class="dt-stat-label">Approved</div>
+    </a>
+
+    <!-- Rejected -->
+    <a href="{% url 'document_tracking:admin_submissions' %}?status=rejected" class="dt-stat-card-animated">
+      <div class="dt-stat-icon-animated rejected-icon">
+        <i class="fas fa-times-circle"></i>
+      </div>
+      <div class="dt-stat-value">{{ status_counts.rejected }}</div>
+      <div class="dt-stat-label">Rejected</div>
+    </a>
+  </div>
+
+<style>
+/* Animated Stat Cards - Compact */
+.dt-stat-card-animated {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dt-stat-card-animated:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+}
+
+.dt-stat-icon-animated {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: white;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.dt-stat-card-animated:hover .dt-stat-icon-animated {
+  transform: scale(1.15);
+}
+
+/* Icon Animations and Colors */
+.pending-tracking-icon {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  animation: clockTick 2s ease-in-out infinite;
+}
+
+.received-icon {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  animation: inboxShake 2s ease-in-out infinite;
+}
+
+.review-icon {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  animation: searchZoom 2s ease-in-out infinite;
+}
+
+.compliance-icon {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  animation: clipboardCheck 2s ease-in-out infinite;
+}
+
+.returned-icon {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  animation: undoRotate 2s ease-in-out infinite;
+}
+
+.approved-icon {
+  background: linear-gradient(135deg, #10b981, #059669);
+  animation: checkPop 2s ease-in-out infinite;
+}
+
+.rejected-icon {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  animation: xShake 2s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes clockTick {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(15deg); }
+  75% { transform: rotate(-15deg); }
+}
+
+@keyframes inboxShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+@keyframes searchZoom {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+@keyframes clipboardCheck {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-8deg) scale(1.05); }
+  75% { transform: rotate(8deg) scale(1.05); }
+}
+
+@keyframes undoRotate {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-180deg); }
+}
+
+@keyframes checkPop {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+@keyframes xShake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+
+.dt-stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.dt-stat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Responsive - Extra Compact Below 770px */
+@media (max-width: 770px) {
+  .dt-stat-card-animated {
+    padding: 5px;
+    gap: 0.25rem;
+  }
+  
+  .dt-stat-icon-animated {
+    width: 16px;
+    height: 16px;
+    font-size: 0.55rem;
+  }
+  
+  .dt-stat-value {
+    font-size: 1rem;
+  }
+  
+  .dt-stat-label {
+    font-size: 0.6rem;
+  }
+}
+</style>
+
+  <!-- RECENT SUBMISSIONS (7 MAX, PRIORITIZED) -->
+  <div style="margin-top: 24px;">
+    <h4 style="font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 12px;">
+      <i class="fas fa-history" style="color: #8b5cf6; margin-right: 6px;"></i>
+      Recent Submissions
+    </h4>
+    
+    {% if recent_submissions %}
+      <div class="dt-submissions-list">
+        {% for submission in recent_submissions %}
+          <a href="{% url 'document_tracking:admin_submission_detail' submission.id %}" class="dt-submission-item">
+            <div class="dt-submission-id">
+              {% if submission.tracking_number %}
+                {{ submission.tracking_number }}
+              {% else %}
+                #{{ submission.id }}
+              {% endif %}
+            </div>
+            
+            <div class="dt-submission-content">
+              <div class="dt-submission-title">{{ submission.title }}</div>
+              <div class="dt-submission-meta">
+                <span>
+                  <i class="fas fa-user"></i>
+                  {{ submission.submitted_by.get_full_name }}
+                </span>
+                <span>
+                  <i class="fas fa-calendar"></i>
+                  {{ submission.created_at|date:"M d, Y" }}
+                </span>
+                {% if submission.assigned_section %}
+                  <span>
+                    <i class="fas fa-building"></i>
+                    {{ submission.assigned_section.get_name_display }}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+            
+            <span class="dt-status-badge dt-status-{{ submission.status }}">
+              {{ submission.get_status_display }}
+            </span>
+            
+            <div class="dt-submission-actions">
+              <span class="dt-btn dt-btn-secondary" style="font-size: 0.7rem; padding: 4px 10px; height: 28px;">
+                <i class="fas fa-eye"></i>
+                View
+              </span>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+      
+      <!-- VIEW ALL BUTTON -->
+      <a href="{% url 'document_tracking:admin_submissions' %}" class="dt-view-all-btn">
+        <span>View All Submissions</span>
+        <i class="fas fa-arrow-right"></i>
+      </a>
+    {% else %}
+      <div style="text-align: center; padding: 40px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px;">
+        <i class="fas fa-inbox" style="font-size: 2.5rem; color: #cbd5e1; margin-bottom: 12px;"></i>
+        <p style="color: #64748b; margin: 0;">No submissions yet</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

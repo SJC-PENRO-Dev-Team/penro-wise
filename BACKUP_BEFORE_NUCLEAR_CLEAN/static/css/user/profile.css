@@ -1,0 +1,581 @@
+/* ==========================================================
+   DARK BLUE MUTED PALETTE WITH WHITE BACKGROUND
+========================================================== */
+:root {
+  --muted-blue: #2c5282;           /* Primary dark blue */
+  --muted-blue-light: #4a7cad;     /* Lighter blue */
+  --muted-blue-lighter: #8da0b8;   /* Very light blue */
+  --muted-blue-lightest: #e8f1fb;  /* Lightest blue for backgrounds */
+  --muted-blue-dark: #1a365d;      /* Darker blue */
+  --muted-blue-darker: #0f294d;    /* Darkest blue */
+  
+  /* Role-specific blues */
+  --admin-blue: #553c9a;           /* Purple-ish blue for admin */
+  --user-blue: #2b6cb0;            /* Standard blue for user */
+  
+  /* Status colors */
+  --success: #38a169;
+  --success-light: #c6f6d5;
+  --danger: #e53e3e;
+  --danger-light: #fed7d7;
+  
+  /* Text colors */
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  
+  /* Border colors */
+  --border-color: #e2e8f0;
+  --border-dark: #cbd5e0;
+  
+  /* Backgrounds */
+  --bg-white: #ffffff;
+  --bg-light: #f7fafc;
+  --bg-lighter: #edf2f7;
+}
+
+/* ==========================================================
+   GLOBAL STYLES
+========================================================== */
+body {
+  background-color: var(--bg-white);
+  color: var(--text-primary);
+}
+
+.container-xl {
+  background-color: var(--bg-white);
+}
+
+/* ==========================================================
+   BUTTONS
+========================================================== */
+.btn-outline-muted-blue {
+  color: var(--muted-blue);
+  border-color: var(--muted-blue);
+  background-color: transparent;
+}
+
+.btn-outline-muted-blue:hover {
+  background-color: var(--muted-blue);
+  border-color: var(--muted-blue);
+  color: white;
+}
+
+.btn-muted-blue {
+  background-color: var(--muted-blue);
+  border-color: var(--muted-blue);
+  color: white;
+}
+
+.btn-muted-blue:hover {
+  background-color: var(--muted-blue-dark);
+  border-color: var(--muted-blue-dark);
+  color: white;
+}
+
+/* ==========================================================
+   PROFILE SIDEBAR
+========================================================== */
+.profile-sidebar {
+  background-color: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.profile-avatar-wrapper {
+  position: relative;
+  text-align: center;
+}
+
+.profile-avatar-img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border: 3px solid var(--muted-blue-lightest);
+  box-shadow: 0 2px 8px rgba(44, 82, 130, 0.1);
+}
+
+.profile-avatar-default {
+  width: 120px;
+  height: 120px;
+  background: linear-gradient(135deg, var(--muted-blue) 0%, var(--muted-blue-dark) 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--muted-blue-lightest);
+  box-shadow: 0 2px 8px rgba(44, 82, 130, 0.1);
+}
+
+.profile-avatar-default i {
+  font-size: 3rem;
+  color: white;
+}
+
+.profile-avatar-edit-btn {
+  position: absolute;
+  bottom: 0;
+  right: 50%;
+  transform: translateX(25px);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--muted-blue);
+  border-color: var(--muted-blue);
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.profile-avatar-edit-btn:hover {
+  background-color: var(--muted-blue-dark);
+  border-color: var(--muted-blue-dark);
+  transform: translateX(25px) scale(1.1);
+}
+
+.profile-name {
+  color: var(--muted-blue-darker);
+  font-weight: 600;
+  text-align: center;
+}
+
+.profile-position {
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.profile-username {
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.profile-role-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 12px;
+  text-align: center;
+  width: 100%;
+  letter-spacing: 0.3px;
+}
+
+.profile-role-badge.admin {
+  background: linear-gradient(135deg, var(--admin-blue) 0%, #44337a 100%);
+  color: white;
+  border: 1px solid rgba(85, 60, 154, 0.3);
+}
+
+.profile-role-badge.user {
+  background: linear-gradient(135deg, var(--user-blue) 0%, #2c5282 100%);
+  color: white;
+  border: 1px solid rgba(43, 108, 176, 0.3);
+}
+
+.profile-status {
+  text-align: center;
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.status-indicator.active {
+  background-color: var(--success);
+  box-shadow: 0 0 0 3px var(--success-light);
+}
+
+.status-indicator.inactive {
+  background-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-light);
+}
+
+.status-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.profile-last-login,
+.profile-join-date {
+  text-align: center;
+}
+
+/* ==========================================================
+   USER STATISTICS & DETAILS
+========================================================== */
+.user-stats,
+.account-details {
+  background-color: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.stat-item {
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.stat-item:hover {
+  border-color: var(--muted-blue);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(44, 82, 130, 0.1);
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--muted-blue);
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+}
+
+.detail-label i {
+  color: var(--muted-blue);
+  width: 16px;
+}
+
+.detail-value {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  text-align: right;
+}
+
+/* ==========================================================
+   MAIN CONTENT CARDS
+========================================================== */
+.card {
+  background-color: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.card-header {
+  background-color: var(--bg-light);
+  border-bottom: 1px solid var(--border-color);
+  padding: 14px 18px;
+}
+
+.card-header h2 {
+  color: var(--muted-blue-darker);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.card-body {
+  padding: 18px;
+}
+
+/* ==========================================================
+   FORM ELEMENTS
+========================================================== */
+.form-label {
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+}
+
+.form-control {
+  background-color: white;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus {
+  border-color: var(--muted-blue);
+  box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.1);
+  color: var(--text-primary);
+}
+
+.form-control::placeholder {
+  color: var(--text-muted);
+}
+
+.view-field {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  padding: 6px 0;
+}
+
+/* ==========================================================
+   BADGES
+========================================================== */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 12px;
+  letter-spacing: 0.3px;
+}
+
+.bg-dark-blue-admin {
+  background: linear-gradient(135deg, var(--admin-blue) 0%, #44337a 100%) !important;
+  color: white !important;
+}
+
+.bg-dark-blue-user {
+  background: linear-gradient(135deg, var(--user-blue) 0%, #2c5282 100%) !important;
+  color: white !important;
+}
+
+/* ==========================================================
+   ORGANIZATIONAL ASSIGNMENT
+========================================================== */
+.org-item {
+  padding: 10px 0;
+}
+
+.org-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.org-label i {
+  color: var(--muted-blue);
+}
+
+.org-value {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.org-visualization {
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.org-visualization-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.org-path {
+  font-size: 0.9rem;
+}
+
+.org-path-item {
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-weight: 500;
+  color: var(--muted-blue-darker);
+  transition: all 0.2s ease;
+}
+
+.org-path-item:hover {
+  border-color: var(--muted-blue);
+  background-color: var(--muted-blue-lightest);
+}
+
+.org-path i {
+  color: var(--muted-blue-lighter);
+}
+
+/* ==========================================================
+   EDIT ACTIONS
+========================================================== */
+.edit-actions {
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+  margin-top: 16px;
+}
+
+/* ==========================================================
+   TEXT UTILITIES
+========================================================== */
+.text-dark {
+  color: var(--text-primary) !important;
+}
+
+.text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+.border-top {
+  border-top: 1px solid var(--border-color) !important;
+}
+
+/* ==========================================================
+   LOADING SPINNER
+========================================================== */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--muted-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-spinner p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.wizard-flow-content {
+  background: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.modal-onboard-compact {
+  max-width: 500px;
+}
+
+/* Modal styles for white theme */
+.modal-header {
+  background-color: var(--bg-light);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  background-color: var(--bg-white);
+  color: var(--text-primary);
+}
+
+.modal-footer {
+  background-color: var(--bg-light);
+  border-top: 1px solid var(--border-color);
+}
+
+.modal-title {
+  color: var(--muted-blue-darker);
+}
+
+.profile-image-default {
+  background: linear-gradient(135deg, var(--muted-blue) 0%, var(--muted-blue-dark) 100%);
+}
+
+.profile-image-default i {
+  color: white;
+}
+
+/* ==========================================================
+   RESPONSIVE ADJUSTMENTS
+========================================================== */
+@media (max-width: 768px) {
+  .profile-avatar-img,
+  .profile-avatar-default {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .profile-avatar-default i {
+    font-size: 2.5rem;
+  }
+  
+  .org-path {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .org-path i {
+    transform: rotate(90deg);
+    margin: 4px 0;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .card-body {
+    padding: 12px;
+  }
+  
+  .profile-avatar-img,
+  .profile-avatar-default {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .profile-avatar-default i {
+    font-size: 2rem;
+  }
+}

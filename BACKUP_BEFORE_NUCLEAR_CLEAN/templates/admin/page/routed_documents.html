@@ -1,0 +1,797 @@
+{% extends base_template|default:"admin/layout/base.html" %}
+{% load static %}
+{% block title %}Routed Documents{% endblock %}
+{% block page_title %}Routed Documents{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin/file_manager.css' %}">
+<style>
+.fm-filters-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.fm-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.fm-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fm-filter-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.fm-filter-select, .fm-filter-input {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.fm-filter-select:focus, .fm-filter-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.fm-filters-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.fm-filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fm-filter-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.fm-filter-btn.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fm-container">
+  <div class="fm-header">
+    <div class="fm-nav">
+      <a href="{% url 'admin_app:file-manager' %}" class="fm-nav-item">
+        <i class="fas fa-folder"></i>
+        <span>File Manager</span>
+      </a>
+      <a href="{% url 'admin_app:routed-documents' %}" class="fm-nav-item active">
+        <i class="fas fa-route"></i>
+        <span>Routed Documents</span>
+      </a>
+      <a href="{% url 'admin_app:workstate-assets' %}" class="fm-nav-item">
+        <i class="fas fa-layer-group"></i>
+        <span>Workstate Assets</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="fm-main">
+    <div class="fm-filters-panel">
+      <!-- Filter Bar (Routed Documents) -->
+      <div class="fm-filter-bar" style="display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: white; border-bottom: 1px solid #e2e8f0;">
+        <span style="font-size: 0.875rem; font-weight: 600; color: #64748b;">Filter by:</span>
+        
+        <div class="filter-dropdown-container" style="position: relative;">
+          <button class="fm-filter-btn" id="routedDocTypeBtn" onclick="toggleDocTypeDropdown()" style="padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; font-size: 0.875rem; font-weight: 500; color: #475569; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-file-alt"></i>
+            <span id="routedDocTypeText">Document Type</span>
+            <i class="fas fa-chevron-down" style="font-size: 0.75rem;"></i>
+          </button>
+          <div id="doc-typeDropdown" class="filter-dropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 300px; max-width: 400px; z-index: 1000;">
+            <div id="doc-typeResults" class="filter-results" style="max-height: 300px; overflow-y: auto;">
+              <div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.875rem;">
+                <i class="fas fa-spinner fa-spin"></i> Loading document types...
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="filter-dropdown-container" style="position: relative;">
+          <button class="fm-filter-btn" id="routedTrackingBtn" onclick="toggleTrackingDropdown()" style="padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; font-size: 0.875rem; font-weight: 500; color: #475569; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-hashtag"></i>
+            <span id="routedTrackingText">Tracking Number</span>
+            <i class="fas fa-chevron-down" style="font-size: 0.75rem;"></i>
+          </button>
+          <div id="trackingDropdown" class="filter-dropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 320px; z-index: 1000;">
+            <div style="padding: 12px;">
+              <input type="text" id="trackingSearch" placeholder="Search tracking numbers..." style="width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem;" oninput="searchTrackingNumbers(this.value)">
+            </div>
+            <div id="trackingResults" class="filter-results" style="max-height: 300px; overflow-y: auto;">
+              <div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.875rem;">
+                <i class="fas fa-spinner fa-spin"></i> Loading tracking numbers...
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="filter-dropdown-container" style="position: relative;">
+          <button class="fm-filter-btn" id="routedSectionBtn" onclick="toggleSectionDropdown()" style="padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; font-size: 0.875rem; font-weight: 500; color: #475569; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-folder"></i>
+            <span id="routedSectionText">Folder Section</span>
+            <i class="fas fa-chevron-down" style="font-size: 0.75rem;"></i>
+          </button>
+          <div id="sectionDropdown" class="filter-dropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 280px; z-index: 1000;">
+            <div id="sectionResults" class="filter-results" style="max-height: 300px; overflow-y: auto;">
+              <div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.875rem;">
+                <i class="fas fa-spinner fa-spin"></i> Loading sections...
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Clear Filters Button -->
+        <button onclick="clearRoutedFilters()" style="padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 0.875rem; font-weight: 500; color: #64748b; cursor: pointer; transition: all 0.2s; margin-left: auto;">
+          <i class="fas fa-times" style="margin-right: 6px;"></i>
+          Clear Filters
+        </button>
+      </div>
+    </div>
+    
+    <!-- Selection Bar -->
+    <div class="fm-selection-bar" id="selectionBar" style="display: none;">
+      <span class="fm-selection-count"><span id="selectedCount">0</span> selected</span>
+      <div class="fm-selection-actions">
+        <button class="fm-selection-btn" onclick="downloadSelected()">
+          <i class="fas fa-download"></i> Download
+        </button>
+        {% if not is_readonly %}
+        <button class="fm-selection-btn danger" onclick="deleteSelected()">
+          <i class="fas fa-trash"></i> Delete
+        </button>
+        {% endif %}
+        <button class="fm-selection-btn" onclick="clearSelection()">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+      </div>
+    </div>
+    
+    <!-- Content Area -->
+    <div class="fm-content" id="fmContent">
+      {% include "admin/page/partials/_routed_documents_content.html" %}
+    </div>
+  </div>
+</div>
+
+<!-- Include the JavaScript from the main all_files template -->
+<script src="{% static 'js/admin/file_manager.js' %}"></script>
+<script>
+// Store context data
+const FM = {
+  csrf: "{{ csrf_token }}",
+  selected: new Set(),
+  isReadonly: {{ is_readonly|yesno:"true,false" }}
+};
+
+// ============================================================
+// ROUTED DOCUMENTS FILTERING SYSTEM
+// ============================================================
+
+let searchDebounceTimer;
+let activeDropdown = null;
+let currentFilter = null;
+
+// Toggle Document Type Dropdown
+function toggleDocTypeDropdown() {
+  const dropdown = document.getElementById('doc-typeDropdown');
+  const resultsContainer = document.getElementById('doc-typeResults');
+  
+  // Close other dropdowns
+  const dropdowns = ['trackingDropdown', 'sectionDropdown'];
+  dropdowns.forEach(id => {
+    const otherDropdown = document.getElementById(id);
+    if (otherDropdown) otherDropdown.style.display = 'none';
+  });
+  
+  // Toggle doc type dropdown
+  if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+    dropdown.style.display = 'block';
+    activeDropdown = 'doc-type';
+    
+    // Load all document types immediately
+    loadAllDocumentTypes();
+  } else {
+    dropdown.style.display = 'none';
+    activeDropdown = null;
+  }
+}
+
+// Load All Document Types
+async function loadAllDocumentTypes() {
+  const resultsContainer = document.getElementById('doc-typeResults');
+  
+  // Show loading
+  resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;"><i class="fas fa-spinner fa-spin"></i> Loading document types...</div>';
+  
+  try {
+    const response = await fetch('{% url "admin_app:api-search-document-types" %}?q=');
+    const data = await response.json();
+    
+    if (data.results && data.results.length > 0) {
+      let html = '';
+      data.results.forEach(docType => {
+        // Document type color scheme
+        const docTypeColor = '#dbeafe'; // Light blue
+        const textColor = '#1e40af'; // Dark blue
+        
+        html += `
+          <div class="filter-result-item" onclick="selectRoutedFilter('doc_type', '${docType.id}', '${docType.title.replace(/'/g, "\\'")}', '${docType.prefix}')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="doc-type-badge" style="background: ${docTypeColor}; color: ${textColor}; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
+                  <i class="fas fa-file-alt" style="margin-right: 4px;"></i>${docType.prefix}
+                </span>
+                <span style="font-weight: 600; font-size: 0.875rem; color: #1e293b;">${docType.title}</span>
+              </div>
+              <span style="background: #f1f5f9; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">${docType.submission_count}</span>
+            </div>
+          </div>
+        `;
+      });
+      resultsContainer.innerHTML = html;
+    } else {
+      resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.875rem;">No document types found</div>';
+    }
+  } catch (error) {
+    console.error('Document type loading error:', error);
+    resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444; font-size: 0.875rem;"><i class="fas fa-exclamation-triangle"></i> Error loading document types</div>';
+  }
+}
+
+// Toggle Filter Dropdown (for section only now)
+function toggleFilterDropdown(type) {
+  if (type === 'section') {
+    toggleSectionDropdown();
+  }
+}
+
+// Toggle Tracking Number Dropdown
+function toggleTrackingDropdown() {
+  const dropdown = document.getElementById('trackingDropdown');
+  const resultsContainer = document.getElementById('trackingResults');
+  
+  // Close other dropdowns
+  const dropdowns = ['doc-typeDropdown', 'sectionDropdown'];
+  dropdowns.forEach(id => {
+    const otherDropdown = document.getElementById(id);
+    if (otherDropdown) otherDropdown.style.display = 'none';
+  });
+  
+  // Toggle tracking dropdown
+  if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+    dropdown.style.display = 'block';
+    activeDropdown = 'tracking';
+    
+    // Load all tracking numbers immediately
+    loadAllTrackingNumbers();
+  } else {
+    dropdown.style.display = 'none';
+    activeDropdown = null;
+  }
+}
+
+// Search Tracking Numbers (Real-time search)
+async function searchTrackingNumbers(query) {
+  const resultsContainer = document.getElementById('trackingResults');
+  
+  // Show loading
+  resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+  
+  try {
+    const response = await fetch(`{% url "admin_app:api-search-tracking-filter" %}?q=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    
+    if (data.results && data.results.length > 0) {
+      let html = '';
+      data.results.forEach(item => {
+        if (item.is_header) {
+          // Document type header
+          html += `
+            <div style="padding: 8px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 0.75rem; color: #64748b; text-transform: uppercase;">
+              ${item.title}
+            </div>
+          `;
+        } else if (item.is_more) {
+          // More items indicator
+          html += `
+            <div style="padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-style: italic; color: #94a3b8; font-size: 0.875rem;">
+              ${item.title}
+              <div style="font-size: 0.75rem; margin-top: 4px;">${item.tracking_number}</div>
+            </div>
+          `;
+        } else {
+          // Regular tracking number item
+          html += `
+            <div class="filter-result-item" onclick="selectRoutedFilter('tracking', '${item.id}', '${item.title.replace(/'/g, "\\'")}', '${item.tracking_number.replace(/'/g, "\\'")}')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="flex: 1;">
+                  <div style="font-weight: 600; font-size: 0.875rem; color: #1e293b; margin-bottom: 4px;">
+                    <i class="fas fa-hashtag" style="color: #8b5cf6; margin-right: 6px; font-size: 0.75rem;"></i>
+                    ${item.title}
+                  </div>
+                  <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 4px;">${item.tracking_number}</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <span style="background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 500;">${item.doc_type}</span>
+                    <span style="background: #f0fdf4; color: #166534; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 500;">${item.status}</span>
+                    ${item.section !== 'No section' ? `<span style="background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 500;">${item.section}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      });
+      resultsContainer.innerHTML = html;
+    } else {
+      resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.875rem;">No tracking numbers found</div>';
+    }
+  } catch (error) {
+    console.error('Tracking number search error:', error);
+    resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444; font-size: 0.875rem;"><i class="fas fa-exclamation-triangle"></i> Error searching tracking numbers</div>';
+  }
+}
+
+// Load All Tracking Numbers
+async function loadAllTrackingNumbers() {
+  const resultsContainer = document.getElementById('trackingResults');
+  
+  // Show loading
+  resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;"><i class="fas fa-spinner fa-spin"></i> Loading tracking numbers...</div>';
+  
+  try {
+    const response = await fetch('{% url "admin_app:api-search-tracking-filter" %}?q=');
+    const data = await response.json();
+    
+    if (data.results && data.results.length > 0) {
+      let html = '';
+      data.results.forEach(item => {
+        if (item.is_header) {
+          // Document type header
+          html += `
+            <div style="padding: 8px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 0.75rem; color: #64748b; text-transform: uppercase;">
+              ${item.title}
+            </div>
+          `;
+        } else if (item.is_more) {
+          // More items indicator
+          html += `
+            <div style="padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-style: italic; color: #94a3b8; font-size: 0.875rem;">
+              ${item.title}
+              <div style="font-size: 0.75rem; margin-top: 4px;">${item.tracking_number}</div>
+            </div>
+          `;
+        } else {
+          // Regular tracking number item
+          html += `
+            <div class="filter-result-item" onclick="selectRoutedFilter('tracking', '${item.id}', '${item.title.replace(/'/g, "\\'")}', '${item.tracking_number.replace(/'/g, "\\'")}')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="flex: 1;">
+                  <div style="font-weight: 600; font-size: 0.875rem; color: #1e293b; margin-bottom: 4px;">
+                    <i class="fas fa-hashtag" style="color: #8b5cf6; margin-right: 6px; font-size: 0.75rem;"></i>
+                    ${item.title}
+                  </div>
+                  <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 4px;">${item.tracking_number}</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <span style="background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 500;">${item.doc_type}</span>
+                    <span style="background: #f0fdf4; color: #166534; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 500;">${item.status}</span>
+                    ${item.section !== 'No section' ? `<span style="background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 500;">${item.section}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      });
+      resultsContainer.innerHTML = html;
+    } else {
+      resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.875rem;">No tracking numbers found</div>';
+    }
+  } catch (error) {
+    console.error('Tracking number loading error:', error);
+    resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444; font-size: 0.875rem;"><i class="fas fa-exclamation-triangle"></i> Error loading tracking numbers</div>';
+  }
+}
+
+// Toggle Section Dropdown
+function toggleSectionDropdown() {
+  const dropdown = document.getElementById('sectionDropdown');
+  const resultsContainer = document.getElementById('sectionResults');
+  
+  // Close other dropdowns
+  const dropdowns = ['doc-typeDropdown', 'trackingDropdown'];
+  dropdowns.forEach(id => {
+    const otherDropdown = document.getElementById(id);
+    if (otherDropdown) otherDropdown.style.display = 'none';
+  });
+  
+  // Toggle section dropdown
+  if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+    dropdown.style.display = 'block';
+    activeDropdown = 'section';
+    
+    // Load all sections immediately
+    loadAllSections();
+  } else {
+    dropdown.style.display = 'none';
+    activeDropdown = null;
+  }
+}
+
+// Load All Sections
+async function loadAllSections() {
+  const resultsContainer = document.getElementById('sectionResults');
+  
+  // Show loading
+  resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;"><i class="fas fa-spinner fa-spin"></i> Loading sections...</div>';
+  
+  try {
+    const response = await fetch('{% url "admin_app:api-search-sections" %}?q=');
+    const data = await response.json();
+    
+    if (data.results && data.results.length > 0) {
+      let html = '';
+      data.results.forEach(section => {
+        // Section color (folder-like theme)
+        const sectionColor = '#e0f2fe'; // Light blue
+        const textColor = '#0c4a6e'; // Dark blue
+        
+        html += `
+          <div class="filter-result-item" onclick="selectRoutedFilter('section', '${section.id}', '${section.title.replace(/'/g, "\\'")}', '${section.submission_count} submissions')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="section-badge" style="background: ${sectionColor}; color: ${textColor}; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;">
+                  <i class="fas fa-folder" style="margin-right: 4px;"></i>Section
+                </span>
+                <span style="font-weight: 600; font-size: 0.875rem; color: #1e293b;">${section.title}</span>
+              </div>
+              <span style="background: #f1f5f9; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">${section.submission_count}</span>
+            </div>
+          </div>
+        `;
+      });
+      resultsContainer.innerHTML = html;
+    } else {
+      resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.875rem;">No sections found</div>';
+    }
+  } catch (error) {
+    console.error('Section loading error:', error);
+    resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444; font-size: 0.875rem;"><i class="fas fa-exclamation-triangle"></i> Error loading sections</div>';
+  }
+}
+
+// Search Filter (with debounce)
+function searchFilter(type, query) {
+  clearTimeout(searchDebounceTimer);
+  
+  const resultsContainer = document.getElementById(type + 'Results');
+  
+  if (query.length < 2) {
+    resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.875rem;">Type at least 2 characters...</div>';
+    return;
+  }
+  
+  // Show loading
+  resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+  
+  searchDebounceTimer = setTimeout(() => {
+    performSearch(type, query);
+  }, 300);
+}
+
+// Perform Search API Call
+async function performSearch(type, query) {
+  const resultsContainer = document.getElementById(type + 'Results');
+  
+  let apiUrl;
+  if (type === 'doc-type') {
+    apiUrl = '{% url "admin_app:api-search-document-types" %}';
+  } else if (type === 'section') {
+    apiUrl = '{% url "admin_app:api-search-sections" %}';
+  }
+  
+  try {
+    const response = await fetch(`${apiUrl}?q=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    
+    if (data.results && data.results.length > 0) {
+      let html = '';
+      data.results.forEach(result => {
+        html += `
+          <div class="filter-result-item" onclick="selectRoutedFilter('${type}', ${result.id}, '${result.title.replace(/'/g, "\\'")}', '${result.tracking_number}')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+            <div style="font-weight: 600; font-size: 0.875rem; color: #1e293b; margin-bottom: 4px;">${result.title}</div>
+            <div style="font-size: 0.75rem; color: #64748b;">
+              <i class="fas fa-hashtag" style="font-size: 0.7rem;"></i> ${result.tracking_number}
+            </div>
+          </div>
+        `;
+      });
+      resultsContainer.innerHTML = html;
+    } else {
+      resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.875rem;">No results found</div>';
+    }
+  } catch (error) {
+    console.error('Search error:', error);
+    resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444; font-size: 0.875rem;"><i class="fas fa-exclamation-triangle"></i> Error loading results</div>';
+  }
+}
+
+// Select Routed Filter and Load Documents
+async function selectRoutedFilter(type, filterId, title, trackingNumber) {
+  // Close dropdown
+  document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+    dropdown.style.display = 'none';
+  });
+  
+  // Update filter button indicators
+  updateRoutedFilterIndicator(type, title);
+  
+  // Store current filter
+  currentFilter = { type, filterId, title, trackingNumber };
+  
+  // Show loading in content area
+  const contentArea = document.getElementById('fmContent');
+  contentArea.innerHTML = `
+    <div style="padding: 60px 20px; text-align: center;">
+      <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: #8b5cf6; margin-bottom: 20px;"></i>
+      <p style="color: #64748b; font-size: 1.1rem;">Loading documents...</p>
+    </div>
+  `;
+  
+  try {
+    const response = await fetch(`{% url "admin_app:api-routed-documents" %}?filter_type=${type}&filter_value=${filterId}`);
+    const data = await response.json();
+    
+    if (data.status === 'success') {
+      contentArea.innerHTML = data.html;
+      
+      // Show notification
+      if (window.notify) {
+        notify(`Showing ${data.total_files} file(s) - ${data.filter_display}`, 'success');
+      }
+    } else {
+      contentArea.innerHTML = `
+        <div class="fm-empty">
+          <div class="fm-empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
+          <h5>Error Loading Documents</h5>
+          <p>${data.message || 'An error occurred'}</p>
+        </div>
+      `;
+      if (window.notify) notify(data.message, 'error');
+    }
+  } catch (error) {
+    console.error('Load error:', error);
+    contentArea.innerHTML = `
+      <div class="fm-empty">
+        <div class="fm-empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <h5>Error Loading Documents</h5>
+        <p>Failed to load documents. Please try again.</p>
+      </div>
+    `;
+    if (window.notify) notify('Failed to load documents', 'error');
+  }
+}
+
+// Update Routed Filter Indicator
+function updateRoutedFilterIndicator(type, title) {
+  // Reset all filter buttons first
+  resetRoutedFilterIndicators();
+  
+  let btnId, textId;
+  if (type === 'doc_type') {
+    btnId = 'routedDocTypeBtn';
+    textId = 'routedDocTypeText';
+  } else if (type === 'tracking') {
+    btnId = 'routedTrackingBtn';
+    textId = 'routedTrackingText';
+  } else if (type === 'section') {
+    btnId = 'routedSectionBtn';
+    textId = 'routedSectionText';
+  }
+  
+  if (btnId && textId) {
+    const btn = document.getElementById(btnId);
+    const text = document.getElementById(textId);
+    
+    if (btn && text) {
+      text.textContent = title;
+      btn.style.background = '#8b5cf6';
+      btn.style.borderColor = '#8b5cf6';
+      btn.style.color = 'white';
+    }
+  }
+}
+
+// Reset Routed Filter Indicators
+function resetRoutedFilterIndicators() {
+  const filterButtons = [
+    { btnId: 'routedDocTypeBtn', textId: 'routedDocTypeText', defaultText: 'Document Type' },
+    { btnId: 'routedTrackingBtn', textId: 'routedTrackingText', defaultText: 'Tracking Number' },
+    { btnId: 'routedSectionBtn', textId: 'routedSectionText', defaultText: 'Folder Section' }
+  ];
+  
+  filterButtons.forEach(({ btnId, textId, defaultText }) => {
+    const btn = document.getElementById(btnId);
+    const text = document.getElementById(textId);
+    
+    if (btn && text) {
+      text.textContent = defaultText;
+      btn.style.background = 'white';
+      btn.style.borderColor = '#e2e8f0';
+      btn.style.color = '#475569';
+    }
+  });
+}
+
+// Clear Routed Filters
+function clearRoutedFilters() {
+  // Reset all filter indicators
+  resetRoutedFilterIndicators();
+  
+  // Clear search inputs
+  const searchInputs = ['doc-typeSearch', 'trackingSearch'];
+  searchInputs.forEach(inputId => {
+    const input = document.getElementById(inputId);
+    if (input) input.value = '';
+  });
+  
+  // Close all dropdowns
+  document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+    dropdown.style.display = 'none';
+  });
+  
+  // Clear current filter and reload
+  currentFilter = null;
+  location.reload();
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.filter-dropdown-container')) {
+    document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+      dropdown.style.display = 'none';
+    });
+    activeDropdown = null;
+  }
+});
+
+// Selection functionality
+function updateSelection() {
+  const bar = document.getElementById('selectionBar');
+  const count = document.getElementById('selectedCount');
+  
+  FM.selected.clear();
+  document.querySelectorAll('.fm-checkbox:checked').forEach(cb => {
+    FM.selected.add({ id: cb.dataset.id, type: cb.dataset.type });
+  });
+  
+  if (FM.selected.size > 0) {
+    bar.style.display = 'flex';
+    count.textContent = FM.selected.size;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function clearSelection() {
+  FM.selected.clear();
+  document.querySelectorAll('.fm-checkbox').forEach(cb => cb.checked = false);
+  updateSelection();
+}
+
+document.addEventListener('change', function(e) {
+  if (e.target.classList.contains('fm-checkbox')) {
+    updateSelection();
+  }
+});
+
+function downloadSelected() {
+  const fileIds = Array.from(FM.selected).filter(f => f.type === 'file').map(f => f.id);
+  
+  if (fileIds.length === 0) {
+    if (window.notify) notify('No downloadable files selected', 'warning');
+    return;
+  }
+  
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '{% url "admin_app:bulk-download" %}';
+  form.style.display = 'none';
+  
+  const csrfInput = document.createElement('input');
+  csrfInput.type = 'hidden';
+  csrfInput.name = 'csrfmiddlewaretoken';
+  csrfInput.value = FM.csrf;
+  form.appendChild(csrfInput);
+  
+  fileIds.forEach(id => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'file_ids';
+    input.value = id;
+    form.appendChild(input);
+  });
+  
+  document.body.appendChild(form);
+  form.submit();
+  setTimeout(() => document.body.removeChild(form), 1000);
+}
+
+{% if not is_readonly %}
+function deleteSelected() {
+  const fileIds = Array.from(FM.selected).map(f => f.id);
+  
+  if (fileIds.length === 0) return;
+  
+  if (!confirm(`Delete ${fileIds.length} item(s)? This cannot be undone.`)) return;
+  
+  fetch('{% url "admin_app:bulk-delete-all" %}', {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': FM.csrf,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ file_ids: fileIds })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === 'success') {
+      if (window.notify) notify(data.message, 'success');
+      setTimeout(() => location.reload(), 800);
+    } else {
+      if (window.notify) notify(data.message, 'error');
+    }
+  });
+}
+{% endif %}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Add hover effects to filter buttons
+  document.querySelectorAll('.fm-filter-btn').forEach(btn => {
+    btn.addEventListener('mouseenter', function() {
+      if (this.style.background !== '#8b5cf6') { // Don't override active state
+        this.style.background = '#f8fafc';
+        this.style.borderColor = '#8b5cf6';
+      }
+    });
+    btn.addEventListener('mouseleave', function() {
+      if (this.style.background !== '#8b5cf6') { // Don't override active state
+        this.style.background = 'white';
+        this.style.borderColor = '#e2e8f0';
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

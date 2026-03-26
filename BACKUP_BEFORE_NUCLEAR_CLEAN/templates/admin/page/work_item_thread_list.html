@@ -1,0 +1,329 @@
+{% extends "admin/layout/base.html" %}
+{% load static %}
+{% block title %}Messages{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/discussions.css' %}">
+{% include "shared/message_ui_modal.html" %}
+
+<div class="disc-container">
+
+  <!-- HEADER -->
+  <div class="disc-header">
+    <div class="disc-header-left">
+      <div class="disc-header-icon">
+        <i class="fas fa-comments"></i>
+      </div>
+      <div>
+        <h4 class="disc-title">Messages</h4>
+        <p class="disc-subtitle">Conversations with assigned workers</p>
+      </div>
+    </div>
+    
+    <div class="disc-header-right">
+      <div class="disc-stats">
+        <div class="disc-stat">
+          <span class="disc-stat-value">{{ total_active_threads }}</span>
+          <span class="disc-stat-label">Threads</span>
+        </div>
+        {% if total_unread > 0 %}
+        <div class="disc-stat disc-stat-unread">
+          <span class="disc-stat-value">{{ total_unread }}</span>
+          <span class="disc-stat-label">Unread</span>
+        </div>
+        {% endif %}
+      </div>
+      
+      <div class="disc-actions">
+        <a href="{% url 'admin_app:hidden-discussions' %}" class="disc-btn {% if hidden_count > 0 %}disc-btn-outline{% else %}disc-btn-ghost{% endif %}">
+          <i class="fas fa-eye-slash"></i>
+          {% if hidden_count > 0 %}
+            {{ hidden_count }} Hidden
+          {% else %}
+            Hidden
+          {% endif %}
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="disc-filter-bar">
+    <div class="disc-search">
+      <i class="fas fa-search"></i>
+      <input type="text" id="discSearchInput" placeholder="Search conversations...">
+    </div>
+    
+    <div class="disc-filter-tabs">
+      <button class="disc-filter-tab active" data-filter="all">All</button>
+      <button class="disc-filter-tab" data-filter="unread">
+        <i class="fas fa-circle"></i>
+        Unread
+      </button>
+    </div>
+  </div>
+
+  <!-- CONVERSATIONS LIST -->
+  <div class="disc-list" id="discList">
+    {% regroup work_items by workcycle_id as grouped_cycles %}
+    
+    {% if grouped_cycles %}
+      {% for group in grouped_cycles %}
+        {% with wc=group.list.0.workcycle %}
+        <div class="disc-group">
+          <div class="disc-group-header">
+            <div class="disc-group-icon">
+              <i class="fas fa-layer-group"></i>
+            </div>
+            <div class="disc-group-info">
+              <span class="disc-group-title">{{ wc.title }}</span>
+              <span class="disc-group-meta">
+                <i class="far fa-clock"></i>
+                Due {{ wc.due_at|date:"M d, Y" }}
+                · {{ group.list|length }} conversation{{ group.list|length|pluralize }}
+              </span>
+            </div>
+            <div class="disc-group-actions">
+              <button class="disc-group-btn disc-hide-btn" onclick="hideWorkcycle({{ wc.id }}, '{{ wc.title|escapejs }}', this)" title="Hide all discussions">
+                <i class="fas fa-eye-slash"></i>
+              </button>
+              <button class="disc-group-btn disc-group-toggle" data-toggle-group>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="disc-group-items">
+            {% for item in group.list %}
+            <div class="disc-item {% if item.unread_count > 0 %}disc-item-unread{% endif %}"
+                 data-item-id="{{ item.pk }}"
+                 data-search="{{ item.owner.get_full_name|default:item.owner.username|lower }} {{ wc.title|lower }}">
+              
+              <div class="disc-item-clickable"
+                   data-qxdlg-trigger
+                   data-qxdlg-url="{% url 'admin_app:work-item-discussion' item.pk %}"
+                   data-qxdlg-title="{{ wc.title }}"
+                   data-qxdlg-subtitle="Thread with {{ item.owner.get_full_name|default:item.owner.username }}">
+              
+                <div class="disc-avatar">
+                  {% if item.owner.profile_image %}
+                    <img src="{{ item.owner.profile_image.url }}" alt="{{ item.owner.get_full_name }}">
+                  {% else %}
+                    <span class="disc-avatar-initials">
+                      {{ item.owner.first_name|default:item.owner.username|slice:":1"|upper }}{{ item.owner.last_name|slice:":1"|upper }}
+                    </span>
+                  {% endif %}
+                  {% if item.unread_count > 0 %}
+                    <span class="disc-avatar-badge">{{ item.unread_count }}</span>
+                  {% endif %}
+                </div>
+                
+                <div class="disc-item-content">
+                  <div class="disc-item-header">
+                    <span class="disc-item-name">{{ item.owner.get_full_name|default:item.owner.username }}</span>
+                    <span class="disc-item-time">
+                      {% if item.last_message_at %}
+                        {{ item.last_message_at|timesince }} ago
+                      {% else %}
+                        No messages
+                      {% endif %}
+                    </span>
+                  </div>
+                  
+                  <div class="disc-item-preview">
+                    {% if item.last_message %}
+                      {{ item.last_message|truncatechars:60 }}
+                    {% else %}
+                      <span class="disc-item-empty">Start a conversation</span>
+                    {% endif %}
+                  </div>
+                  
+                  <div class="disc-item-meta">
+                    {% if item.owner.division %}
+                      <span><i class="fas fa-building"></i> {{ item.owner.division.name }}</span>
+                    {% endif %}
+                    <span><i class="fas fa-hashtag"></i> Thread #{{ item.pk }}</span>
+                  </div>
+                </div>
+                
+                <div class="disc-item-arrow">
+                  <i class="fas fa-chevron-right"></i>
+                </div>
+              </div>
+              
+              <button class="disc-item-hide" onclick="hideDiscussion({{ item.pk }}, this)" title="Hide this discussion">
+                <i class="fas fa-eye-slash"></i>
+              </button>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endwith %}
+      {% endfor %}
+    {% else %}
+      <div class="disc-empty">
+        <div class="disc-empty-icon">
+          <i class="fas fa-inbox"></i>
+        </div>
+        <h5>No conversations yet</h5>
+        <p>Messages will appear here when workers start discussions on their work items.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Modal flash prevention
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.classList.remove('show');
+  modal.style.display = 'none';
+  modal.setAttribute('aria-hidden', 'true');
+});
+document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+document.body.classList.remove('modal-open');
+
+// Hide single discussion
+function hideDiscussion(itemId, btn) {
+  const csrfToken = '{{ csrf_token }}';
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  
+  fetch(`/admin/discussions/${itemId}/hide/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      showToast('Discussion hidden', 'success');
+      removeItemWithAnimation(btn.closest('.disc-item'));
+    } else {
+      showToast(data.message || 'Failed to hide', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+    }
+  })
+  .catch(() => {
+    showToast('An error occurred', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+  });
+}
+
+// Hide workcycle
+function hideWorkcycle(workcycleId, title, btn) {
+  if (!confirm(`Hide all discussions in "${title}"?`)) return;
+  
+  const csrfToken = '{{ csrf_token }}';
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  
+  fetch(`/admin/discussions/workcycle/${workcycleId}/hide/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      showToast(data.message, 'success');
+      const group = btn.closest('.disc-group');
+      group.style.transition = 'all 0.3s ease';
+      group.style.opacity = '0';
+      setTimeout(() => { group.remove(); checkEmptyState(); }, 300);
+    } else {
+      showToast(data.message || 'Failed to hide', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+    }
+  })
+  .catch(() => {
+    showToast('An error occurred', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+  });
+}
+
+function removeItemWithAnimation(item) {
+  item.style.transition = 'all 0.3s ease';
+  item.style.opacity = '0';
+  item.style.transform = 'translateX(-20px)';
+  setTimeout(() => {
+    const group = item.closest('.disc-group');
+    item.remove();
+    if (group && group.querySelectorAll('.disc-item').length === 0) {
+      group.style.transition = 'all 0.3s ease';
+      group.style.opacity = '0';
+      setTimeout(() => { group.remove(); checkEmptyState(); }, 300);
+    }
+  }, 300);
+}
+
+function checkEmptyState() {
+  if (document.querySelectorAll('.disc-item').length === 0) location.reload();
+}
+
+function showToast(message, type = 'info') {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'primary'} border-0`;
+  toast.setAttribute('role', 'alert');
+  toast.innerHTML = `<div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+  container.appendChild(toast);
+  const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+  bsToast.show();
+  toast.addEventListener('hidden.bs.toast', () => toast.remove());
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Search
+  document.getElementById('discSearchInput')?.addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    document.querySelectorAll('.disc-item').forEach(item => {
+      const searchText = item.dataset.search || '';
+      item.style.display = searchText.includes(query) || query === '' ? '' : 'none';
+    });
+    document.querySelectorAll('.disc-group').forEach(group => {
+      const visible = group.querySelectorAll('.disc-item:not([style*="display: none"])');
+      group.style.display = visible.length > 0 ? '' : 'none';
+    });
+  });
+  
+  // Filter tabs
+  document.querySelectorAll('.disc-filter-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.disc-filter-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      const filter = this.dataset.filter;
+      document.querySelectorAll('.disc-item').forEach(item => {
+        if (filter === 'all') item.style.display = '';
+        else if (filter === 'unread') item.style.display = item.classList.contains('disc-item-unread') ? '' : 'none';
+      });
+      document.querySelectorAll('.disc-group').forEach(group => {
+        const visible = group.querySelectorAll('.disc-item:not([style*="display: none"])');
+        group.style.display = visible.length > 0 ? '' : 'none';
+      });
+    });
+  });
+  
+  // Group toggle
+  document.querySelectorAll('[data-toggle-group]').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      this.closest('.disc-group').classList.toggle('collapsed');
+    });
+  });
+  
+  // Re-attach message modal triggers after DOM is ready
+  if (window.msgDiscussion && typeof window.msgDiscussion.attachTriggers === 'function') {
+    window.msgDiscussion.attachTriggers();
+  }
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,586 @@
+{% extends base_template|default:"admin/layout/base.html" %}
+{% load static %}
+{% block title %}Workstate Assets{% endblock %}
+{% block page_title %}Workstate Assets{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin/file_manager.css' %}">
+<style>
+.fm-filters-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.fm-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.fm-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fm-filter-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.fm-filter-select, .fm-filter-input {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.fm-filter-select:focus, .fm-filter-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.fm-filters-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.fm-filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fm-filter-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.fm-filter-btn.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fm-container">
+  <div class="fm-header">
+    <div class="fm-nav">
+      <a href="{% url 'admin_app:file-manager' %}" class="fm-nav-item">
+        <i class="fas fa-folder"></i>
+        <span>File Manager</span>
+      </a>
+      <a href="{% url 'admin_app:routed-documents' %}" class="fm-nav-item">
+        <i class="fas fa-route"></i>
+        <span>Routed Documents</span>
+      </a>
+      <a href="{% url 'admin_app:workstate-assets' %}" class="fm-nav-item active">
+        <i class="fas fa-layer-group"></i>
+        <span>Workstate Assets</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="fm-main">
+    <div class="fm-filters-panel">
+      <!-- Workstate Filters -->
+      <div class="fm-filter-bar" style="display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: white; border-bottom: 1px solid #e2e8f0;">
+        <span style="font-size: 0.875rem; font-weight: 600; color: #64748b;">Filter by:</span>
+        
+        <div class="filter-dropdown-container" style="position: relative;">
+          <button class="fm-filter-btn" onclick="toggleFilterDropdown('workstate-workcycle')" style="padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; font-size: 0.875rem; font-weight: 500; color: #475569; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-tasks"></i>
+            WorkCycle
+            <i class="fas fa-chevron-down" style="font-size: 0.75rem;"></i>
+          </button>
+          <div id="workstate-workcycleDropdown" class="filter-dropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 300px; max-width: 400px; z-index: 1000;">
+            <div style="padding: 12px;">
+              <input type="text" id="workstate-workcycleSearch" placeholder="Search workcycles..." style="width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.875rem;" oninput="searchFilter('workstate-workcycle', this.value)">
+            </div>
+            <div id="workstate-workcycleResults" class="filter-results" style="max-height: 300px; overflow-y: auto;">
+              <div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.875rem;">
+                Type to search...
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="filter-dropdown-container" style="position: relative;">
+          <button class="fm-filter-btn" id="workstateCategoryBtn" onclick="toggleFilterDropdown('workstate-category')" style="padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; font-size: 0.875rem; font-weight: 500; color: #475569; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-tags"></i>
+            <span id="workstateCategoryText">Asset Category</span>
+            <i class="fas fa-chevron-down" style="font-size: 0.75rem;"></i>
+          </button>
+          <div id="workstate-categoryDropdown" class="filter-dropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 250px; z-index: 1000;">
+            <div class="filter-results" style="max-height: 300px; overflow-y: auto;">
+              <div class="filter-result-item" onclick="selectWorkstateCategory('', 'All Assets')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                <div style="font-weight: 600; font-size: 0.875rem; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                  <span class="badge" style="background: #f3f4f6; color: #6b7280; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">All</span>
+                  All Assets
+                </div>
+              </div>
+              {% for choice in filters.attachment_types %}
+              <div class="filter-result-item" onclick="selectWorkstateCategory('{{ choice.0 }}', '{{ choice.1 }}')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                <div style="font-weight: 600; font-size: 0.875rem; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                  <span class="badge" style="background: #8b5cf6; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">{{ choice.0|upper }}</span>
+                  {{ choice.1 }}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        
+        <!-- Clear Filters Button -->
+        <button onclick="clearWorkstateFilters()" style="padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 0.875rem; font-weight: 500; color: #64748b; cursor: pointer; transition: all 0.2s; margin-left: auto;">
+          <i class="fas fa-times" style="margin-right: 6px;"></i>
+          Clear Filters
+        </button>
+      </div>
+    </div>
+    
+    <!-- Selection Bar -->
+    <div class="fm-selection-bar" id="selectionBar" style="display: none;">
+      <span class="fm-selection-count"><span id="selectedCount">0</span> selected</span>
+      <div class="fm-selection-actions">
+        <button class="fm-selection-btn" onclick="downloadSelected()">
+          <i class="fas fa-download"></i> Download
+        </button>
+        {% if not is_readonly %}
+        <button class="fm-selection-btn danger" onclick="deleteSelected()">
+          <i class="fas fa-trash"></i> Delete
+        </button>
+        {% endif %}
+        <button class="fm-selection-btn" onclick="clearSelection()">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+      </div>
+    </div>
+    
+    <!-- Content Area -->
+    <div class="fm-content" id="fmContent">
+      {% include "admin/page/partials/_workstate_assets_content.html" %}
+    </div>
+  </div>
+</div>
+
+<!-- Include the JavaScript from the main all_files template -->
+<script src="{% static 'js/admin/file_manager.js' %}"></script>
+<script>
+// Store context data
+const FM = {
+  csrf: "{{ csrf_token }}",
+  selected: new Set(),
+  isReadonly: {{ is_readonly|yesno:"true,false" }}
+};
+
+// ============================================================
+// WORKSTATE ASSETS FILTERING SYSTEM
+// ============================================================
+
+let searchDebounceTimer;
+let activeDropdown = null;
+
+// Toggle Filter Dropdown
+function toggleFilterDropdown(type) {
+  const dropdowns = [
+    'workstate-workcycleDropdown', 'workstate-categoryDropdown', 'workstate-fileDropdown'
+  ];
+  const targetDropdown = type + 'Dropdown';
+  
+  // Close other dropdowns
+  dropdowns.forEach(id => {
+    if (id !== targetDropdown) {
+      const dropdown = document.getElementById(id);
+      if (dropdown) dropdown.style.display = 'none';
+    }
+  });
+  
+  // Toggle target dropdown
+  const dropdown = document.getElementById(targetDropdown);
+  if (dropdown) {
+    if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+      dropdown.style.display = 'block';
+      activeDropdown = type;
+      // Focus search input if it exists
+      const searchInput = document.getElementById(type + 'Search');
+      if (searchInput) searchInput.focus();
+    } else {
+      dropdown.style.display = 'none';
+      activeDropdown = null;
+    }
+  }
+}
+
+// Search Filter (with debounce)
+function searchFilter(type, query) {
+  clearTimeout(searchDebounceTimer);
+  
+  const resultsContainer = document.getElementById(type + 'Results');
+  
+  if (query.length < 2) {
+    resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.875rem;">Type at least 2 characters...</div>';
+    return;
+  }
+  
+  // Show loading
+  resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8;"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+  
+  searchDebounceTimer = setTimeout(() => {
+    performWorkstateSearch(type, query);
+  }, 300);
+}
+
+// Perform Workstate Search API Call
+async function performWorkstateSearch(type, query) {
+  const resultsContainer = document.getElementById(type + 'Results');
+  
+  const actualType = type.replace('workstate-', '');
+  
+  let apiUrl;
+  if (actualType === 'workcycle') {
+    apiUrl = '{% url "admin_app:api-search-workstate-workcycles" %}';
+  } else if (actualType === 'file') {
+    apiUrl = '{% url "admin_app:api-search-workstate-files" %}';
+  }
+  
+  try {
+    const response = await fetch(`${apiUrl}?q=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    
+    if (data.results && data.results.length > 0) {
+      let html = '';
+      data.results.forEach(result => {
+        html += `
+          <div class="filter-result-item" onclick="selectWorkstateFilter('${type}', ${result.id}, '${result.title.replace(/'/g, "\\'")}', '${result.tracking_number}')" style="padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+            <div style="font-weight: 600; font-size: 0.875rem; color: #1e293b; margin-bottom: 4px;">${result.title}</div>
+            <div style="font-size: 0.75rem; color: #64748b;">
+              <i class="fas fa-hashtag" style="font-size: 0.7rem;"></i> ${result.tracking_number}
+              ${result.file_name ? `<span style="margin-left: 12px;"><i class="fas fa-paperclip" style="font-size: 0.7rem;"></i> ${result.file_name}</span>` : ''}
+            </div>
+          </div>
+        `;
+      });
+      resultsContainer.innerHTML = html;
+    } else {
+      resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.875rem;">No results found</div>';
+    }
+  } catch (error) {
+    console.error('Search error:', error);
+    resultsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #ef4444; font-size: 0.875rem;"><i class="fas fa-exclamation-triangle"></i> Error loading results</div>';
+  }
+}
+
+// Select Workstate Category Filter
+function selectWorkstateCategory(categoryValue, categoryDisplay) {
+  // Close dropdown
+  document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+    dropdown.style.display = 'none';
+  });
+  
+  // Update button text and style to show active filter
+  const categoryBtn = document.getElementById('workstateCategoryBtn');
+  const categoryText = document.getElementById('workstateCategoryText');
+  
+  if (categoryValue === '') {
+    // All Assets selected
+    categoryText.textContent = 'All Assets';
+    categoryBtn.style.background = '#f8fafc';
+    categoryBtn.style.borderColor = '#8b5cf6';
+    categoryBtn.style.color = '#8b5cf6';
+  } else {
+    // Specific category selected
+    categoryText.textContent = categoryDisplay;
+    categoryBtn.style.background = '#8b5cf6';
+    categoryBtn.style.borderColor = '#8b5cf6';
+    categoryBtn.style.color = 'white';
+  }
+  
+  // Show loading in content area
+  const contentArea = document.getElementById('fmContent');
+  const loadingMessage = categoryValue === '' ? 'Loading all workstate assets...' : `Filtering by ${categoryDisplay}...`;
+  
+  contentArea.innerHTML = `
+    <div style="padding: 60px 20px; text-align: center;">
+      <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: #8b5cf6; margin-bottom: 20px;"></i>
+      <p style="color: #64748b; font-size: 1.1rem;">${loadingMessage}</p>
+    </div>
+  `;
+  
+  // Apply category filter to current workstate assets
+  const params = new URLSearchParams();
+  params.set('view', 'workstate');
+  if (categoryValue !== '') {
+    params.set('workstate_type', categoryValue);
+  }
+  
+  fetch(`{% url "admin_app:workstate-assets" %}?${params.toString()}`, {
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === 'success') {
+      contentArea.innerHTML = data.html;
+      if (window.notify) {
+        const message = categoryValue === '' 
+          ? `Showing all ${data.total_files} workstate asset(s)`
+          : `Showing ${data.total_files} ${categoryDisplay} asset(s)`;
+        notify(message, 'success');
+      }
+    } else {
+      const emptyMessage = categoryValue === '' 
+        ? 'No workstate assets found'
+        : `No ${categoryDisplay} assets found`;
+      contentArea.innerHTML = `
+        <div class="fm-empty">
+          <div class="fm-empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
+          <h5>No Assets Found</h5>
+          <p>${emptyMessage}</p>
+        </div>
+      `;
+    }
+  })
+  .catch(error => {
+    console.error('Filter error:', error);
+    contentArea.innerHTML = `
+      <div class="fm-empty">
+        <div class="fm-empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <h5>Error Filtering Assets</h5>
+        <p>Failed to filter assets. Please try again.</p>
+      </div>
+    `;
+  });
+}
+
+// Select Workstate Filter (WorkCycle and File Name)
+async function selectWorkstateFilter(type, itemId, title, trackingNumber) {
+  // Close dropdown
+  document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+    dropdown.style.display = 'none';
+  });
+  
+  // Show loading in content area
+  const contentArea = document.getElementById('fmContent');
+  contentArea.innerHTML = `
+    <div style="padding: 60px 20px; text-align: center;">
+      <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: #8b5cf6; margin-bottom: 20px;"></i>
+      <p style="color: #64748b; font-size: 1.1rem;">Loading assets...</p>
+    </div>
+  `;
+  
+  try {
+    let apiUrl;
+    let params = new URLSearchParams();
+    
+    if (type === 'workstate-workcycle') {
+      // Filter by WorkCycle
+      params.set('workstate_workcycle', itemId);
+      apiUrl = `{% url "admin_app:workstate-assets" %}?${params.toString()}`;
+    } else if (type === 'workstate-file') {
+      // Filter by file name (using WorkCycle from search result)
+      params.set('workstate_workcycle', itemId);
+      apiUrl = `{% url "admin_app:workstate-assets" %}?${params.toString()}`;
+    }
+    
+    const response = await fetch(apiUrl, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const data = await response.json();
+    
+    if (data.status === 'success') {
+      contentArea.innerHTML = data.html;
+      if (window.notify) {
+        notify(`Showing ${data.total_files} asset(s) from: ${title}`, 'success');
+      }
+    } else {
+      contentArea.innerHTML = `
+        <div class="fm-empty">
+          <div class="fm-empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
+          <h5>No Assets Found</h5>
+          <p>No assets found for the selected filter</p>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Filter error:', error);
+    contentArea.innerHTML = `
+      <div class="fm-empty">
+        <div class="fm-empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <h5>Error Loading Assets</h5>
+        <p>Failed to load assets. Please try again.</p>
+      </div>
+    `;
+  }
+}
+
+// Reset Workstate Filter Indicators
+function resetWorkstateFilterIndicators() {
+  // Reset category filter button
+  const categoryBtn = document.getElementById('workstateCategoryBtn');
+  const categoryText = document.getElementById('workstateCategoryText');
+  
+  if (categoryBtn && categoryText) {
+    categoryText.textContent = 'Asset Category';
+    categoryBtn.style.background = 'white';
+    categoryBtn.style.borderColor = '#e2e8f0';
+    categoryBtn.style.color = '#475569';
+  }
+}
+
+// Clear Workstate Filters
+function clearWorkstateFilters() {
+  // Reset all filter indicators
+  resetWorkstateFilterIndicators();
+  
+  // Clear search inputs
+  const searchInputs = ['workstate-workcycleSearch', 'workstate-fileSearch'];
+  searchInputs.forEach(inputId => {
+    const input = document.getElementById(inputId);
+    if (input) input.value = '';
+  });
+  
+  // Close all dropdowns
+  document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+    dropdown.style.display = 'none';
+  });
+  
+  // Reload all workstate assets
+  location.reload();
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.filter-dropdown-container')) {
+    document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+      dropdown.style.display = 'none';
+    });
+    activeDropdown = null;
+  }
+});
+
+// Selection functionality
+function updateSelection() {
+  const bar = document.getElementById('selectionBar');
+  const count = document.getElementById('selectedCount');
+  
+  FM.selected.clear();
+  document.querySelectorAll('.fm-checkbox:checked').forEach(cb => {
+    FM.selected.add({ id: cb.dataset.id, type: cb.dataset.type });
+  });
+  
+  if (FM.selected.size > 0) {
+    bar.style.display = 'flex';
+    count.textContent = FM.selected.size;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function clearSelection() {
+  FM.selected.clear();
+  document.querySelectorAll('.fm-checkbox').forEach(cb => cb.checked = false);
+  updateSelection();
+}
+
+document.addEventListener('change', function(e) {
+  if (e.target.classList.contains('fm-checkbox')) {
+    updateSelection();
+  }
+});
+
+function downloadSelected() {
+  const fileIds = Array.from(FM.selected).filter(f => f.type === 'file').map(f => f.id);
+  
+  if (fileIds.length === 0) {
+    if (window.notify) notify('No downloadable files selected', 'warning');
+    return;
+  }
+  
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '{% url "admin_app:bulk-download" %}';
+  form.style.display = 'none';
+  
+  const csrfInput = document.createElement('input');
+  csrfInput.type = 'hidden';
+  csrfInput.name = 'csrfmiddlewaretoken';
+  csrfInput.value = FM.csrf;
+  form.appendChild(csrfInput);
+  
+  fileIds.forEach(id => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'file_ids';
+    input.value = id;
+    form.appendChild(input);
+  });
+  
+  document.body.appendChild(form);
+  form.submit();
+  setTimeout(() => document.body.removeChild(form), 1000);
+}
+
+{% if not is_readonly %}
+function deleteSelected() {
+  const fileIds = Array.from(FM.selected).map(f => f.id);
+  
+  if (fileIds.length === 0) return;
+  
+  if (!confirm(`Delete ${fileIds.length} item(s)? This cannot be undone.`)) return;
+  
+  fetch('{% url "admin_app:bulk-delete-all" %}', {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': FM.csrf,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ file_ids: fileIds })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === 'success') {
+      if (window.notify) notify(data.message, 'success');
+      setTimeout(() => location.reload(), 800);
+    } else {
+      if (window.notify) notify(data.message, 'error');
+    }
+  });
+}
+{% endif %}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Add hover effects to filter buttons
+  document.querySelectorAll('.fm-filter-btn').forEach(btn => {
+    btn.addEventListener('mouseenter', function() {
+      if (this.style.background !== '#8b5cf6') { // Don't override active state
+        this.style.background = '#f8fafc';
+        this.style.borderColor = '#8b5cf6';
+      }
+    });
+    btn.addEventListener('mouseleave', function() {
+      if (this.style.background !== '#8b5cf6') { // Don't override active state
+        this.style.background = 'white';
+        this.style.borderColor = '#e2e8f0';
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,73 @@
+/* ===== EDIT WORKCYCLE MODAL STYLES ===== */
+
+/* Modal Structure */
+#editWorkcycleModal .modal-content {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#editWorkcycleModal .modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  margin: 0;
+  border-bottom: 1px solid #dee2e6;
+  background: white;
+}
+
+#editWorkcycleModal .modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.5rem;
+  min-height: 0;
+}
+
+#editWorkcycleModal .modal-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1030;
+  margin: 0;
+  border-top: 1px solid #dee2e6;
+  background: white;
+}
+
+/* Section Cards */
+.section-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.section-title {
+  margin: -12px -12px 12px;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 10px 10px 0 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+/* Field Groups */
+.field-group {
+  margin-bottom: 0;
+}
+
+/* Errors */
+.field-error-text {
+  font-size: 0.7rem;
+  color: #dc2626;
+  margin-top: 3px;
+}
+
+/* Responsive */
+@media (max-height: 600px) {
+  #editWorkcycleModal .modal-body {
+    max-height: calc(80vh - 140px);
+  }
+}

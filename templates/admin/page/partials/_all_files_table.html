@@ -1,0 +1,1105 @@
+<!-- Bulk Action Bar (Sticky) -->
+<div id="bulkActionBar" class="bulk-action-bar" style="display: none;">
+  <div class="bulk-action-content">
+    <div class="bulk-action-left">
+      <button type="button" class="bulk-action-close" onclick="clearSelection()" title="Clear selection">
+        <i class="fas fa-times"></i>
+      </button>
+      <span class="bulk-action-count">
+        <strong id="selectedCount">0</strong> item<span id="selectedPlural">s</span> selected
+      </span>
+      <div id="excludedWarning" class="bulk-action-warning" style="display: none;">
+        <button type="button" class="warning-btn" onclick="showExcludedDetails()">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span id="excludedCount">0</span> item<span id="excludedPlural">s</span> excluded
+        </button>
+      </div>
+    </div>
+    <div class="bulk-action-right">
+      <button type="button" class="bulk-action-btn bulk-action-btn-download" onclick="bulkDownload()" title="Download selected files">
+        <i class="fas fa-download"></i>
+        <span>Download</span>
+      </button>
+      {% if not is_readonly %}
+      <button type="button" class="bulk-action-btn bulk-action-btn-delete" onclick="bulkDelete()" title="Delete selected items">
+        <i class="fas fa-trash"></i>
+        <span>Delete</span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- All Files Table Partial (for AJAX) -->
+{% if files %}
+<table class="table table-hover align-middle mb-0 modern-files-table">
+  <thead>
+    <tr>
+      {% if not is_readonly %}
+      <th style="width: 30px;">
+        <input type="checkbox" class="form-check-input" id="selectAllFiles">
+      </th>
+      {% endif %}
+      <th style="width: 50px;"></th>
+      <th>File Name</th>
+      <th>Type</th>
+      <th>Reviewed</th>
+      <th>Workcycle</th>
+      <th>Organization</th>
+      <th>Uploaded By</th>
+      <th>Date</th>
+      <th>Size</th>
+      <th class="text-end" style="width: 80px;">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for f in files %}
+    <tr class="file-row" data-file-id="{{ f.id }}">
+      {% if not is_readonly %}
+      <td>
+        <input type="checkbox" class="form-check-input file-checkbox" 
+               value="{{ f.id }}" 
+               data-is-link="{% if f.is_link or f.is_link_group %}true{% else %}false{% endif %}"
+               data-name="{{ f.name|escapejs }}">
+      </td>
+      {% endif %}
+      
+      <!-- FILE ICON -->
+      <td>
+        <div class="file-icon-wrapper">
+          {% if f.is_link_group %}
+            <!-- Link Group Icon -->
+            <div class="file-icon file-icon-link-group">
+              {% if f.link_count == 1 %}
+                <i class="fas fa-link"></i>
+              {% else %}
+                <i class="fas fa-layer-group"></i>
+              {% endif %}
+            </div>
+          {% elif f.is_link %}
+            <!-- Single Link Icon -->
+            <div class="file-icon file-icon-link">
+              <i class="fas fa-link"></i>
+            </div>
+          {% elif '.pdf' in f.name|lower %}
+            <div class="file-icon file-icon-pdf">
+              <i class="fas fa-file-pdf"></i>
+            </div>
+          {% elif '.doc' in f.name|lower %}
+            <div class="file-icon file-icon-word">
+              <i class="fas fa-file-word"></i>
+            </div>
+          {% elif '.xls' in f.name|lower %}
+            <div class="file-icon file-icon-excel">
+              <i class="fas fa-file-excel"></i>
+            </div>
+          {% elif '.ppt' in f.name|lower %}
+            <div class="file-icon file-icon-powerpoint">
+              <i class="fas fa-file-powerpoint"></i>
+            </div>
+          {% elif '.jpg' in f.name|lower or '.jpeg' in f.name|lower or '.png' in f.name|lower or '.gif' in f.name|lower or '.svg' in f.name|lower or '.webp' in f.name|lower %}
+            <div class="file-icon file-icon-image">
+              <i class="fas fa-file-image"></i>
+            </div>
+          {% elif '.zip' in f.name|lower or '.rar' in f.name|lower or '.7z' in f.name|lower %}
+            <div class="file-icon file-icon-archive">
+              <i class="fas fa-file-archive"></i>
+            </div>
+          {% elif '.txt' in f.name|lower or '.csv' in f.name|lower or '.log' in f.name|lower %}
+            <div class="file-icon file-icon-text">
+              <i class="fas fa-file-alt"></i>
+            </div>
+          {% else %}
+            <div class="file-icon file-icon-default">
+              <i class="fas fa-file"></i>
+            </div>
+          {% endif %}
+        </div>
+      </td>
+
+      <!-- FILE NAME -->
+      <td>
+        {% if f.is_link_group %}
+          <!-- Link Group - Show Modal -->
+          <a href="javascript:void(0)" onclick="showLinkGroupModal({{ f.id }}, '{{ f.name|escapejs }}', {{ f.links|safe }})" class="file-name-link" title="{{ f.name }}">
+            <div class="file-name-text">
+              {% if f.name|length > 18 %}
+                {{ f.name|slice:":18" }}...
+              {% else %}
+                {{ f.name }}
+              {% endif %}
+              <span class="badge bg-purple ms-2" style="font-size: 0.65rem;">{{ f.link_count }} link{{ f.link_count|pluralize }}</span>
+            </div>
+          </a>
+        {% elif f.is_link %}
+          <!-- Single Link - Open in New Tab -->
+          <a href="{{ f.file_url }}" target="_blank" class="file-name-link" title="{{ f.name }}">
+            <div class="file-name-text">
+              {% if f.name|length > 18 %}
+                {{ f.name|slice:":18" }}...
+              {% else %}
+                {{ f.name }}
+              {% endif %}
+              <i class="fas fa-external-link-alt ms-1" style="font-size: 0.7rem;"></i>
+            </div>
+          </a>
+        {% else %}
+          <!-- Regular File - Preview -->
+          <a href="javascript:void(0)" onclick="window.FilePreview.show({{ f.id }})" class="file-name-link" title="{{ f.name }}">
+            <div class="file-name-text">
+              {% if f.name|length > 18 %}
+                {{ f.name|slice:":18" }}...
+              {% else %}
+                {{ f.name }}
+              {% endif %}
+            </div>
+          </a>
+        {% endif %}
+      </td>
+
+      <td>
+        <span class="badge badge-type">{{ f.type }}</span>
+      </td>
+
+      <!-- REVIEWED INFO -->
+      <td>
+        {% if f.reviewed_by and f.reviewed_at %}
+          <div class="review-info">
+            <div class="review-user">
+              <div class="review-avatar">
+                {{ f.reviewed_by.first_name|slice:":1"|upper }}{{ f.reviewed_by.last_name|slice:":1"|upper }}
+              </div>
+              <span class="review-name">{{ f.reviewed_by.get_full_name|default:f.reviewed_by.username }}</span>
+            </div>
+            <div class="review-date">
+              <i class="fas fa-check-circle text-success"></i>
+              <span>{{ f.reviewed_at|date:"M d, Y" }}</span>
+            </div>
+          </div>
+        {% elif f.type_code == 'admin_upload' %}
+          <div class="review-info">
+            <div class="review-user">
+              <div class="review-avatar auto-accepted">
+                <i class="fas fa-shield-alt"></i>
+              </div>
+              <span class="review-name text-muted">Admin Upload</span>
+            </div>
+            <div class="review-date">
+              <i class="fas fa-upload text-muted"></i>
+              <span>{{ f.uploaded_at|date:"M d, Y" }}</span>
+            </div>
+          </div>
+        {% elif f.accepted_at %}
+          <div class="review-info">
+            <div class="review-user">
+              <div class="review-avatar auto-accepted">
+                <i class="fas fa-check"></i>
+              </div>
+              <span class="review-name text-muted">Auto-accepted</span>
+            </div>
+            <div class="review-date">
+              <i class="fas fa-check-circle text-success"></i>
+              <span>{{ f.accepted_at|date:"M d, Y" }}</span>
+            </div>
+          </div>
+        {% else %}
+          <span class="text-muted small">Not reviewed</span>
+        {% endif %}
+      </td>
+
+      <td class="text-muted small">{{ f.workcycle|default:"—" }}</td>
+      
+      <!-- ORGANIZATION HIERARCHY -->
+      <td>
+        <div class="org-hierarchy">
+          {% if f.division or f.section or f.service or f.unit %}
+            <div class="org-path">
+              {% if f.division %}
+                <span class="org-item org-division" title="Division">{{ f.division }}</span>
+              {% endif %}
+              {% if f.section %}
+                <i class="fas fa-chevron-right org-separator"></i>
+                <span class="org-item org-section" title="Section">{{ f.section }}</span>
+              {% endif %}
+              {% if f.service %}
+                <i class="fas fa-chevron-right org-separator"></i>
+                <span class="org-item org-service" title="Service">{{ f.service }}</span>
+              {% endif %}
+              {% if f.unit %}
+                <i class="fas fa-chevron-right org-separator"></i>
+                <span class="org-item org-unit" title="Unit">{{ f.unit }}</span>
+              {% endif %}
+            </div>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </div>
+      </td>
+
+      <td>
+        {% if f.uploaded_by %}
+          <div class="user-info-pfp">
+            {% if f.uploaded_by.profile_image %}
+              <img src="{{ f.uploaded_by.profile_image.url }}" 
+                   alt="{{ f.uploaded_by.get_full_name|default:f.uploaded_by.username }}" 
+                   class="user-pfp"
+                   title="{{ f.uploaded_by.get_full_name|default:f.uploaded_by.username }}">
+            {% else %}
+              <div class="user-avatar-pfp" title="{{ f.uploaded_by.get_full_name|default:f.uploaded_by.username }}">
+                {{ f.uploaded_by.first_name|slice:":1"|upper }}{{ f.uploaded_by.last_name|slice:":1"|upper }}
+              </div>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="user-info-pfp">
+            <div class="user-avatar-pfp system-avatar" title="System">
+              <i class="fas fa-cog"></i>
+            </div>
+          </div>
+        {% endif %}
+      </td>
+
+      <td class="text-muted small">
+        <div class="date-info">
+          <div class="date-primary">{{ f.uploaded_at|date:"M d, Y" }}</div>
+          <div class="date-secondary">{{ f.uploaded_at|date:"g:i A" }}</div>
+        </div>
+      </td>
+
+      <td class="text-muted small fw-medium">{{ f.file_size }}</td>
+
+      <!-- ACTIONS -->
+      <td class="text-end">
+        <div class="action-buttons">
+          {% if f.is_link_group %}
+            <!-- Link Group Actions -->
+            <button class="action-btn action-btn-view" onclick="showLinkGroupModal({{ f.id }}, '{{ f.name|escapejs }}', {{ f.links|safe }})" title="View Links">
+              <i class="fas fa-eye"></i>
+            </button>
+          {% elif f.is_link %}
+            <!-- Single Link Actions -->
+            <a href="{{ f.file_url }}" target="_blank" class="action-btn action-btn-view" title="Open Link">
+              <i class="fas fa-external-link-alt"></i>
+            </a>
+          {% else %}
+            <!-- Regular File Actions -->
+            <button class="action-btn action-btn-view" onclick="window.FilePreview.show({{ f.id }})" title="Preview">
+              <i class="fas fa-eye"></i>
+            </button>
+            {% if is_readonly %}
+            <a href="{% url 'user_app:download-file' f.id %}" class="action-btn action-btn-download" title="Download">
+              <i class="fas fa-download"></i>
+            </a>
+            {% else %}
+            <a href="{% url 'admin_app:download-file' f.id %}" class="action-btn action-btn-download" title="Download">
+              <i class="fas fa-download"></i>
+            </a>
+            {% endif %}
+          {% endif %}
+          
+          {% if not is_readonly %}
+            <button class="action-btn action-btn-delete" onclick="deleteFile({{ f.id }}, '{{ f.name|escapejs }}')" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-icon">
+    <i class="fas fa-folder-open"></i>
+  </div>
+  <h6 class="empty-state-title">No files found</h6>
+  <p class="empty-state-text">Try adjusting your filters or search criteria</p>
+</div>
+{% endif %}
+
+<style>
+/* Bulk Action Bar Styles */
+.bulk-action-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: white;
+  padding: 16px 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 1050;
+  animation: slideDown 0.3s ease;
+  border-bottom: 3px solid #3b82f6;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.bulk-action-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.bulk-action-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bulk-action-close {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bulk-action-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.bulk-action-count {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.bulk-action-count strong {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.bulk-action-warning {
+  display: flex;
+  align-items: center;
+}
+
+.warning-btn {
+  background: rgba(251, 191, 36, 0.25);
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  color: #fcd34d;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.warning-btn:hover {
+  background: rgba(251, 191, 36, 0.35);
+  border-color: rgba(251, 191, 36, 0.7);
+  color: #fde68a;
+  transform: scale(1.02);
+}
+
+.bulk-action-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bulk-action-btn {
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  color: #1e293b;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.bulk-action-btn:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.bulk-action-btn i {
+  font-size: 1rem;
+}
+
+.bulk-action-btn-download:hover {
+  color: #059669;
+}
+
+.bulk-action-btn-delete {
+  background: rgba(220, 38, 38, 0.95);
+  color: white;
+}
+
+.bulk-action-btn-delete:hover {
+  background: #b91c1c;
+  color: white;
+}
+
+/* Excluded Details Modal */
+.excluded-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.excluded-modal {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.excluded-modal-header {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  padding: 20px 24px;
+  border-bottom: 2px solid #fbbf24;
+}
+
+.excluded-modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.excluded-modal-body {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.excluded-item {
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border-left: 4px solid #fbbf24;
+}
+
+.excluded-item-name {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.excluded-item-reason {
+  font-size: 0.875rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.excluded-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.excluded-modal-close {
+  background: #7b69ff;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.excluded-modal-close:hover {
+  background: #6366f1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(123, 105, 255, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .bulk-action-bar {
+    padding: 12px 16px;
+  }
+  
+  .bulk-action-content {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .bulk-action-left,
+  .bulk-action-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .bulk-action-btn span {
+    display: none;
+  }
+  
+  .bulk-action-btn {
+    padding: 10px 16px;
+  }
+}
+
+/* Modern Files Table Styles */
+.modern-files-table {
+  font-size: 0.875rem;
+}
+
+.modern-files-table thead {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 2px solid #dee2e6;
+}
+
+.modern-files-table thead th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6c757d;
+  padding: 14px 12px;
+  border: none;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+.modern-files-table tbody td {
+  padding: 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.modern-files-table .file-row {
+  transition: all 0.2s ease;
+}
+
+.modern-files-table .file-row:hover {
+  background: linear-gradient(90deg, #f8f9ff 0%, #ffffff 100%);
+  box-shadow: 0 2px 8px rgba(123, 105, 255, 0.08);
+}
+
+/* File Icon Styles */
+.file-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: all 0.2s ease;
+}
+
+.file-icon-pdf {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #dc2626;
+}
+
+.file-icon-word {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #2563eb;
+}
+
+.file-icon-excel {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #059669;
+}
+
+.file-icon-powerpoint {
+  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+  color: #ea580c;
+}
+
+.file-icon-image {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  color: #6366f1;
+}
+
+.file-icon-archive {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #d97706;
+}
+
+.file-icon-text {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #6b7280;
+}
+
+.file-icon-default {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #9ca3af;
+}
+
+.file-icon-link,
+.file-icon-link-group {
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+  color: #8b5cf6;
+}
+
+.file-row:hover .file-icon {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* File Name Styles */
+.file-name-link {
+  color: #1f2937;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: block;
+}
+
+.file-name-link:hover {
+  color: #7b69ff;
+}
+
+.file-name-text {
+  line-height: 1.4;
+}
+
+/* Badge Styles */
+.badge-type {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.badge-status i {
+  font-size: 0.7rem;
+}
+
+.badge-status-success {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.badge-status-danger {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.badge-status-warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+/* User Info Styles */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+}
+
+.user-name {
+  font-size: 0.8rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Profile Image Styles for Uploaded By Column */
+.user-info-pfp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-pfp {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-pfp:hover {
+  transform: scale(1.15);
+  border-color: #8b5cf6;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.user-avatar-pfp {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-avatar-pfp:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.user-avatar-pfp.system-avatar {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+  box-shadow: 0 2px 6px rgba(100, 116, 139, 0.3);
+}
+
+.user-avatar-pfp.system-avatar:hover {
+  box-shadow: 0 4px 12px rgba(100, 116, 139, 0.4);
+}
+
+/* Review Info Styles */
+.review-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.review-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.review-avatar.auto-accepted {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+  box-shadow: 0 2px 4px rgba(100, 116, 139, 0.3);
+}
+
+.review-name {
+  font-size: 0.8rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.review-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #6b7280;
+  padding-left: 32px;
+}
+
+.review-date i {
+  font-size: 0.7rem;
+}
+
+/* Date Info Styles */
+.date-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.date-primary {
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.date-secondary {
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+/* Organization Hierarchy Styles */
+.org-hierarchy {
+  font-size: 0.75rem;
+}
+
+.org-path {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.org-item {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.org-division {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+}
+
+.org-section {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+}
+
+.org-service {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+}
+
+.org-unit {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  color: #4338ca;
+}
+
+.org-separator {
+  font-size: 0.5rem;
+  color: #cbd5e1;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn-view:hover {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #2563eb;
+}
+
+.action-btn-download:hover {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #059669;
+}
+
+.action-btn-delete:hover {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #dc2626;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  color: #d1d5db;
+  margin-bottom: 20px;
+}
+
+.empty-state-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.empty-state-text {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+  .modern-files-table {
+    font-size: 0.8rem;
+  }
+  
+  .file-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  
+  .user-name {
+    display: none;
+  }
+  
+  .user-pfp,
+  .user-avatar-pfp {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .review-name {
+    display: none;
+  }
+  
+  .org-path {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .org-item {
+    padding: 2px 6px;
+    font-size: 0.7rem;
+  }
+  
+  .review-date {
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .action-btn {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .org-path {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .org-separator {
+    display: none;
+  }
+  
+  .review-user {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+</style>

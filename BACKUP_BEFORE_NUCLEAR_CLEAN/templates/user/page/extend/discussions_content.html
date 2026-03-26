@@ -1,0 +1,275 @@
+{% if work_items %}
+<div class="msg-conversations-inline">
+  {% regroup work_items by work_item.workcycle.id as grouped_cycles %}
+  
+  {% for group in grouped_cycles %}
+    {% with wc=group.list.0.work_item.workcycle %}
+    <div class="msg-group-inline">
+      <div class="msg-group-header-inline">
+        <div class="msg-group-icon-inline">
+          <i class="fas fa-layer-group"></i>
+        </div>
+        <div class="msg-group-info-inline">
+          <span class="msg-group-title-inline">{{ wc.title }}</span>
+          <span class="msg-group-meta-inline">
+            <i class="far fa-clock"></i>
+            Due {{ wc.due_at|date:"M d, Y" }}
+          </span>
+        </div>
+      </div>
+      
+      <div class="msg-group-items-inline">
+        {% for item in group.list %}
+        {% with wi=item.work_item %}
+        <div class="msg-item-inline {% if item.unread_count > 0 %}msg-item-unread-inline{% endif %}"
+             data-qxdlg-trigger
+             data-qxdlg-url="{% url 'user_app:work-item-discussion' wi.id %}"
+             data-qxdlg-title="{{ wi.workcycle.title }}"
+             data-qxdlg-subtitle="Assigned by: {{ wi.workcycle.created_by.get_full_name|default:wi.workcycle.created_by.username }}">
+          
+          <!-- Avatar -->
+          <div class="msg-avatar-inline">
+            {% if wi.workcycle.created_by.profile_image %}
+              <img src="{{ wi.workcycle.created_by.profile_image.url }}" alt="{{ wi.workcycle.created_by.get_full_name }}">
+            {% else %}
+              <span class="msg-avatar-initials-inline">
+                {{ wi.workcycle.created_by.first_name|default:wi.workcycle.created_by.username|slice:":1"|upper }}{{ wi.workcycle.created_by.last_name|slice:":1"|upper }}
+              </span>
+            {% endif %}
+            {% if item.unread_count > 0 %}
+              <span class="msg-avatar-badge-inline">{{ item.unread_count }}</span>
+            {% endif %}
+          </div>
+          
+          <!-- Content -->
+          <div class="msg-item-content-inline">
+            <div class="msg-item-header-inline">
+              <span class="msg-item-name-inline">{{ wi.workcycle.title }}</span>
+              <span class="msg-item-time-inline">
+                {% if item.last_message_at %}
+                  {{ item.last_message_at|timesince }} ago
+                {% endif %}
+              </span>
+            </div>
+            
+            <div class="msg-item-preview-inline">
+              {% if item.last_message %}
+                {{ item.last_message|truncatechars:50 }}
+              {% else %}
+                <span class="msg-item-empty-inline">Start a conversation</span>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- Arrow -->
+          <div class="msg-item-arrow-inline">
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endwith %}
+  {% endfor %}
+</div>
+
+<style>
+/* Inline Discussion List Styles (for embedding in other pages) */
+.msg-conversations-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.msg-group-inline {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.msg-group-header-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.msg-group-icon-inline {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #eef3fa;
+  color: #4a6fa5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+
+.msg-group-info-inline {
+  flex: 1;
+}
+
+.msg-group-title-inline {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.msg-group-meta-inline {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.msg-group-meta-inline i {
+  margin-right: 3px;
+}
+
+.msg-group-items-inline {
+  padding: 0;
+}
+
+.msg-item-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.msg-item-inline:last-child {
+  border-bottom: none;
+}
+
+.msg-item-inline:hover {
+  background: #f8fafc;
+}
+
+.msg-item-unread-inline {
+  background: #fef2f2;
+}
+
+.msg-item-unread-inline:hover {
+  background: #fee2e2;
+}
+
+.msg-avatar-inline {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4a6fa5, #6b86b3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.msg-avatar-inline img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.msg-avatar-initials-inline {
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.msg-avatar-badge-inline {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+}
+
+.msg-item-content-inline {
+  flex: 1;
+  min-width: 0;
+}
+
+.msg-item-header-inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.msg-item-name-inline {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.msg-item-unread-inline .msg-item-name-inline {
+  font-weight: 700;
+}
+
+.msg-item-time-inline {
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.msg-item-unread-inline .msg-item-time-inline {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.msg-item-preview-inline {
+  font-size: 0.75rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-item-unread-inline .msg-item-preview-inline {
+  color: #475569;
+  font-weight: 500;
+}
+
+.msg-item-empty-inline {
+  font-style: italic;
+  color: #94a3b8;
+}
+
+.msg-item-arrow-inline {
+  color: #cbd5e1;
+  transition: transform 0.2s, color 0.2s;
+}
+
+.msg-item-inline:hover .msg-item-arrow-inline {
+  color: #4a6fa5;
+  transform: translateX(3px);
+}
+</style>
+
+{% else %}
+<div class="text-center py-5">
+  <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+  <h6 class="text-muted">No discussion threads yet</h6>
+  <p class="small text-muted mb-0">
+    Discussions will appear here when you have active work items
+  </p>
+</div>
+{% endif %}

@@ -1,0 +1,513 @@
+/* =====================================================
+   ENTERPRISE COLOR SYSTEM
+===================================================== */
+:root {
+/* ================================
+   LIFECYCLE (SOFT BUT CLEAR)
+================================ */
+--lifecycle-lapsed: #e26666;     /* Muted red */
+--lifecycle-due-soon: #e89a4f;   /* Muted orange */
+--lifecycle-ongoing: #4fa3d1;    /* Muted sky blue */
+
+/* ================================
+   REVIEW DECISIONS (DISTINCT)
+================================ */
+--review-pending: #8b6fd6;       /* Muted violet */
+--review-approved: #3fa38c;      /* Muted teal green */
+--review-revision: #c0545e;      /* Muted crimson */
+
+/* ================================
+   WORK STATUS (NEUTRAL SOFT)
+================================ */
+--status-not-started: #7b8794;   /* Muted slate */
+--status-working: #b7791f;       /* Muted amber/brown */
+--status-done: #6fb34d;          /* Muted green */
+
+  
+  /* Neutral UI Palette */
+  --ui-bg-primary: #f8fafc;           /* Off-white background */
+  --ui-bg-secondary: #ffffff;         /* White cards */
+  --ui-bg-tertiary: #f1f5f9;          /* Light gray for subtle backgrounds */
+  
+  --ui-border-light: #e2e8f0;         /* Light borders */
+  --ui-border-medium: #cbd5e1;        /* Medium borders */
+  --ui-border-dark: #94a3b8;          /* Dark borders */
+  
+  --ui-text-primary: #1e293b;         /* Charcoal - main text */
+  --ui-text-secondary: #475569;       /* Slate - secondary text */
+  --ui-text-tertiary: #64748b;        /* Muted text */
+  
+  --ui-accent-cool: #0284c7;          /* Cool blue for links/buttons */
+}
+
+/* =====================================================
+   COMPACT HEADER LAYOUT
+===================================================== */
+.work-items-header {
+  background: var(--ui-bg-secondary);
+  border: 1px solid var(--ui-border-light);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+/* HEADER TOP: Title + Archive + Total Stats */
+.header-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid black;
+  padding: 0 0 5px 0;
+}
+
+.header-title-section {
+  flex: 1;
+}
+
+.header-main-title {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--ui-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.header-main-title i {
+  color: var(--ui-accent-cool);
+  font-size: 1.125rem;
+}
+
+.header-top-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Total Active Card */
+.total-active-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--ui-bg-primary);
+  border: 1px solid var(--ui-border-light);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  min-width: 140px;
+}
+
+.total-active-card:hover {
+  background: var(--ui-bg-tertiary);
+  border-color: var(--ui-border-medium);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.total-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--ui-text-primary);
+}
+
+.total-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ui-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.total-badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  background: rgba(2, 132, 199, 0.1);
+  color: var(--ui-accent-cool);
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+/* Archive Button */
+.archive-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid var(--ui-border-medium);
+  border-radius: 6px;
+  background: var(--ui-bg-primary);
+  color: var(--ui-text-secondary);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.archive-btn:hover {
+  background: var(--ui-bg-tertiary);
+  border-color: var(--ui-border-dark);
+  text-decoration: none;
+}
+
+/* HEADER BOTTOM: Search + Sort in one line */
+.header-bottom-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Search Container */
+.search-container {
+  flex: 1;
+  min-width: 300px;
+}
+
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--ui-bg-primary);
+  border: 1px solid var(--ui-border-light);
+  border-radius: 8px;
+  padding: 6px 12px;
+  transition: all 0.2s ease;
+}
+
+.search-wrapper:focus-within {
+  border-color: var(--ui-accent-cool);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+  background: var(--ui-bg-secondary);
+}
+
+.search-icon {
+  color: var(--ui-text-tertiary);
+  margin-right: 8px;
+  font-size: 0.875rem;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 0.875rem;
+  color: var(--ui-text-primary);
+  min-width: 0;
+}
+
+.search-input::placeholder {
+  color: var(--ui-text-tertiary);
+  font-weight: 400;
+}
+
+.search-input:focus {
+  outline: none;
+}
+
+.search-button {
+  background: var(--ui-accent-cool);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-left: 8px;
+  white-space: nowrap;
+  height: 32px;
+}
+
+.search-button:hover {
+  background: #0369a1;
+}
+
+/* Sort Controls - Aligned with search */
+.sort-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ui-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.sort-buttons {
+  display: flex;
+  background: var(--ui-bg-primary);
+  border: 1px solid var(--ui-border-light);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ui-text-secondary);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.sort-btn:hover {
+  background: var(--ui-bg-tertiary);
+  text-decoration: none;
+}
+
+.sort-btn.active {
+  background: var(--ui-accent-cool);
+  color: white;
+  font-weight: 600;
+}
+
+.sort-btn i {
+  font-size: 0.625rem;
+}
+
+/* =====================================================
+   FILTER CHIPS SECTION - REDESIGNED WITH COLORED BACKGROUNDS
+===================================================== */
+.filter-chips-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--ui-bg-primary);
+  border: 1px solid var(--ui-border-light);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.filter-chips-label {
+  font-size: 0.688rem;
+  font-weight: 600;
+  color: var(--ui-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+  justify-content: space-around;
+}
+
+/* REDESIGNED FILTER CHIPS - COMPACT & COLORED BACKGROUNDS */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 0.688rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  color: white;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  position: relative;
+  line-height: 1.2;
+}
+
+.filter-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 5px rgba(15, 23, 42, 0.15);
+  text-decoration: none;
+  filter: brightness(1.1);
+}
+
+.filter-chip.active {
+  font-weight: 600;
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+}
+
+/* Count Badge inside chips - COMPACT */
+.chip-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+.filter-chip.active .chip-count {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Work Status Chips - COLORED BACKGROUNDS */
+.filter-chip[data-type="status-not-started"] {
+  background: var(--status-not-started);
+}
+
+.filter-chip[data-type="status-working"] {
+  background: var(--status-working);
+}
+
+.filter-chip[data-type="status-done"] {
+  background: var(--status-done);
+}
+
+/* Review Status Chips - COLORED BACKGROUNDS */
+.filter-chip[data-type="review-pending"] {
+  background: var(--review-pending);
+}
+
+.filter-chip[data-type="review-approved"] {
+  background: var(--review-approved);
+}
+
+.filter-chip[data-type="review-revision"] {
+  background: var(--review-revision);
+}
+
+/* Lifecycle Chips - COLORED BACKGROUNDS */
+.filter-chip[data-type="lifecycle-ongoing"] {
+  background: var(--lifecycle-ongoing);
+}
+
+.filter-chip[data-type="lifecycle-due_soon"] {
+  background: var(--lifecycle-due-soon);
+}
+
+.filter-chip[data-type="lifecycle-lapsed"] {
+  background: var(--lifecycle-lapsed);
+}
+
+/* Clear All Button - COMPACT */
+.clear-filters-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
+  font-size: 0.688rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1.5px solid var(--ui-border-dark);
+  border-radius: 6px;
+  background: var(--ui-bg-secondary);
+  color: var(--ui-text-secondary);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.clear-filters-btn:hover {
+  background: var(--ui-bg-tertiary);
+  border-color: var(--ui-text-primary);
+  color: var(--ui-text-primary);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.clear-filters-btn i {
+  font-size: 0.625rem;
+}
+
+/* =====================================================
+   WORK ITEMS CONTENT AREA
+===================================================== */
+.work-items-content {
+  min-height: 400px;
+}
+
+/* =====================================================
+   RESPONSIVE DESIGN
+===================================================== */
+@media (max-width: 992px) {
+  .header-top-row {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .header-top-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 768px) {
+  .work-items-header {
+    padding: 16px;
+  }
+  
+  .header-bottom-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .search-container {
+    min-width: 100%;
+  }
+  
+  .sort-container {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .filter-chips-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .filter-chips-label {
+    align-self: flex-start;
+  }
+  
+  .total-active-card {
+    min-width: auto;
+    flex: 1;
+  }
+}
+
+@media (max-width: 576px) {
+  .header-top-controls {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .total-active-card {
+    width: 100%;
+  }
+  
+  .archive-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .sort-buttons {
+    flex: 1;
+  }
+}

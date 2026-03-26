@@ -1,0 +1,39 @@
+{% extends "admin/page/file_manager.html" %}
+
+{# Override to hide admin-only actions for regular users #}
+{% block extra_content %}
+<style>
+  /* Hide admin-only elements for read-only users */
+  .upload-btn,
+  .create-folder-btn,
+  .delete-btn,
+  .rename-btn,
+  .move-btn,
+  [data-action="delete"],
+  [data-action="rename"],
+  [data-action="move"],
+  .file-actions .dropdown-item:not([data-action="download"]):not([data-action="preview"]) {
+    display: none !important;
+  }
+  
+  /* Disable drag and drop */
+  [draggable="true"] {
+    cursor: default !important;
+  }
+</style>
+
+<script>
+  // Disable drag and drop for read-only users
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[draggable="true"]').forEach(el => {
+      el.removeAttribute('draggable');
+      el.style.cursor = 'default';
+    });
+    
+    // Remove drag event listeners
+    document.removeEventListener('dragstart', () => {});
+    document.removeEventListener('dragover', () => {});
+    document.removeEventListener('drop', () => {});
+  });
+</script>
+{% endblock %}
