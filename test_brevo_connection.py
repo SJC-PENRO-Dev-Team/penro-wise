@@ -21,7 +21,7 @@ def test_email():
     print(f"  HOST: {settings.EMAIL_HOST}")
     print(f"  PORT: {settings.EMAIL_PORT}")
     print(f"  USE_TLS: {settings.EMAIL_USE_TLS}")
-    print(f"  USER: {settings.EMAIL_HOST_USER}")
+    print(f"  USER configured: {'YES' if settings.EMAIL_HOST_USER else 'NO'}")
     print(f"  PASSWORD: {'*' * 20} (hidden)")
     print(f"  FROM: {settings.DEFAULT_FROM_EMAIL}")
     

@@ -1,138 +1,69 @@
 """
-Migrate data from SQLite to PostgreSQL.
+Migrate selected user accounts from SQLite to PostgreSQL.
 
 This script:
-1. Exports data from SQLite (db.sqlite3)
-2. Imports data into PostgreSQL
-
-Usage:
-    python migrate_sqlite_to_postgres.py
+1. Exports only accounts.User rows with login_role of admin/user from SQLite
+2. Clears nullable foreign keys that would require related models
+3. Imports only the User model dataset into PostgreSQL using DATABASE_URL from the env
 """
 
+import json
 import os
+import subprocess
 import sys
-import django
+import tempfile
+from pathlib import Path
+from urllib.parse import urlparse
+
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
 
-# Setup Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'penro_project.settings')
+ALLOWED_LOGIN_ROLES = ["admin", "user"]
+
+
+def run_manage_py(args: list[str], env: dict[str, str]) -> None:
+    subprocess.run([sys.executable, "manage.py", *args], env=env, check=True)
+
+
+load_dotenv()
+postgres_url = os.getenv("DATABASE_URL", "").strip()
+EXPORT_PATH = Path(tempfile.gettempdir()) / "wise_penro_sqlite_user_export.json"
+
+os.environ["DATABASE_URL"] = ""
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "penro_project.settings")
+
+import django
+
 django.setup()
 
-from django.core.management import call_command
-from django.db import connections
-import json
+from django.core import serializers
+from accounts.models import User
 
-print("=" * 70)
-print("SQLITE TO POSTGRESQL DATA MIGRATION")
-print("=" * 70)
+users = User.objects.filter(login_role__in=ALLOWED_LOGIN_ROLES).order_by("id")
+serialized_users = serializers.serialize(
+    "json",
+    users,
+    indent=2,
+    use_natural_foreign_keys=True,
+    use_natural_primary_keys=True,
+)
+data = json.loads(serialized_users)
+for item in data:
+    item["fields"]["department"] = None
 
-# Step 1: Export data from SQLite
-print("\n1. Exporting data from SQLite...")
-print("-" * 70)
+EXPORT_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
+print(f"Exported {len(data)} user records to {EXPORT_PATH}")
 
-# Temporarily use SQLite
-os.environ['DATABASE_URL'] = ''  # Clear PostgreSQL URL to use SQLite
+if not postgres_url:
+    print("DATABASE_URL is not set in the environment.")
+    raise SystemExit(1)
 
-# Reload Django settings
-from django.conf import settings
-from importlib import reload
-import penro_project.settings as settings_module
-reload(settings_module)
+postgres_host = urlparse(postgres_url).hostname or ""
+if postgres_host and "." not in postgres_host and postgres_host not in {"localhost", "127.0.0.1"}:
+    print("DATABASE_URL appears to use an internal-only hostname.")
+    raise SystemExit(1)
 
-try:
-    # Export data to JSON
-    with open('sqlite_data.json', 'w', encoding='utf-8') as f:
-        call_command('dumpdata', 
-                    '--natural-foreign', 
-                    '--natural-primary',
-                    '--exclude', 'contenttypes',
-                    '--exclude', 'auth.permission',
-                    '--indent', '2',
-                    stdout=f)
-    
-    print("✅ Data exported to sqlite_data.json")
-    
-    # Show what was exported
-    with open('sqlite_data.json', 'r', encoding='utf-8') as f:
-        data = json.load(f)
-        print(f"\n📊 Exported {len(data)} records")
-        
-        # Count by model
-        model_counts = {}
-        for item in data:
-            model = item['model']
-            model_counts[model] = model_counts.get(model, 0) + 1
-        
-        print("\nRecords by model:")
-        for model, count in sorted(model_counts.items()):
-            print(f"   - {model}: {count}")
-    
-except Exception as e:
-    print(f"❌ Export failed: {str(e)}")
-    sys.exit(1)
-
-# Step 2: Import data into PostgreSQL
-print("\n" + "=" * 70)
-print("2. Importing data into PostgreSQL...")
-print("-" * 70)
-
-# Set PostgreSQL URL
-postgres_url = "postgresql://wisepenrodatabase_user:1FvlotoZSMtyYexsNkNuIby6y8QilX1u@dpg-d5o4bi1r0fns73d0duog-a.oregon-postgres.render.com/wisepenrodatabase"
-os.environ['DATABASE_URL'] = postgres_url
-
-# Reload Django settings to use PostgreSQL
-reload(settings_module)
-from django.core.management import execute_from_command_line
-
-try:
-    # Run migrations on PostgreSQL
-    print("\nRunning migrations on PostgreSQL...")
-    call_command('migrate', '--no-input')
-    print("✅ Migrations complete")
-    
-    # Import data
-    print("\nImporting data...")
-    with open('sqlite_data.json', 'r', encoding='utf-8') as f:
-        call_command('loaddata', 'sqlite_data.json')
-    
-    print("✅ Data imported successfully!")
-    
-    # Verify import
-    print("\n" + "=" * 70)
-    print("3. Verifying data in PostgreSQL...")
-    print("-" * 70)
-    
-    from accounts.models import User, Team, WorkCycle, WorkItem, WorkItemAttachment
-    from notifications.models import Notification
-    
-    print(f"\n✅ Users: {User.objects.count()}")
-    print(f"✅ Teams: {Team.objects.count()}")
-    print(f"✅ WorkCycles: {WorkCycle.objects.count()}")
-    print(f"✅ WorkItems: {WorkItem.objects.count()}")
-    print(f"✅ WorkItemAttachments: {WorkItemAttachment.objects.count()}")
-    print(f"✅ Notifications: {Notification.objects.count()}")
-    
-    print("\n" + "=" * 70)
-    print("✅ MIGRATION COMPLETE!")
-    print("=" * 70)
-    print("\nYour data has been successfully migrated from SQLite to PostgreSQL.")
-    print("\nNext steps:")
-    print("1. Update .env to use PostgreSQL by default")
-    print("2. Test your application with PostgreSQL")
-    print("3. Deploy to Render")
-    print("\n" + "=" * 70)
-    
-except Exception as e:
-    print(f"❌ Import failed: {str(e)}")
-    print("\nTroubleshooting:")
-    print("- Check PostgreSQL connection")
-    print("- Verify DATABASE_URL is correct")
-    print("- Ensure PostgreSQL database is empty (or use --clear flag)")
-    sys.exit(1)
-finally:
-    # Clean up
-    if os.path.exists('sqlite_data.json'):
-        print("\n📁 Backup file saved: sqlite_data.json")
+postgres_env = os.environ.copy()
+postgres_env["DATABASE_URL"] = postgres_url
+run_manage_py(["migrate", "--no-input"], postgres_env)
+run_manage_py(["loaddata", str(EXPORT_PATH)], postgres_env)

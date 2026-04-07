@@ -1,23 +1,24 @@
 """
-Verify email configuration
+Verify email configuration without exposing secret values.
 """
+
 import os
 from dotenv import load_dotenv
 
-# Force reload
+
 load_dotenv(override=True)
 
+email_host_user = os.getenv("EMAIL_HOST_USER", "")
+gmail_password = os.getenv("GMAIL_APP_PASSWORD", "")
+
 print("=" * 60)
-print("Email Configuration Verification")
+print("EMAIL CONFIGURATION VERIFICATION")
 print("=" * 60)
-print(f"Email: penrowisenotifications@gmail.com")
-print(f"Password from .env: {os.getenv('GMAIL_APP_PASSWORD')}")
-print(f"Password length: {len(os.getenv('GMAIL_APP_PASSWORD', ''))}")
+print(f"EMAIL_HOST_USER configured: {'YES' if email_host_user else 'NO'}")
+print(f"GMAIL_APP_PASSWORD configured: {'YES' if gmail_password else 'NO'}")
+print(f"Password length: {len(gmail_password)}")
 print("=" * 60)
-print("\n✅ Configuration updated successfully!")
+print("\nConfiguration check completed.")
 print("\nNext steps:")
-print("1. Restart your Django server (Ctrl+C, then 'python manage.py runserver')")
-print("2. Test email functionality in your app")
-print("\nIf emails still don't send, check:")
-print("- Windows Firewall isn't blocking port 587")
-print("- Antivirus isn't blocking SMTP connections")
+print("1. Restart your Django server")
+print("2. Test email functionality in the app")

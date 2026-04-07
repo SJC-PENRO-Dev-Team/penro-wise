@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BREVO_HOST = "smtp-relay.brevo.com"
+BREVO_HOST = os.getenv("EMAIL_HOST", "smtp-relay.brevo.com")
 PORTS = [25, 465, 587, 2525]
 
 print("=" * 60)

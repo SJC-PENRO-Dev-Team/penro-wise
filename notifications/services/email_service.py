@@ -9,7 +9,6 @@ Uses Brevo API instead of SMTP for better reliability on Render.
 Author: System
 """
 
-import os
 from django.conf import settings
 from django.utils import timezone
 from notifications.models import EmailLog
@@ -122,7 +121,7 @@ def send_bulk_logged_email(
     return logs
 
 
-SITE_URL = os.getenv("SITE_URL", "https://penrowise.onrender.com")
+SITE_URL = getattr(settings, "SITE_URL", "http://localhost:8000")
 
 
 def get_styled_email_html(title, content_html, footer_text="PENRO WISE Team", action_url=None, action_text="Go to PENRO WISE"):

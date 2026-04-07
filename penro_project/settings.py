@@ -7,13 +7,20 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
 # -------------------------------------------------
 # BASE
 # -------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from the project .env file.
+load_dotenv(BASE_DIR / ".env")
+
+
+def env_flag(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 # -------------------------------------------------
 # SECURITY
@@ -23,6 +30,7 @@ if not SECRET_KEY:
     raise ValueError("SECRET_KEY environment variable is not set!")
 
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+SITE_URL = os.getenv("SITE_URL", "http://localhost:8000").rstrip("/")
 
 # Parse ALLOWED_HOSTS from environment variable
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
@@ -129,7 +137,7 @@ TEMPLATES = [
 # DATABASE
 # -------------------------------------------------
 # Use PostgreSQL if DATABASE_URL is provided, otherwise SQLite3
-DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASE_URL = os.getenv('DATABASE_URL', '').strip()
 
 if DATABASE_URL:
     # PostgreSQL configuration for production
@@ -138,7 +146,6 @@ if DATABASE_URL:
         'default': dj_database_url.parse(DATABASE_URL)
     }
     print("[OK] PostgreSQL database enabled (PRODUCTION MODE)")
-    print(f"  Database: {DATABASE_URL.split('@')[1].split('/')[0] if '@' in DATABASE_URL else 'PostgreSQL'}")
 else:
     # SQLite3 configuration for local development
     DATABASES = {
@@ -148,7 +155,6 @@ else:
         }
     }
     print("[OK] SQLite3 database enabled (DEVELOPMENT MODE)")
-    print(f"  Database file: {BASE_DIR / 'db.sqlite3'}")
 
 # -------------------------------------------------
 # PASSWORD VALIDATION
@@ -181,6 +187,14 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Use CompressedStaticFilesStorage (without Manifest) to avoid issues with ICO files
 # This still compresses files but doesn't add hashes to filenames
 STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
 # Memory optimization - disable unnecessary features in production
 if not DEBUG:
@@ -217,9 +231,9 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 # CLOUDINARY CONFIGURATION
 # -------------------------------------------------
 # Check if Cloudinary credentials are provided
-CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME')
-CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY')
-CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET')
+CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '').strip()
+CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '').strip()
+CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '').strip()
 
 if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
     # Cloudinary configuration for production
@@ -235,29 +249,41 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
     import cloudinary
     import cloudinary.uploader
     import cloudinary.api
-    
+
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": CLOUDINARY_CLOUD_NAME,
+        "API_KEY": CLOUDINARY_API_KEY,
+        "API_SECRET": CLOUDINARY_API_SECRET,
+        "SECURE": True,
+    }
+
     cloudinary.config(
-        cloud_name=CLOUDINARY_CLOUD_NAME,
-        api_key=CLOUDINARY_API_KEY,
-        api_secret=CLOUDINARY_API_SECRET,
-        secure=True
+        cloud_name=CLOUDINARY_STORAGE["CLOUD_NAME"],
+        api_key=CLOUDINARY_STORAGE["API_KEY"],
+        api_secret=CLOUDINARY_STORAGE["API_SECRET"],
+        secure=CLOUDINARY_STORAGE["SECURE"],
     )
-    
-    # Use Cloudinary for media files
+
+    # Use Cloudinary for media files only. Static files remain on WhiteNoise.
+    STORAGES["default"] = {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    }
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     MEDIA_URL = '/media/'
-    
+
     print("[OK] Cloudinary storage enabled (PRODUCTION MODE)")
-    print(f"  Cloud name: {CLOUDINARY_CLOUD_NAME}")
 else:
     # Local file storage for development
     CLOUDINARY_ENABLED = False
+    CLOUDINARY_STORAGE = {}
+    STORAGES["default"] = {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    }
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
     MEDIA_URL = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
     
     print("[OK] Local file storage enabled (DEVELOPMENT MODE)")
-    print(f"  Media files will be stored in: {MEDIA_ROOT}")
 
 # -------------------------------------------------
 # DEFAULTS
@@ -275,7 +301,7 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 # SMTP settings (optional, not used when using Brevo API)
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp-relay.brevo.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == 'true'
+EMAIL_USE_TLS = env_flag("EMAIL_USE_TLS", default=True)
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 

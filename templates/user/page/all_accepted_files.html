@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     container.classList.add('loading');
     
-    fetch(`{% url 'user_app:all-accepted-files' %}?${params.toString()}`, {
+    fetch(`{% url 'user_app:accepted-files' %}?${params.toString()}`, {
       headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(response => response.json())

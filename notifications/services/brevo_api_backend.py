@@ -5,7 +5,6 @@ Uses Brevo's HTTP API instead of SMTP to avoid network restrictions on Render.
 More reliable than SMTP as it uses HTTPS (port 443) which is rarely blocked.
 """
 
-import os
 import logging
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
@@ -29,8 +28,8 @@ class BrevoAPIClient:
     @classmethod
     def _initialize(cls):
         """Initialize the Brevo API client"""
-        api_key = os.getenv('BREVO_API_KEY')
-        
+        api_key = getattr(settings, "BREVO_API_KEY", "")
+
         if not api_key:
             raise ValueError(
                 "BREVO_API_KEY environment variable is not set! "
