@@ -1,1173 +1,186 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'css/notification-panel.css' %}">
+{% with current_path=request.path current_url=request.resolver_match.url_name current_ns=request.resolver_match.namespace %}
+<div class="app-mobile-topbar" data-app-mobile-topbar>
+  <button type="button" class="app-mobile-topbar__toggle" data-app-sidebar-toggle aria-label="Open navigation">
+    <i class="fas fa-bars"></i>
+  </button>
+  <a href="{% url 'user_app:main-dashboard' %}" class="app-mobile-topbar__brand">
+    <img src="{% static 'img/denrpenrologo.png' %}" alt="DENR-PENRO" class="app-mobile-topbar__logo">
+    <div class="app-mobile-topbar__title">
+      <span class="app-mobile-topbar__eyebrow">Work Indicator</span>
+      <span class="app-mobile-topbar__role">User Workspace</span>
+    </div>
+  </a>
+</div>
 
-<header class="ah">
-  <div class="ah-left-section">
-    <a href="{% url 'user_app:main-dashboard' %}" class="logo" style="text-decoration: none; color: inherit; cursor: pointer;">
-      <img src="{% static 'img/denrpenrologo.png' %}" alt="DENR-PENRO" class="logo-img">
-      <div>
-        <small>Work Indicator<br>& Submission Engine</small>
+<div class="app-sidebar-backdrop" data-app-sidebar-backdrop></div>
+<div class="notif-backdrop" data-notif-backdrop></div>
+
+<aside class="app-sidebar" data-app-sidebar>
+  <div class="app-sidebar__inner">
+    <a href="{% url 'user_app:main-dashboard' %}" class="app-brand">
+      <img src="{% static 'img/denrpenrologo.png' %}" alt="DENR-PENRO" class="app-brand__logo">
+      <div class="app-brand__text">
+        <span class="app-brand__eyebrow">Work Indicator &amp; Submission Engine</span>
+        <span class="app-brand__role">User Workspace</span>
       </div>
     </a>
-  </div>
 
-  <div class="right-section">
-    <!-- Mobile menu backdrop -->
-    <div class="nav-backdrop" data-nav-backdrop></div>
-    
-    <!-- Documents backdrop -->
-    <div class="docs-backdrop" data-docs-backdrop></div>
-    
-    <!-- Notification backdrop -->
-    <div class="notif-backdrop" data-notif-backdrop></div>
-    
-    <!-- User profile backdrop -->
-    <div class="user-backdrop" data-user-backdrop></div>
+    <div class="app-sidebar__scroll">
+      <section class="app-nav-section">
+        <span class="app-nav-section__label">Workspace</span>
+        <div class="app-nav-stack">
+          <a href="{% url 'user_app:main-dashboard' %}" class="app-nav-link {% if current_path == '/user/' or current_path == '/user/dashboard/' %}is-active{% endif %}">
+            <span class="app-nav-link__icon"><i class="fas fa-gauge-high"></i></span>
+            <span class="app-nav-link__body">
+              <span class="app-nav-link__label">Dashboard</span>
+              <span class="app-nav-link__meta">Overview and shortcuts</span>
+            </span>
+          </a>
 
-    <!-- DOCUMENT TRACKING BUTTON -->
-    <div class="docs-container" data-tracking-panel>
-      <button class="docs-btn" 
-              data-tracking-toggle 
-              aria-label="Document Tracking"
-              aria-expanded="false"
-              aria-haspopup="true"
-              style="background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.3);">
-        <i class="fas fa-route"></i>
-      </button>
-      
-      <!-- Document Tracking Panel -->
-      <div class="docs-panel" data-tracking-content>
-        <div class="docs-header">
-          <h3 class="docs-title">
-            <i class="fas fa-route"></i>
-            Document Tracking
-          </h3>
-        </div>
-        <div class="docs-body">
-          <a href="{% url 'document_tracking:submit_document' %}" class="docs-item">
-            <i class="fas fa-plus-circle" style="color: #3b82f6;"></i>
-            <span>Submit Document</span>
-          </a>
-          <a href="{% url 'document_tracking:my_submissions' %}" class="docs-item">
-            <i class="fas fa-user-check" style="color: #22c55e;"></i>
-            <span>My Submissions</span>
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- WORKSTATE BUTTON -->
-    <div class="docs-container" data-workstate-panel>
-      <button class="docs-btn" 
-              data-workstate-toggle 
-              aria-label="Workstate"
-              aria-expanded="false"
-              aria-haspopup="true"
-              style="background: rgba(34, 211, 238, 0.15); border-color: rgba(34, 211, 238, 0.3);">
-        <i class="fas fa-briefcase"></i>
-      </button>
-      
-      <!-- Workstate Panel -->
-      <div class="docs-panel" data-workstate-content>
-        <div class="docs-header">
-          <h3 class="docs-title">
-            <i class="fas fa-briefcase"></i>
-            Workstate
-          </h3>
-        </div>
-        <div class="docs-body">
-          <a href="{% url 'user_app:workstate-overview' %}" class="docs-item">
-            <i class="fas fa-tachometer-alt" style="color: #3b82f6;"></i>
-            <span>Workstate Overview</span>
-          </a>
-          <a href="{% url 'user_app:work-items' %}" class="docs-item">
-            <i class="fas fa-calendar-alt" style="color: #8b5cf6;"></i>
-            <span>Work Cycles</span>
-          </a>
-          <a href="{% url 'user_app:discussions-list' %}" class="docs-item">
-            <i class="fas fa-comments" style="color: #ec4899;"></i>
-            <span>Messages</span>
-            <span class="msg-badge" id="discussions-badge" style="display: none;">0</span>
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- NOTIFICATION PANEL -->
-    <div class="notif-container" data-notif-panel data-view-all-url="{% url 'user_app:user-notifications' %}">
-      <button class="notif-bell" 
-              data-notif-toggle 
-              aria-label="Notifications ({{ unread_notifications_count }} unread)"
-              aria-expanded="false"
-              aria-haspopup="true">
-        <i class="fas fa-bell"></i>
-        <span class="notif-badge" 
-              data-notif-badge
-              data-unread-type="notifications"
-              data-unread-count="{{ unread_notifications_count }}"
-              data-count="{{ unread_notifications_count }}"
-              aria-live="polite"
-              {% if unread_notifications_count == 0 %}style="display: none;"{% endif %}>
-          {% if unread_notifications_count > 9 %}9+{% else %}{{ unread_notifications_count }}{% endif %}
-        </span>
-      </button>
-
-      <div class="notif-panel" data-notif-dropdown role="menu">
-        <div class="notif-panel-header">
-          <h6>Notifications</h6>
-          <button class="notif-mark-all" data-mark-all-read>Mark all as read</button>
-        </div>
-        <div class="notif-panel-body" data-notif-list>
-          <div class="notif-loading">
-            <div class="notif-spinner"></div>
-          </div>
-        </div>
-        <div class="notif-panel-footer" data-notif-footer>
-          <a href="{% url 'user_app:user-notifications' %}">View all notifications</a>
-        </div>
-      </div>
-    </div>
-    
-    <!-- DOCUMENTS BUTTON (File Manager) -->
-    <div class="docs-container" data-docs-panel>
-      <button class="docs-btn" 
-              data-docs-toggle 
-              aria-label="Documents"
-              aria-expanded="false"
-              aria-haspopup="true">
-        <i class="fas fa-folder-open"></i>
-      </button>
-      
-      <!-- Documents Panel -->
-      <div class="docs-panel" data-docs-content>
-        <div class="docs-header">
-          <h3 class="docs-title">
-            <i class="fas fa-folder-open"></i>
-            Documents
-          </h3>
-        </div>
-        <div class="docs-body">
-          <a href="{% url 'user_app:file-manager' %}" class="docs-item">
-            <i class="fas fa-folder-tree"></i>
-            <span>Browse Files</span>
-          </a>
-          <a href="{% url 'user_app:accepted-files' %}" class="docs-item">
-            <i class="fas fa-file-alt"></i>
-            <span>All Accepted</span>
-          </a>
-          <div class="docs-divider"></div>
-          <a href="{% url 'user_app:accepted-files' %}" class="docs-item">
-            <i class="fas fa-check-circle" style="color: #22c55e;"></i>
-            <span>My Accepted</span>
-          </a>
-          <a href="{% url 'user_app:rejected-files' %}" class="docs-item">
-            <i class="fas fa-times-circle" style="color: #ef4444;"></i>
-            <span>My Rejected</span>
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <div class="user" data-user-menu>
-      <button class="ubox" type="button">
-        <i class="fas fa-user-circle"></i>
-        <span>{{ request.user.username|truncatechars:15 }}</span>
-        <i class="fas fa-chevron-down"></i>
-      </button>
-
-      <div class="udrop">
-        <div class="udrop-header">
-          {% if request.user.profile_image %}
-            <img class="udrop-avatar"
-                 src="{{ request.user.profile_image.url }}"
-                 alt="{{ request.user.get_full_name|default:request.user.username }}"
-                 style="object-fit: cover;">
-          {% else %}
-            <div class="udrop-avatar">
-              <i class="fas fa-user"></i>
+          <div class="app-nav-group {% if '/documents/submit/' in current_path or '/documents/my-submissions/' in current_path or '/documents/submission/' in current_path %}is-active{% endif %} is-expanded" data-nav-group>
+            <button type="button" class="app-nav-group__toggle" data-nav-group-toggle aria-expanded="true">
+              <span class="app-nav-group__icon"><i class="fas fa-route"></i></span>
+              <span class="app-nav-group__body">
+                <span class="app-nav-group__label">Tracking</span>
+                <span class="app-nav-group__meta">Document submission and status</span>
+              </span>
+              <i class="fas fa-chevron-down app-nav-group__chevron"></i>
+            </button>
+            <div class="app-nav-group__children">
+              <a href="{% url 'document_tracking:submit_document' %}" class="app-nav-child {% if '/documents/submit/' in current_path %}is-active{% endif %}">
+                <i class="fas fa-plus-circle app-nav-child__icon"></i>
+                <span class="app-nav-child__label">Submit Document</span>
+              </a>
+              <a href="{% url 'document_tracking:my_submissions' %}" class="app-nav-child {% if '/documents/my-submissions/' in current_path or '/documents/submission/' in current_path %}is-active{% endif %}">
+                <i class="fas fa-folder-open app-nav-child__icon"></i>
+                <span class="app-nav-child__label">My Submissions</span>
+              </a>
             </div>
-          {% endif %}
-          <div class="udrop-info">
-            <span class="udrop-name">{{ request.user.first_name }} {{ request.user.last_name }}</span>
-            <span class="udrop-email">{{ request.user.email|default:"No email set" }}</span>
+          </div>
+
+          <div class="app-nav-group {% if current_path == '/user/workstate/' or '/user/work-items/' in current_path or '/user/discussions/' in current_path %}is-active{% endif %} is-expanded" data-nav-group>
+            <button type="button" class="app-nav-group__toggle" data-nav-group-toggle aria-expanded="true">
+              <span class="app-nav-group__icon"><i class="fas fa-briefcase"></i></span>
+              <span class="app-nav-group__body">
+                <span class="app-nav-group__label">Work State</span>
+                <span class="app-nav-group__meta">Assignments, cycles, and discussion</span>
+              </span>
+              <i class="fas fa-chevron-down app-nav-group__chevron"></i>
+            </button>
+            <div class="app-nav-group__children">
+              <a href="{% url 'user_app:workstate-overview' %}" class="app-nav-child {% if current_path == '/user/workstate/' %}is-active{% endif %}">
+                <i class="fas fa-chart-pie app-nav-child__icon"></i>
+                <span class="app-nav-child__label">Overview</span>
+              </a>
+              <a href="{% url 'user_app:work-items' %}" class="app-nav-child {% if '/user/work-items/' in current_path %}is-active{% endif %}">
+                <i class="fas fa-calendar-days app-nav-child__icon"></i>
+                <span class="app-nav-child__label">Work Cycles</span>
+              </a>
+              <a href="{% url 'user_app:discussions-list' %}" class="app-nav-child {% if '/user/discussions/' in current_path %}is-active{% endif %}">
+                <i class="fas fa-comments app-nav-child__icon"></i>
+                <span class="app-nav-child__label">Messages</span>
+                <span class="app-nav-child__badge" id="discussions-badge" style="display: none;">0</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="app-nav-group {% if '/user/documents/browse/' in current_path or '/user/files/accepted/' in current_path or '/user/files/rejected/' in current_path %}is-active{% endif %} is-expanded" data-nav-group>
+            <button type="button" class="app-nav-group__toggle" data-nav-group-toggle aria-expanded="true">
+              <span class="app-nav-group__icon"><i class="fas fa-folder-open"></i></span>
+              <span class="app-nav-group__body">
+                <span class="app-nav-group__label">Documents</span>
+                <span class="app-nav-group__meta">Browse and review your files</span>
+              </span>
+              <i class="fas fa-chevron-down app-nav-group__chevron"></i>
+            </button>
+            <div class="app-nav-group__children">
+              <a href="{% url 'user_app:file-manager' %}" class="app-nav-child {% if '/user/documents/browse/' in current_path %}is-active{% endif %}">
+                <i class="fas fa-folder-tree app-nav-child__icon"></i>
+                <span class="app-nav-child__label">Browse Files</span>
+              </a>
+              <a href="{% url 'user_app:accepted-files' %}" class="app-nav-child {% if '/user/files/accepted/' in current_path %}is-active{% endif %}">
+                <i class="fas fa-check-circle app-nav-child__icon"></i>
+                <span class="app-nav-child__label">My Accepted Files</span>
+              </a>
+              <a href="{% url 'user_app:rejected-files' %}" class="app-nav-child {% if '/user/files/rejected/' in current_path %}is-active{% endif %}">
+                <i class="fas fa-circle-xmark app-nav-child__icon"></i>
+                <span class="app-nav-child__label">My Rejected Files</span>
+              </a>
+            </div>
           </div>
         </div>
-        <div class="udrop-links">
-          <a href="{% url 'user_app:profile' %}"><i class="fas fa-id-card"></i>My Profile</a>
-          <a href="{% url 'user_app:email-logs' %}" class="position-relative">
-            <i class="fas fa-envelope"></i>Email Logs
-            {% if has_unread_emails %}
-            <span class="email-unread-badge">{{ unread_emails_count }}</span>
-            {% endif %}
-          </a>
-          <div class="udrop-divider"></div>
-          <a href="{% url 'logout' %}" class="out">
-            <i class="fas fa-sign-out-alt"></i>Logout
-          </a>
+      </section>
+    </div>
+
+    <div class="app-sidebar__footer">
+      <div class="app-account-card">
+        <div class="app-account-card__avatar">
+          {% if request.user.profile_image %}
+            <img src="{{ request.user.profile_image.url }}" alt="{{ request.user.get_full_name|default:request.user.username }}">
+          {% else %}
+            <i class="fas fa-user"></i>
+          {% endif %}
         </div>
+        <div class="app-account-card__body">
+          <span class="app-account-card__name">{{ request.user.get_full_name|default:request.user.username }}</span>
+          <span class="app-account-card__meta">{{ request.user.email|default:"User Workspace" }}</span>
+        </div>
+      </div>
+
+      <div class="notif-container app-sidebar-notif" data-notif-panel data-view-all-url="{% url 'user_app:user-notifications' %}">
+        <button class="notif-bell" data-notif-toggle aria-label="Notifications ({{ unread_notifications_count }} unread)" aria-expanded="false" aria-haspopup="true">
+          <span class="app-utility-button__icon"><i class="fas fa-bell"></i></span>
+          <span class="app-utility-button__text">Notifications</span>
+          <span class="notif-badge"
+                data-notif-badge
+                data-unread-type="notifications"
+                data-unread-count="{{ unread_notifications_count }}"
+                data-count="{{ unread_notifications_count }}"
+                aria-live="polite"
+                {% if unread_notifications_count == 0 %}style="display: none;"{% endif %}>
+            {% if unread_notifications_count > 9 %}9+{% else %}{{ unread_notifications_count }}{% endif %}
+          </span>
+        </button>
+
+        <div class="notif-panel" data-notif-dropdown role="menu">
+          <div class="notif-panel-header">
+            <h6>Notifications</h6>
+            <button class="notif-mark-all" data-mark-all-read>Mark all as read</button>
+          </div>
+          <div class="notif-panel-body" data-notif-list>
+            <div class="notif-loading">
+              <div class="notif-spinner"></div>
+            </div>
+          </div>
+          <div class="notif-panel-footer" data-notif-footer>
+            <a href="{% url 'user_app:user-notifications' %}">View all notifications</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-account-links">
+        <a href="{% url 'user_app:profile' %}" class="app-account-link {% if current_url == 'profile' %}is-active{% endif %}">
+          <span class="app-account-link__icon"><i class="fas fa-id-card"></i></span>
+          <span class="app-account-link__label">My Profile</span>
+        </a>
+        <a href="{% url 'user_app:email-logs' %}" class="app-account-link {% if current_url == 'email-logs' %}is-active{% endif %}">
+          <span class="app-account-link__icon"><i class="fas fa-envelope"></i></span>
+          <span class="app-account-link__label">Email Logs</span>
+          {% if has_unread_emails %}
+            <span class="app-account-link__badge">
+              {% if unread_emails_count > 99 %}99+{% else %}{{ unread_emails_count }}{% endif %}
+            </span>
+          {% endif %}
+        </a>
+        <a href="{% url 'logout' %}" class="app-account-link is-danger">
+          <span class="app-account-link__icon"><i class="fas fa-right-from-bracket"></i></span>
+          <span class="app-account-link__label">Logout</span>
+        </a>
       </div>
     </div>
   </div>
-</header>
-
-<style>
-/* COLOR PALETTE */
-:root {
-  --navy-900: #0a1628;
-  --navy-800: #0f2744;
-  --navy-700: #1a3a5c;
-  --navy-600: #254d73;
-  --navy-500: #3a6ea5;
-  --slate-600: #475569;
-  --slate-500: #64748b;
-  --slate-400: #94a3b8;
-  --slate-200: #e2e8f0;
-  --slate-100: #f1f5f9;
-  --white: #ffffff;
-  --cyan-400: #22d3ee;
-  --cyan-500: #06b6d4;
-}
-
-/* HEADER - ANIMATION REMOVED */
-.ah {
-  position: sticky;
-  top: 0;
-  z-index: 1050;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.7rem 1.2rem;
-  background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: var(--white);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* LEFT SECTION */
-.ah-left-section {
-  display: flex;
-  align-items: center;
-}
-
-/* LOGO - IMPROVED */
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  flex-shrink: 0;
-  padding: 0.4rem 0.75rem;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.logo:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.logo:active {
-  transform: translateY(0);
-}
-
-.logo-img {
-  width: 42px;
-  height: 42px;
-  object-fit: contain;
-  border-radius: 10px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 248, 255, 0.9));
-  padding: 4px;
-  border: 2px solid rgba(59, 130, 246, 0.3);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25), 0 0 20px rgba(59, 130, 246, 0.15);
-}
-
-.ico {
-  position: relative;
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, var(--cyan-400), var(--cyan-500));
-  border-radius: 11px;
-  font-size: 1.15rem;
-  color: var(--white);
-  box-shadow: 0 4px 15px rgba(34, 211, 238, 0.4);
-  transition: all 0.3s ease;
-}
-
-.ico::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  background: linear-gradient(135deg, var(--cyan-400), var(--cyan-500));
-  border-radius: 14px;
-  z-index: -1;
-  opacity: 0;
-  filter: blur(10px);
-  transition: opacity 0.3s ease;
-}
-
-.logo:hover .ico::after {
-  opacity: 0.6;
-}
-
-.logo > div {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.35;
-}
-
-.logo b {
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--white);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.logo small {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.95);
-  text-transform: uppercase;
-  line-height: 1.4;
-}
-
-/* NAV - IMPROVED */
-.nav {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  gap: 0.35rem;
-  min-width: 0;
-  flex-wrap: wrap;
-}
-
-/* RIGHT SECTION */
-.right-section {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.nav a {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.9rem;
-  font-size: 0.87rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
-  text-decoration: none;
-  border-radius: 10px;
-  transition: all 0.2s ease;
-  overflow: hidden;
-}
-
-.nav a::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 10px;
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(6, 182, 212, 0.15));
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.nav a i {
-  font-size: 0.95rem;
-  z-index: 1;
-}
-
-.nav a span {
-  z-index: 1;
-}
-
-/* HOVER (ONLY WHEN NOT ACTIVE) */
-.nav a:not(.active):hover {
-  color: var(--white);
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 0 12px rgba(34, 211, 238, 0.3), inset 0 0 0 1px rgba(34, 211, 238, 0.15);
-}
-
-.nav a:not(.active):hover::before {
-  opacity: 0.3;
-}
-
-/* ACTIVE (FIXED) */
-.nav a.active {
-  background: rgba(34, 211, 238, 0.25);
-  color: var(--white);
-  font-weight: 600;
-  box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.4);
-}
-
-/* DISABLED */
-.nav a.disabled {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-.nav em {
-  font-size: 0.55rem;
-  font-style: normal;
-  font-weight: 600;
-  padding: 0.15rem 0.4rem;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.25);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  z-index: 1;
-}
-
-/* MESSAGE UNREAD BADGE */
-.msg-badge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  min-width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  font-style: normal;
-  font-weight: 700;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: #ef4444;
-  color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 2;
-}
-
-.nav a {
-  position: relative;
-}
-
-/* USER */
-.user {
-  position: relative;
-}
-
-/* BACKDROP STYLES */
-.nav-backdrop,
-.docs-backdrop,
-.notif-backdrop,
-.user-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 1040;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-}
-
-.nav-backdrop.show,
-.docs-backdrop.show,
-.notif-backdrop.show,
-.user-backdrop.show {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* DOCUMENTS PANEL */
-.docs-container {
-  position: relative;
-  display: flex;
-}
-
-.docs-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: var(--white);
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: grid;
-  place-items: center;
-}
-
-.docs-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
-  transform: translateY(-1px);
-}
-
-.docs-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 160px;
-  background: var(--navy-800);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px);
-  transition: all 0.3s ease;
-  z-index: 2000;
-}
-
-.docs-panel.show {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.docs-header {
-  padding: 0.5rem 0.65rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.docs-title {
-  margin: 0;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--white);
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.docs-title i {
-  font-size: 0.65rem;
-}
-
-.docs-body {
-  padding: 0.25rem;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.docs-item {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: 5px;
-  color: rgba(255, 255, 255, 0.9);
-  text-decoration: none;
-  font-size: 0.7rem;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.docs-item:hover {
-  background: rgba(34, 211, 238, 0.2);
-  color: var(--white);
-}
-
-.docs-item i {
-  font-size: 0.7rem;
-  width: 14px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.docs-item span {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.docs-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.1);
-  margin: 0.25rem 0;
-}
-
-/* ACTIONS CONTAINER */
-.actions {
-  display: none;
-}
-
-.menu-btn {
-  display: none;
-}
-
-.ubox {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.8rem 0.45rem 0.55rem;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: var(--white);
-  font-size: 0.87rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.ubox:hover {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.25);
-}
-
-.ubox i:first-child {
-  font-size: 1.15rem;
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.ubox i:last-child {
-  font-size: 0.68rem;
-  opacity: 0.75;
-  transition: transform 0.2s ease;
-}
-
-.ubox.active i:last-child {
-  transform: rotate(180deg);
-}
-
-/* DROPDOWN - IMPROVED WITH PROFILE HEADER */
-.udrop {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 10px);
-  width: 260px;
-  background: var(--navy-800);
-  backdrop-filter: blur(20px);
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-8px) scale(0.95);
-  transform-origin: top right;
-  transition: all 0.2s ease;
-  z-index: 2000;
-  overflow: hidden;
-}
-
-.udrop.show {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0) scale(1);
-}
-
-/* Profile Header in Dropdown */
-.udrop-header {
-  padding: 1.1rem;
-  background: linear-gradient(135deg, rgba(34, 211, 238, 0.18) 0%, rgba(6, 182, 212, 0.12) 100%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
-
-.udrop-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 11px;
-  overflow: hidden;
-  background: linear-gradient(135deg, var(--cyan-400), var(--cyan-500));
-  color: var(--white);
-  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.35);
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  font-size: 1.2rem;
-}
-
-.udrop-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  gap: 0.15rem;
-}
-
-.udrop-name {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--white);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.udrop-email {
-  font-size: 0.74rem;
-  color: var(--slate-400);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Dropdown Links Section */
-.udrop-links {
-  padding: 0.6rem;
-}
-
-.udrop a {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.7rem 0.9rem;
-  font-size: 0.87rem;
-  font-weight: 500;
-  color: var(--slate-200);
-  text-decoration: none;
-  border-radius: 9px;
-  transition: all 0.15s ease;
-}
-
-.udrop a i {
-  width: 20px;
-  text-align: center;
-  font-size: 0.95rem;
-  opacity: 0.75;
-}
-
-.udrop a:hover {
-  background: rgba(34, 211, 238, 0.15);
-  color: var(--white);
-}
-
-.udrop a:hover i {
-  opacity: 1;
-}
-
-.udrop-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.08);
-  margin: 0.35rem 0.6rem;
-}
-
-.udrop .out {
-  color: #f87171;
-}
-
-.udrop .out:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
-}
-
-/* Email Unread Badge */
-.email-unread-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  min-width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: #ef4444;
-  color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-/* RESPONSIVE */
-@media (max-width: 1024px) {
-  .nav span, .user span {
-    display: none;
-  }
-  
-  .nav a {
-    padding: 0.5rem 0.7rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .logo small {
-    display: none;
-  }
-  
-  .ah {
-    padding: 0.6rem 1rem;
-  }
-
-  /* SHOW MOBILE MENU BUTTON - REMOVED */
-
-  /* NAV DROPDOWN ON MOBILE */
-  .nav {
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 1rem;
-    left: auto;
-    width: 240px;
-    background: var(--navy-800);
-    backdrop-filter: blur(20px);
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0.6rem;
-    display: none;
-    flex-direction: column;
-    gap: 0.25rem;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-    z-index: 2000;
-    justify-content: flex-start;
-  }
-
-  .nav.show {
-    display: flex;
-    animation: fadeIn 0.2s ease-out;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .nav a {
-    width: 100%;
-    justify-content: flex-start;
-    gap: 0.75rem;
-    padding: 0.75rem 0.9rem;
-    border-radius: 9px;
-  }
-
-  .nav a::before {
-    display: none;
-  }
-
-  .nav a:not(.active):hover {
-    background: rgba(34, 211, 238, 0.15);
-    box-shadow: none;
-  }
-
-  .nav a span {
-    display: inline;
-    font-size: 0.88rem;
-  }
-
-  /* Keep badge visible on mobile */
-  .msg-badge {
-    top: 8px;
-    right: 8px;
-  }
-  
-  /* Document Tracking panel mobile adjustments */
-  [data-tracking-panel] {
-    display: flex;
-  }
-  
-  [data-tracking-panel] .docs-panel {
-    position: fixed;
-    top: 70px;
-    right: 1rem;
-    left: auto;
-    width: 160px;
-    max-width: 200px;
-  }
-  
-  /* Hide File Manager documents button on mobile */
-  [data-docs-panel] {
-    display: none;
-  }
-
-  /* USER DROPDOWN POSITION ON MOBILE */
-  .udrop {
-    left: auto;
-    right: 0;
-  }
-}
-
-@media (max-width: 600px) {
-  .logo > div {
-    display: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .logo b {
-    font-size: 0.9rem;
-  }
-  
-  .ico {
-    width: 38px;
-    height: 38px;
-    font-size: 1rem;
-  }
-
-  .ubox {
-    padding: 0.45rem;
-  }
-
-  .ubox span {
-    display: none;
-  }
-}
-</style>
-
-<script>
-/* USER DROPDOWN */
-document.addEventListener("click", e => {
-  const userMenus = document.querySelectorAll("[data-user-menu]");
-  const nav = document.querySelector("[data-nav]");
-  const menuToggle = document.querySelector("[data-menu-toggle]");
-  const userBackdrop = document.querySelector("[data-user-backdrop]");
-  const navBackdrop = document.querySelector("[data-nav-backdrop]");
-  const notifPanel = document.querySelector(".notif-panel");
-  const notifBackdrop = document.querySelector("[data-notif-backdrop]");
-  const docsPanel = document.querySelector("[data-docs-content]");
-  const docsBackdrop = document.querySelector("[data-docs-backdrop]");
-  const trackingPanel = document.querySelector("[data-tracking-content]");
-  const workstatePanel = document.querySelector("[data-workstate-content]");
-  
-  // Handle user dropdown
-  userMenus.forEach(w => {
-    const b = w.querySelector(".ubox");
-    const d = w.querySelector(".udrop");
-    if (b && b.contains(e.target)) {
-      const isOpen = d.classList.contains("show");
-      
-      // Close other panels
-      if (nav) nav.classList.remove("show");
-      if (navBackdrop) navBackdrop.classList.remove("show");
-      if (notifPanel) notifPanel.classList.remove("show");
-      if (notifBackdrop) notifBackdrop.classList.remove("show");
-      if (docsPanel) docsPanel.classList.remove("show");
-      if (docsBackdrop) docsBackdrop.classList.remove("show");
-      if (trackingPanel) trackingPanel.classList.remove("show");
-      if (workstatePanel) workstatePanel.classList.remove("show");
-      
-      // Toggle user dropdown
-      d.classList.toggle("show");
-      b.classList.toggle("active");
-      
-      // Toggle backdrop
-      if (!isOpen && userBackdrop) {
-        userBackdrop.classList.add("show");
-      } else if (userBackdrop) {
-        userBackdrop.classList.remove("show");
-      }
-    } else {
-      d.classList.remove("show");
-      b.classList.remove("active");
-      if (userBackdrop) {
-        userBackdrop.classList.remove("show");
-      }
-    }
-  });
-  
-  // Handle mobile nav dropdown (close if clicking outside)
-  if (nav && menuToggle && !nav.contains(e.target) && !menuToggle.contains(e.target)) {
-    nav.classList.remove("show");
-    if (navBackdrop) navBackdrop.classList.remove("show");
-  }
-});
-
-/* CLOSE USER DROPDOWN ON BACKDROP CLICK */
-document.querySelector("[data-user-backdrop]")?.addEventListener("click", () => {
-  const userMenu = document.querySelector("[data-user-menu]");
-  const backdrop = document.querySelector("[data-user-backdrop]");
-  const udrop = document.querySelector(".udrop");
-  const ubox = document.querySelector(".ubox");
-  
-  if (udrop) udrop.classList.remove("show");
-  if (ubox) ubox.classList.remove("active");
-  if (backdrop) backdrop.classList.remove("show");
-});
-
-/* MOBILE NAV TOGGLE - REMOVED */
-
-/* DOCUMENTS PANEL TOGGLE */
-document.querySelector("[data-docs-toggle]")?.addEventListener("click", e => {
-  e.stopPropagation();
-  const panel = document.querySelector("[data-docs-content]");
-  const backdrop = document.querySelector("[data-docs-backdrop]");
-  const isOpen = panel.classList.contains("show");
-  
-  // Close other panels
-  const nav = document.querySelector("[data-nav]");
-  const navBackdrop = document.querySelector("[data-nav-backdrop]");
-  const notifPanel = document.querySelector(".notif-panel");
-  const notifBackdrop = document.querySelector("[data-notif-backdrop]");
-  const userDrops = document.querySelectorAll(".udrop");
-  const userBackdrop = document.querySelector("[data-user-backdrop]");
-  const trackingPanel = document.querySelector("[data-tracking-content]");
-  const workstatePanel = document.querySelector("[data-workstate-content]");
-  
-  if (nav) nav.classList.remove("show");
-  if (navBackdrop) navBackdrop.classList.remove("show");
-  if (notifPanel) notifPanel.classList.remove("show");
-  if (notifBackdrop) notifBackdrop.classList.remove("show");
-  if (trackingPanel) trackingPanel.classList.remove("show");
-  if (workstatePanel) workstatePanel.classList.remove("show");
-  userDrops.forEach(d => {
-    d.classList.remove("show");
-    const btn = d.parentElement.querySelector(".ubox");
-    if (btn) btn.classList.remove("active");
-  });
-  if (userBackdrop) userBackdrop.classList.remove("show");
-  
-  // Toggle this panel and backdrop
-  if (!isOpen) {
-    panel.classList.add("show");
-    backdrop.classList.add("show");
-  } else {
-    panel.classList.remove("show");
-    backdrop.classList.remove("show");
-  }
-});
-
-/* DOCUMENT TRACKING PANEL TOGGLE */
-document.querySelector("[data-tracking-toggle]")?.addEventListener("click", e => {
-  e.stopPropagation();
-  const panel = document.querySelector("[data-tracking-content]");
-  const backdrop = document.querySelector("[data-docs-backdrop]");
-  const isOpen = panel.classList.contains("show");
-  
-  // Close other panels
-  const nav = document.querySelector("[data-nav]");
-  const navBackdrop = document.querySelector("[data-nav-backdrop]");
-  const notifPanel = document.querySelector(".notif-panel");
-  const notifBackdrop = document.querySelector("[data-notif-backdrop]");
-  const userDrops = document.querySelectorAll(".udrop");
-  const userBackdrop = document.querySelector("[data-user-backdrop]");
-  const docsPanel = document.querySelector("[data-docs-content]");
-  const workstatePanel = document.querySelector("[data-workstate-content]");
-  
-  if (nav) nav.classList.remove("show");
-  if (navBackdrop) navBackdrop.classList.remove("show");
-  if (notifPanel) notifPanel.classList.remove("show");
-  if (notifBackdrop) notifBackdrop.classList.remove("show");
-  if (docsPanel) docsPanel.classList.remove("show");
-  if (workstatePanel) workstatePanel.classList.remove("show");
-  userDrops.forEach(d => {
-    d.classList.remove("show");
-    const btn = d.parentElement.querySelector(".ubox");
-    if (btn) btn.classList.remove("active");
-  });
-  if (userBackdrop) userBackdrop.classList.remove("show");
-  
-  // Toggle this panel and backdrop
-  if (!isOpen) {
-    panel.classList.add("show");
-    backdrop.classList.add("show");
-  } else {
-    panel.classList.remove("show");
-    backdrop.classList.remove("show");
-  }
-});
-
-/* WORKSTATE PANEL TOGGLE */
-document.querySelector("[data-workstate-toggle]")?.addEventListener("click", e => {
-  e.stopPropagation();
-  const panel = document.querySelector("[data-workstate-content]");
-  const backdrop = document.querySelector("[data-docs-backdrop]");
-  const isOpen = panel.classList.contains("show");
-  
-  // Close other panels
-  const nav = document.querySelector("[data-nav]");
-  const navBackdrop = document.querySelector("[data-nav-backdrop]");
-  const notifPanel = document.querySelector(".notif-panel");
-  const notifBackdrop = document.querySelector("[data-notif-backdrop]");
-  const userDrops = document.querySelectorAll(".udrop");
-  const userBackdrop = document.querySelector("[data-user-backdrop]");
-  const docsPanel = document.querySelector("[data-docs-content]");
-  const trackingPanel = document.querySelector("[data-tracking-content]");
-  
-  if (nav) nav.classList.remove("show");
-  if (navBackdrop) navBackdrop.classList.remove("show");
-  if (notifPanel) notifPanel.classList.remove("show");
-  if (notifBackdrop) notifBackdrop.classList.remove("show");
-  if (docsPanel) docsPanel.classList.remove("show");
-  if (trackingPanel) trackingPanel.classList.remove("show");
-  userDrops.forEach(d => {
-    d.classList.remove("show");
-    const btn = d.parentElement.querySelector(".ubox");
-    if (btn) btn.classList.remove("active");
-  });
-  if (userBackdrop) userBackdrop.classList.remove("show");
-  
-  // Toggle this panel and backdrop
-  if (!isOpen) {
-    panel.classList.add("show");
-    backdrop.classList.add("show");
-  } else {
-    panel.classList.remove("show");
-    backdrop.classList.remove("show");
-  }
-});
-
-/* CLOSE DOCUMENTS PANEL ON BACKDROP CLICK */
-document.querySelector("[data-docs-backdrop]")?.addEventListener("click", () => {
-  const panel = document.querySelector("[data-docs-content]");
-  const trackingPanel = document.querySelector("[data-tracking-content]");
-  const workstatePanel = document.querySelector("[data-workstate-content]");
-  const backdrop = document.querySelector("[data-docs-backdrop]");
-  if (panel) panel.classList.remove("show");
-  if (trackingPanel) trackingPanel.classList.remove("show");
-  if (workstatePanel) workstatePanel.classList.remove("show");
-  if (backdrop) backdrop.classList.remove("show");
-});
-
-/* CLOSE DOCUMENTS PANEL ON OUTSIDE CLICK */
-document.addEventListener("click", e => {
-  const docsContainer = document.querySelector("[data-docs-panel]");
-  const docsPanel = document.querySelector("[data-docs-content]");
-  const trackingContainer = document.querySelector("[data-tracking-panel]");
-  const trackingPanel = document.querySelector("[data-tracking-content]");
-  const workstateContainer = document.querySelector("[data-workstate-panel]");
-  const workstatePanel = document.querySelector("[data-workstate-content]");
-  const backdrop = document.querySelector("[data-docs-backdrop]");
-  
-  if (docsPanel && docsContainer && trackingContainer && workstateContainer && !docsContainer.contains(e.target) && !trackingContainer.contains(e.target) && !workstateContainer.contains(e.target)) {
-    docsPanel.classList.remove("show");
-    if (trackingPanel) trackingPanel.classList.remove("show");
-    if (workstatePanel) workstatePanel.classList.remove("show");
-    if (backdrop) backdrop.classList.remove("show");
-  }
-});
-
-/* CLOSE DOCUMENTS PANEL ON LINK CLICK */
-document.querySelectorAll(".docs-item").forEach(item => {
-  item.addEventListener("click", () => {
-    const panel = document.querySelector("[data-docs-content]");
-    const trackingPanel = document.querySelector("[data-tracking-content]");
-    const workstatePanel = document.querySelector("[data-workstate-content]");
-    const backdrop = document.querySelector("[data-docs-backdrop]");
-    if (panel) panel.classList.remove("show");
-    if (trackingPanel) trackingPanel.classList.remove("show");
-    if (workstatePanel) workstatePanel.classList.remove("show");
-    if (backdrop) backdrop.classList.remove("show");
-  });
-});
-
-/* ACTIVE NAV — EXACT MATCH (FIXED) */
-const currentPath = location.pathname.replace(/\/$/, "");
-
-document.querySelectorAll(".nav a[href]").forEach(link => {
-  const linkPath = new URL(link.href).pathname.replace(/\/$/, "");
-  if (currentPath === linkPath) {
-    link.classList.add("active");
-  } else {
-    link.classList.remove("active");
-  }
-});
-</script>
+</aside>
 
 <script src="{% static 'js/notifications.js' %}?v=2"></script>
+{% endwith %}
